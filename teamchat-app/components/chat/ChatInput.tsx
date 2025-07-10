@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon, Folder, Vote } from "lucide-react";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
-import { ChatInputProps } from "@/lib/src/types"; // Adjust the import path as needed
+import { ChatInputProps } from "@/lib/src/types";
 
 declare global {
     interface Window {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { VideoCallState } from '../types/videocall';
+import { VideoCallState } from '../lib/src/types/videocall';
 
 export const useVideoCall = () => {
     const [room, setRoom] = useState<any>(null);

@@ -1,19 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import {
-    Paperclip,
-    Smile,
-    Mic,
-    Send,
-    X,
-    ImageIcon,
-    File as FileIcon,
-    Folder,
-} from "lucide-react";
+import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon, Folder, Vote } from "lucide-react";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
-import { ChatInputProps } from "@/app/types";
+import { ChatInputProps } from "@/lib/src/types"; // Adjust the import path as needed
 
-// Add typings for SpeechRecognition APIs
 declare global {
     interface Window {
         SpeechRecognition?: any;
@@ -21,12 +11,19 @@ declare global {
     }
 }
 
-export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps) {
+interface ExtendedChatInputProps extends ChatInputProps {
+    onCreatePoll?: (pollData: { question: string; options: string[] }) => void;
+}
+
+export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: ExtendedChatInputProps) {
     const [message, setMessage] = useState("");
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [isListening, setIsListening] = useState(false);
     const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [showPollForm, setShowPollForm] = useState(false);
+    const [pollQuestion, setPollQuestion] = useState("");
+    const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
@@ -89,9 +86,7 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
     };
 
     const removeFile = (fileToRemove: File) => {
-        setSelectedFiles((prevFiles) =>
-            prevFiles.filter((file) => file !== fileToRemove)
-        );
+        setSelectedFiles((prevFiles) => prevFiles.filter((file) => file !== fileToRemove));
     };
 
     const onEmojiClick = (emojiData: EmojiClickData) => {
@@ -100,10 +95,7 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
     };
 
     const handleSendMessage = () => {
-        if (!message.trim() && selectedFiles.length === 0) {
-            return;
-        }
-
+        if (!message.trim() && selectedFiles.length === 0) return;
         onSendMessage(message);
         setMessage("");
         setSelectedFiles([]);
@@ -114,6 +106,27 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
             event.preventDefault();
             handleSendMessage();
         }
+    };
+
+    const handleCreatePoll = () => {
+        if (pollQuestion.trim() && pollOptions.every((opt) => opt.trim()) && onCreatePoll) {
+            onCreatePoll({
+                question: pollQuestion,
+                options: pollOptions.filter((opt) => opt.trim()),
+            });
+            setPollQuestion("");
+            setPollOptions(["", ""]);
+            setShowPollForm(false);
+            setShowAttachmentMenu(false);
+        }
+    };
+
+    const addPollOption = () => {
+        setPollOptions((prev) => [...prev, ""]);
+    };
+
+    const updatePollOption = (index: number, value: string) => {
+        setPollOptions((prev) => prev.map((opt, i) => (i === index ? value : opt)));
     };
 
     const AttachmentMenuItem = ({
@@ -127,9 +140,7 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
     }) => (
         <button
             onClick={onClick}
-            className={`w-full flex items-center gap-3 p-2 rounded-md text-sm transition-colors ${isDarkMode
-                ? "text-gray-300 hover:bg-gray-600"
-                : "text-gray-700 hover:bg-gray-100"
+            className={`w-full flex items-center gap-3 p-2 rounded-md text-sm transition-colors ${isDarkMode ? "text-gray-300 hover:bg-gray-600" : "text-gray-700 hover:bg-gray-100"
                 }`}
         >
             {icon}
@@ -139,32 +150,61 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
 
     return (
         <div
-            className={`p-4 border-t transition-colors relative ${isDarkMode
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
+            className={`p-4 border-t transition-colors relative ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
                 }`}
         >
             {selectedFiles.length > 0 && (
-                <div className={`mb-2 p-2 border rounded-lg max-h-32 overflow-y-auto space-y-2 ${isDarkMode ? "border-gray-600" : "border-gray-300"
-                    }`}>
+                <div
+                    className={`mb-2 p-2 border rounded-lg max-h-32 overflow-y-auto space-y-2 ${isDarkMode ? "border-gray-600" : "border-gray-300"
+                        }`}
+                >
                     {selectedFiles.map((file, index) => (
                         <div
                             key={index}
                             className={`flex items-center justify-between p-2 rounded ${isDarkMode ? "bg-gray-700" : "bg-gray-100"
                                 }`}
                         >
-                            <span className={`text-sm truncate max-w-xs ${isDarkMode ? "text-gray-300" : "text-gray-700"
-                                }`}>
+                            <span className={`text-sm truncate max-w-xs ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
                                 {file.name}
                             </span>
                             <button
                                 onClick={() => removeFile(file)}
-                                className={`hover:text-red-500 ${isDarkMode ? "text-gray-400" : "text-gray-500"
-                                    }`}
+                                className={`hover:text-red-500 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}
                             >
                                 <X className="h-4 w-4" />
                             </button>
                         </div>
+                    ))}
+                </div>
+            )}
+
+            {showPollForm && (
+                <div
+                    className={`mb-2 p-4 border rounded-lg ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"
+                        }`}
+                >
+                    <input
+                        type="text"
+                        placeholder="Câu hỏi bình chọn..."
+                        value={pollQuestion}
+                        onChange={(e) => setPollQuestion(e.target.value)}
+                        className={`w-full mb-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode
+                            ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                            : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                            }`}
+                    />
+                    {pollOptions.map((option, index) => (
+                        <input
+                            key={index}
+                            type="text"
+                            placeholder={`Lựa chọn ${index + 1}`}
+                            value={option}
+                            onChange={(e) => updatePollOption(index, e.target.value)}
+                            className={`w-full mb-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode
+                                ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                                }`}
+                        />
                     ))}
                 </div>
             )}
@@ -193,17 +233,6 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                     multiple
                     style={{ display: "none" }}
                 />
-                <input
-                    type="file"
-                    ref={folderInputRef}
-                    onChange={handleFileSelect}
-                    // @ts-ignore
-                    webkitdirectory=""
-                    directory=""
-                    multiple
-                    style={{ display: "none" }}
-                />
-
                 <div ref={emojiPickerRef} className="absolute bottom-full mb-2 z-10">
                     <EmojiPicker
                         open={showEmojiPicker}
@@ -252,9 +281,7 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                             {showAttachmentMenu && (
                                 <div
                                     onMouseLeave={() => setShowAttachmentMenu(false)}
-                                    className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-lg w-48 ${isDarkMode
-                                        ? "bg-gray-700 border border-gray-600"
-                                        : "bg-white border"
+                                    className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-lg w-48 ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border"
                                         }`}
                                 >
                                     <AttachmentMenuItem
@@ -298,8 +325,7 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
             </div>
 
             <div
-                className={`mt-2 text-xs flex items-center ${isDarkMode ? "text-gray-400" : "text-gray-500"
-                    }`}
+                className={`mt-2 text-xs flex items-center ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}
             >
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                 Victoria Lane đang nhập

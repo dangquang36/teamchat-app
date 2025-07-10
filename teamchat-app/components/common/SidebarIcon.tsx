@@ -1,5 +1,5 @@
 import React from "react";
-import { SidebarIconProps } from "@/app/types";
+import { SidebarIconProps } from "@/app/types"; // Adjust the import path as needed
 
 export function SidebarIcon({
     icon,

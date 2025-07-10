@@ -1,5 +1,5 @@
 import React from "react";
-import { FeatureCardProps } from "@/app/types";
+import { FeatureCardProps } from "@/app/types"; // Adjust the import path as needed
 
 export function FeatureCard({ icon, title, description }: FeatureCardProps) {
     return (

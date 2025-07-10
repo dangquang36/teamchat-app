@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { useVideoCall } from '@/src/hooks/useVideoCall';
 import { ParticipantView } from './ParticipantView';
 import { CallControls } from './CallControls';
+import { useVideoCall } from '@/hooks/useVideoCall';
 
 interface VideoCallRoomProps {
     roomName: string;

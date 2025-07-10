@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Phone, Video } from "lucide-react";
-import { ChatHeaderProps } from "@/app/types";
+import { ChatHeaderProps } from "@/app/types"; // Adjust the import path as needed
 import { VideoCallButton } from "../videocall/VideoCallButton";
 
 export function ChatHeader({

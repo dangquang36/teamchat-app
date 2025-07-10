@@ -1,17 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Settings, ArrowRight, User, KeyRound, LogOut, Edit, Save, Camera, ArrowLeft, Laptop, Smartphone } from "lucide-react";
-import { ChatHeader } from "@/components/chat/ChatHeader";
-import { ChatMessages } from "@/components/chat/ChatMessages";
-import { ChatInput } from "@/components/chat/ChatInput";
+import { User, KeyRound, LogOut, Edit, Save, Camera, ArrowLeft, Laptop, Smartphone } from "lucide-react";
 
-
-
-interface SettingsSectionProps {
-    onLogout: () => void;
-    isDarkMode?: boolean;
-}
-
+// Component SettingsSection
+// Quản lý cài đặt người dùng, bao gồm hồ sơ và bảo mật
 export function SettingsSection({ onLogout, isDarkMode = false }: { onLogout: () => void; isDarkMode?: boolean }) {
     // === State Quản lý chung ===
     const [view, setView] = useState<'profile' | 'security'>('profile');

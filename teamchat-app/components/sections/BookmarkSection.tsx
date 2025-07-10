@@ -5,6 +5,7 @@ import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatMessages } from "@/components/chat/ChatMessages";
 import { ChatInput } from "@/components/chat/ChatInput";
 
+
 interface BookmarkSectionProps {
     isDarkMode?: boolean;
 }
@@ -68,8 +69,8 @@ export function BookmarkSection({ isDarkMode = false }: BookmarkSectionProps) {
                             type="text"
                             placeholder="Tìm kiếm..."
                             className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors ${isDarkMode
-                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                                ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                                 }`}
                         />
                     </div>
@@ -160,7 +161,12 @@ export function BookmarkSection({ isDarkMode = false }: BookmarkSectionProps) {
                 />
                 <ChatMessages
                     messages={[]}
-                    currentUser={{ id: "me", name: "Me", avatar: "/placeholder.svg" }}
+                    currentUser={{
+                        id: "me",
+                        name: "Me",
+                        avatar: "/placeholder.svg",
+                        online: true, // <-- Thêm dòng này để đúng kiểu
+                    }}
                     isDarkMode={isDarkMode}
                 />
                 <ChatInput onSendMessage={() => { }} isDarkMode={isDarkMode} />

@@ -66,6 +66,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/dom-webcodecs": "^0.1.15",
     "@types/emoji-mart": "^3.0.14",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22",

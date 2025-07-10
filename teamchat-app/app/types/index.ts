@@ -1,3 +1,10 @@
+export interface Group {
+    id: string;
+    name: string;
+    members: number;
+    pinnedMessages: boolean;
+}
+
 export interface UserProfile {
     id: string;
     name: string;
@@ -62,4 +69,12 @@ export interface FeatureCardProps {
     icon: React.ReactNode;
     title: string;
     description: string;
+}
+
+export interface ExtendedMessage {
+    id: string;
+    from: string;
+    text?: string;
+    time: string;
+    type?: string;
 }

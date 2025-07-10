@@ -10,7 +10,8 @@ import {
     HelpCircle,
     Sun,
     Moon,
-    Plus
+    Plus,
+    Hash // 1. Import biểu tượng Hash
 } from "lucide-react";
 import { SidebarIcon } from "@/components/common/SidebarIcon";
 
@@ -106,18 +107,19 @@ export default function DashboardLayout({
                         onClick={() => handleNavigation("/dashboard/chat")}
                         tooltip="Tin Nhắn"
                     />
+                    {/* 2. Thêm biểu tượng cho Kênh */}
+                    <SidebarIcon
+                        icon={<Hash className="h-6 w-6" />}
+                        active={isActive("/dashboard/channels")}
+                        onClick={() => handleNavigation("/dashboard/channels")}
+                        tooltip="Kênh"
+                    />
                     <SidebarIcon
                         icon={<Plus className="h-6 w-6" />}
                         active={isActive("/dashboard/posts")}
                         onClick={() => handleNavigation("/dashboard/posts")}
                         tooltip="Bài Đăng"
                         badge="5"
-                    />
-                    <SidebarIcon
-                        icon={<Settings className="h-6 w-6" />}
-                        active={isActive("/dashboard/settings")}
-                        onClick={() => handleNavigation("/dashboard/settings")}
-                        tooltip="Cài Đặt"
                     />
                     <SidebarIcon
                         icon={<HelpCircle className="h-6 w-6" />}

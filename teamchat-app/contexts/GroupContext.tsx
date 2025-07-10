@@ -24,7 +24,10 @@ const GroupContext = createContext<GroupContextType | undefined>(undefined);
 export const GroupProvider = ({ children }: { children: ReactNode }) => {
     // Dữ liệu ban đầu, giống trong hình của bạn
     const [groups, setGroups] = useState<Group[]>([
-        { id: 'landing-design', name: 'Landing Design', members: 23 }
+        {
+            id: 'landing-design', name: 'Landing Design', members: 23,
+            description: ''
+        }
     ]);
 
     // Hàm để thêm một nhóm mới vào danh sách
@@ -34,6 +37,7 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
             id: `channel-${Date.now()}`,
             name: groupData.name,
             members: 1,
+            description: ''
         };
         setGroups(prevGroups => [...prevGroups, newGroup]);
     }

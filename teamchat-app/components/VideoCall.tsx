@@ -3,7 +3,6 @@
 'use client';
 import { useState } from 'react';
 import { Mic, MicOff, Video, VideoOff, PhoneMissed, Users, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 // Props cho component, thêm onClose để có thể đóng lại từ bên ngoài
 interface VideoCallProps {

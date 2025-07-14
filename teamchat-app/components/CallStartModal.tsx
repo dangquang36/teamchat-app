@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { Dialog } from "@headlessui/react"
 import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
 
 interface User {
     id: string

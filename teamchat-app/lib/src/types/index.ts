@@ -1,4 +1,6 @@
 export interface Message {
+    reactions: any;
+    reactions: boolean;
     id: string;
     from: string;
     text?: string;

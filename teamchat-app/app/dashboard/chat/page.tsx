@@ -5,7 +5,6 @@ import { GroupProvider } from "@/contexts/GroupContext";
 import { MessagesSection } from "@/components/chat/MessagesSection";
 import { VideoCallModal } from "@/components/modals/VideoCallModal";
 import { AudioCallModal } from "@/components/modals/AudioCallModal";
-import { CreatePostModal } from "@/components/modals/CreatePostModal";
 
 export default function ChatPage() {
     const [showVideoCall, setShowVideoCall] = useState(false);
@@ -58,14 +57,12 @@ export default function ChatPage() {
                 <MessagesSection
                     onVideoCall={() => setShowVideoCall(true)}
                     onAudioCall={() => setShowAudioCall(true)}
-                    onCreatePost={() => setShowCreatePost(true)}
                     isDarkMode={isDarkMode}
                 />
 
                 {/* Modals */}
                 {showVideoCall && <VideoCallModal onClose={() => setShowVideoCall(false)} />}
                 {showAudioCall && <AudioCallModal onClose={() => setShowAudioCall(false)} />}
-                {showCreatePost && <CreatePostModal onClose={() => setShowCreatePost(false)} />}
             </div>
         </GroupProvider>
     );

@@ -13,5 +13,7 @@ export default function ProfilePage() {
         }
     }, []);
 
-    return <ProfileSection isDarkMode={isDarkMode} />;
+    return <ProfileSection isDarkMode={isDarkMode} onLogout={function (): void {
+        throw new Error("Function not implemented.");
+    }} />;
 }

@@ -70,27 +70,6 @@ export function UserProfileModal({ user, onClose, isDarkMode = false }: UserProf
                             </Button>
                         </div>
                     </div>
-
-                    {/* Các phần thông tin chi tiết */}
-                    <div className="border-t border-gray-200 dark:border-gray-700">
-                        <div className="p-4">
-                            <h3 className="font-semibold mb-3">Thông tin cá nhân</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-500 dark:text-gray-400">Giới tính</span>
-                                    <span>{user.gender}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-500 dark:text-gray-400">Ngày sinh</span>
-                                    <span>{user.birthday}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-500 dark:text-gray-400">Điện thoại</span>
-                                    <span>{user.phone}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 

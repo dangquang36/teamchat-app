@@ -20,6 +20,12 @@ export interface Message {
     from: string;
     text: string;
     time: string;
+    id: string; // ID là bắt buộc để xác định tin nhắn
+    reactions?: Reaction[];
+}
+export interface Reaction {
+    emoji: string;
+    user: string; // 'me' hoặc id của người dùng khác
 }
 
 export interface DirectMessage {
@@ -78,3 +84,4 @@ export interface ExtendedMessage {
     time: string;
     type?: string;
 }
+

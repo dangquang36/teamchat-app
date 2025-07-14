@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import {
   Heart,
   MessageCircle,
-  Share2,
   Bookmark,
   MoreHorizontal,
   Plus,

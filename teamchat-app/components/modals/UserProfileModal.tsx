@@ -65,26 +65,6 @@ export function UserProfileModal({
                         </Button>
                     </div>
                 </div>
-
-                {/* Thông tin chi tiết */}
-                <div className={`p-6 border-t ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
-                    <h4 className="font-semibold mb-4">Thông tin cá nhân</h4>
-                    <div className="space-y-3 text-sm">
-                        <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Giới tính</span>
-                            <span>{user.gender || "Nam"}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Ngày sinh</span>
-                            <span>{user.dob || "22/06/2004"}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500 dark:text-gray-400">Điện thoại</span>
-                            <span>{user.phone || "********"}</span>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Các phần khác */}
                 <div className={`p-6 border-t ${isDarkMode ? "border-gray-700" : "border-gray-200"} text-sm space-y-3`}>
                     <div className="flex justify-between items-center text-gray-500 dark:text-gray-400">

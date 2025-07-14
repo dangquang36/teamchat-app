@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Vote } from "lucide-react";
 import { ChatMessagesProps, Message } from "@/lib/src/types";
 
+
 interface PollOption {
     text: string;
     votes: number;
@@ -26,8 +27,10 @@ interface ExtendedChatMessagesProps extends ChatMessagesProps {
     messages: ExtendedMessage[];
 }
 
+
 export function ChatMessages({ messages, currentUser, isDarkMode = false }: ExtendedChatMessagesProps) {
     const [pollVotes, setPollVotes] = useState<Record<string, number[]>>({});
+
 
     const handleVote = (messageIndex: number, optionIndex: number) => {
         setPollVotes((prev) => ({
@@ -120,7 +123,6 @@ export function ChatMessages({ messages, currentUser, isDarkMode = false }: Exte
                         </div>
                     );
                 }
-
                 return (
                     <div key={msg.id} className={`flex ${isMyMessage ? "justify-end" : "items-start space-x-3"}`}>
                         {isMyMessage ? (

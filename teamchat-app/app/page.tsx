@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FeatureCard } from "@/components/common/FeatureCard";
+import '@/styles/poll.css';
 
 export default function LandingPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon, Folder, Vote } from "lucide-react";
+import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon, Folder, BarChart2 } from "lucide-react";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
-import { ChatInputProps } from "@/lib/src/types";
+import { ChatInputProps } from "@/app/types";
+import { PollCreator } from "@/components/modals/PollCreator";
 
 declare global {
     interface Window {
@@ -21,9 +22,7 @@ export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: E
     const [isListening, setIsListening] = useState(false);
     const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [showPollForm, setShowPollForm] = useState(false);
-    const [pollQuestion, setPollQuestion] = useState("");
-    const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+    const [showPollCreator, setShowPollCreator] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
@@ -108,27 +107,6 @@ export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: E
         }
     };
 
-    const handleCreatePoll = () => {
-        if (pollQuestion.trim() && pollOptions.every((opt) => opt.trim()) && onCreatePoll) {
-            onCreatePoll({
-                question: pollQuestion,
-                options: pollOptions.filter((opt) => opt.trim()),
-            });
-            setPollQuestion("");
-            setPollOptions(["", ""]);
-            setShowPollForm(false);
-            setShowAttachmentMenu(false);
-        }
-    };
-
-    const addPollOption = () => {
-        setPollOptions((prev) => [...prev, ""]);
-    };
-
-    const updatePollOption = (index: number, value: string) => {
-        setPollOptions((prev) => prev.map((opt, i) => (i === index ? value : opt)));
-    };
-
     const AttachmentMenuItem = ({
         icon,
         label,
@@ -178,35 +156,13 @@ export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: E
                 </div>
             )}
 
-            {showPollForm && (
-                <div
-                    className={`mb-2 p-4 border rounded-lg ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"
-                        }`}
-                >
-                    <input
-                        type="text"
-                        placeholder="Câu hỏi bình chọn..."
-                        value={pollQuestion}
-                        onChange={(e) => setPollQuestion(e.target.value)}
-                        className={`w-full mb-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode
-                            ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                            : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                            }`}
-                    />
-                    {pollOptions.map((option, index) => (
-                        <input
-                            key={index}
-                            type="text"
-                            placeholder={`Lựa chọn ${index + 1}`}
-                            value={option}
-                            onChange={(e) => updatePollOption(index, e.target.value)}
-                            className={`w-full mb-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode
-                                ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                                }`}
-                        />
-                    ))}
-                </div>
+            {/* Poll Creator Modal */}
+            {showPollCreator && onCreatePoll && (
+                <PollCreator
+                    onClose={() => setShowPollCreator(false)}
+                    onCreatePoll={onCreatePoll}
+                    isDarkMode={isDarkMode}
+                />
             )}
 
             <div className="flex items-center space-x-3">
@@ -234,15 +190,16 @@ export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: E
                     style={{ display: "none" }}
                 />
                 <div ref={emojiPickerRef} className="absolute bottom-full mb-2 z-10">
-                    <EmojiPicker
-                        open={showEmojiPicker}
-                        onEmojiClick={onEmojiClick}
-                        autoFocusSearch={false}
-                        height={400}
-                        width={350}
-                        theme={isDarkMode ? ("dark" as Theme) : ("light" as Theme)}
-                        lazyLoadEmojis={true}
-                    />
+                    {showEmojiPicker && (
+                        <EmojiPicker
+                            onEmojiClick={onEmojiClick}
+                            autoFocusSearch={false}
+                            height={400}
+                            width={350}
+                            theme={isDarkMode ? ("dark" as Theme) : ("light" as Theme)}
+                            lazyLoadEmojis={true}
+                        />
+                    )}
                 </div>
 
                 <div className="relative">
@@ -298,6 +255,15 @@ export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: E
                                         icon={<Folder className="h-5 w-5 text-yellow-500" />}
                                         label="Chọn Thư Mục"
                                         onClick={() => folderInputRef.current?.click()}
+                                    />
+
+                                    <AttachmentMenuItem
+                                        icon={<BarChart2 className="h-5 w-5 text-blue-500" />}
+                                        label="Tạo Bình Chọn"
+                                        onClick={() => {
+                                            setShowPollCreator(true);
+                                            setShowAttachmentMenu(false);
+                                        }}
                                     />
                                 </div>
                             )}

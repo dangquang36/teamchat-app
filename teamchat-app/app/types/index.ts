@@ -15,14 +15,6 @@ export interface UserProfile {
     phone?: string;
     email?: string;
 }
-
-export interface Message {
-    from: string;
-    text: string;
-    time: string;
-    id: string; // ID là bắt buộc để xác định tin nhắn
-    reactions?: Reaction[];
-}
 export interface Reaction {
     emoji: string;
     user: string; // 'me' hoặc id của người dùng khác
@@ -50,11 +42,7 @@ export interface ChatHeaderProps {
 
 export interface ChatMessagesProps {
     messages: Message[];
-    currentUser: {
-        id: string;
-        name: string;
-        avatar: string;
-    };
+    currentUser: UserProfile;
     isDarkMode?: boolean;
 }
 
@@ -83,5 +71,97 @@ export interface ExtendedMessage {
     text?: string;
     time: string;
     type?: string;
+}
+
+// Thêm vào file types.ts hiện tại của bạn
+
+export interface PollOption {
+    text: string;
+    votes: number;
+    voters: string[]; // Danh sách user đã vote
+}
+
+export interface Poll {
+    id: string;
+    question: string;
+    options: PollOption[];
+    totalVotes: number;
+    allowMultipleVotes?: boolean;
+    createdBy: string;
+    createdAt: string;
+    expiresAt?: string; // Thời gian hết hạn (optional)
+}
+
+export interface PollMessage extends Message {
+    type: 'poll';
+    poll: Poll;
+}
+
+// Cập nhật interface Message để hỗ trợ các loại tin nhắn khác nhau
+export interface Message {
+    id: string;
+    from: string;
+    time: string;
+    reactions: Reaction[];
+    type?: 'text' | 'poll' | 'file' | 'image';
+    text?: string; // Chỉ có khi type = 'text'
+    poll?: Poll;   // Chỉ có khi type = 'poll'
+    fileUrl?: string; // Chỉ có khi type = 'file' hoặc 'image'
+    fileName?: string;
+}
+
+// Thêm vào file types/index.ts hoặc file tương tự
+
+export interface Reaction {
+    emoji: string;
+    user: string;
+}
+
+export interface Message {
+    id: string;
+    from: string;
+    text?: string;
+    time: string;
+    reactions: Reaction[];
+}
+
+export interface PollOption {
+    text: string;
+    votes: number;
+}
+
+export interface Poll {
+    question: string;
+    options: PollOption[];
+    voters: string[];
+}
+
+export interface ChannelMessage extends Message {
+    type?: 'text' | 'poll';
+    poll?: Poll;
+}
+
+export interface ChatInputProps {
+    onSendMessage: (text: string) => void;
+    isDarkMode?: boolean;
+    onCreatePoll?: (pollData: { question: string; options: string[] }) => void;
+}
+
+export interface ChatMessagesProps {
+    messages: Message[];
+    currentUser: UserProfile;
+    isDarkMode?: boolean;
+}
+
+export interface UserProfile {
+    id: string;
+    name: string;
+    email?: string;
+    avatar: string;
+    online: boolean;
+}
+
+export interface DirectMessage extends UserProfile {
+    message: string;
 }
 

@@ -3,11 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Search, Plus } from "lucide-react";
 import { useGroups } from "@/contexts/GroupContext";
 import { CreateGroupModal } from "@/components/ui/CreateGroupModal";
-import { ChannelView } from "@/components/ChannelView";
+import { ChannelView } from "./ChannelView";
 import { ChannelItem } from "./ChannelItem";
 import { ChannelDetails } from "./ChannelDetails";
-import { ChannelMessage } from "@/app/types/index";
-// Đã loại bỏ import router
+import { Message } from "@/lib/src/types";
 
 interface ChannelsSectionProps {
     onCreatePost: () => void;
@@ -24,16 +23,26 @@ export function ChannelsSection({
     const [showChannelDetails, setShowChannelDetails] = useState(false);
     const [currentDarkMode, setCurrentDarkMode] = useState(isDarkMode);
     const [searchQuery, setSearchQuery] = useState<string>("");
-
-    // SỬ DỤNG KIỂU DỮ LIỆU ChannelMessage CHO STATE
-    const [channelMessages, setChannelMessages] = useState<Record<string, ChannelMessage[]>>({});
+    const [channelMessages, setChannelMessages] = useState<Record<string, Message[]>>({});
 
     const enrichedGroups = groups.map((group) => ({
         ...group,
         description: `This is the ${group.name} channel for team collaboration.`,
         pinnedMessages: [
-            { id: `pin-1`, text: "Welcome to the channel!", time: "10:00 AM", from: "admin", reactions: [] },
+            { text: "Welcome to the channel!", time: "10:00 AM", pinnedBy: "System" },
         ],
+        membersList: [
+            { id: "user1", username: "User One", role: "leader" as "leader" | "member" },
+            { id: "user2", username: "User Two", role: "member" as "leader" | "member" },
+            // Add more members to match the 23 members
+            ...Array.from({ length: 21 }, (_, i) => ({
+                id: `user${i + 3}`,
+                username: `User ${i + 3}`,
+                role: "member" as "leader" | "member",
+            })),
+        ],
+        createdBy: "admin",
+        createdAt: new Date().toISOString(),
     }));
 
     const selectedChannel = enrichedGroups.find((g) => g.id === selectedChannelId);
@@ -53,118 +62,6 @@ export function ChannelsSection({
         setCurrentDarkMode(isDarkMode);
     }, [isDarkMode]);
 
-    // HÀM GỬI TIN NHẮN THÔNG THƯỜNG
-    const handleSendMessage = (text: string) => {
-        if (!text.trim() || !selectedChannelId) return;
-
-        const newMessage: ChannelMessage = {
-            id: `msg-${Date.now()}`,
-            from: "me",
-            text,
-            time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-            reactions: [],
-            type: 'text', // Là tin nhắn văn bản
-        };
-
-        setChannelMessages((prev) => ({
-            ...prev,
-            [selectedChannelId]: [...(prev[selectedChannelId] || []), newMessage],
-        }));
-    };
-
-    // HÀM TẠO POLL MỚI
-    const handleCreatePoll = (pollData: { question: string; options: string[] }) => {
-        if (!selectedChannelId) return;
-
-        const newPollMessage: ChannelMessage = {
-            id: `msg-${Date.now()}`,
-            from: "me",
-            time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-            type: "poll",
-            poll: {
-                id: `poll-${Date.now()}`,
-                question: pollData.question,
-                options: pollData.options.map(opt => ({ text: opt, votes: 0, voters: [] })),
-                voters: [],
-                totalVotes: 0,
-                createdBy: "me",
-                createdAt: new Date().toISOString(),
-            },
-            reactions: [],
-        };
-
-        setChannelMessages(prev => ({
-            ...prev,
-            [selectedChannelId]: [...(prev[selectedChannelId] || []), newPollMessage],
-        }));
-
-        // Thêm phản hồi tự động sau một khoảng thời gian
-        setTimeout(() => {
-            const autoVoteMessage: ChannelMessage = {
-                id: `msg-${Date.now() + 1}`,
-                from: "system",
-                time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-                text: "Admin đã thêm một bình chọn mới. Hãy tham gia bình chọn!",
-                reactions: [],
-                type: 'text',
-            };
-
-            setChannelMessages(prev => ({
-                ...prev,
-                [selectedChannelId]: [...(prev[selectedChannelId] || []), autoVoteMessage],
-            }));
-        }, 1000);
-    };
-
-    // HÀM XỬ LÝ VOTE CHO BÌNH CHỌN
-    const handleVote = (messageId: string, optionIndex: number) => {
-        if (!selectedChannelId) return;
-
-        setChannelMessages(prev => {
-            const currentMessages = prev[selectedChannelId] || [];
-            const updatedMessages = currentMessages.map(msg => {
-                if (msg.id === messageId && msg.type === 'poll' && msg.poll) {
-                    // Tạo bản sao sâu của đối tượng poll
-                    const newPoll = {
-                        ...msg.poll,
-                        options: [...msg.poll.options]
-                    };
-
-                    // Cập nhật số lượng vote cho option được chọn
-                    newPoll.options[optionIndex] = {
-                        ...newPoll.options[optionIndex],
-                        votes: newPoll.options[optionIndex].votes + 1,
-                    };
-
-                    // Thêm người đã bình chọn
-                    newPoll.voters = [...newPoll.voters, 'me'];
-
-                    return { ...msg, poll: newPoll };
-                }
-                return msg;
-            });
-
-            return { ...prev, [selectedChannelId]: updatedMessages };
-        });
-
-        // Thêm thông báo về việc bình chọn thành công
-        setTimeout(() => {
-            const feedbackMessage: ChannelMessage = {
-                id: `msg-${Date.now()}`,
-                from: "system",
-                time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }),
-                text: "Cảm ơn bạn đã tham gia bình chọn!",
-                reactions: [],
-                type: 'text',
-            };
-
-            setChannelMessages(prev => ({
-                ...prev,
-                [selectedChannelId]: [...(prev[selectedChannelId] || []), feedbackMessage],
-            }));
-        }, 500);
-    };
-
     return (
         <div className={`flex flex-col h-screen ${currentDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}>
             {/* Header with Search */}
@@ -176,7 +73,7 @@ export function ChannelsSection({
                         placeholder="Tìm kiếm kênh theo tên..."
                         className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${currentDarkMode
                             ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                            : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                            : "bg-white border-gray-300 text-gray-900"
                             }`}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -237,10 +134,6 @@ export function ChannelsSection({
                         <ChannelView
                             channel={selectedChannel}
                             isDarkMode={currentDarkMode}
-                            messages={channelMessages[selectedChannel.id] || []}
-                            onSendMessage={handleSendMessage}
-                            onCreatePoll={handleCreatePoll}
-                            onVote={handleVote}
                         />
                     ) : (
                         <div className={`flex-1 flex items-center justify-center text-center p-4 ${currentDarkMode ? "text-gray-400" : "text-gray-500"}`}>
@@ -255,6 +148,7 @@ export function ChannelsSection({
                         channel={selectedChannel}
                         isDarkMode={currentDarkMode}
                         onClose={() => setShowChannelDetails(false)}
+                        currentUser={{ id: "user1", role: "leader" }}
                     />
                 )}
             </div>

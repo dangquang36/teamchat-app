@@ -16,7 +16,6 @@ import {
   Search,
   Globe,
   Lock,
-  Eye,
   X,
   Users,
 } from "lucide-react"
@@ -25,7 +24,7 @@ const emojis = [
   "😊", "😂", "🥰", "😎", "🤩", "🎉", "🔥", "✨", "🚀", "💡",
   "❤️", "👍", "🙏", "💪", "💡", "🤔", "🥳", "🌈", "☀️", "🌙",
   "🐶", "🐱", "🍔", "🍕", "☕", "💻", "📱", "📚", "✈️", "🎵",
-];
+]
 
 interface Post {
   id: string
@@ -207,7 +206,6 @@ export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
     console.log("Sharing post:", postId)
   }
 
-
   const scrollToTop = () => {
     if (postsContainerRef.current) {
       postsContainerRef.current.scrollTo({ top: 0, behavior: "smooth" })
@@ -237,39 +235,40 @@ export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
   return (
     <div className="flex-1 flex min-w-0 overflow-hidden">
       {/* Posts Feed */}
-      <div className={`flex-1 flex flex-col transition-colors ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}>
+      <div className={`flex-1 flex flex-col transition-colors duration-300 ${isDarkMode ? "bg-gray-900" : "bg-gray-100"}`}>
         {/* Header */}
         <div
-          className={`p-4 border-b flex-shrink-0 transition-colors ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+          className={`p-6 border-b flex-shrink-0 transition-colors duration-300 ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} shadow-sm`}
         >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className={`text-xl font-bold ${isDarkMode ? "text-white" : "text-gray-900"}`}>Bài Đăng</h2>
-            <Button onClick={() => setShowCreatePost(true)} className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-4 py-2 shadow-lg">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className={`text-2xl font-bold tracking-tight ${isDarkMode ? "text-white" : "text-gray-900"}`}>Bài Đăng</h2>
+            <Button
+              onClick={() => setShowCreatePost(true)}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-full px-6 py-2.5 shadow-md transition-all duration-200"
+            >
               <Plus className="h-5 w-5 mr-2" />
               Tạo bài viết
             </Button>
           </div>
 
           {/* Search */}
-          <div className="flex items-center space-x-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm bài viết..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors ${isDarkMode
-                  ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                  : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                  }`}
-              />
-            </div>
+          <div className="relative max-w-xl">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm bài viết..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full pl-12 pr-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 text-sm ${isDarkMode
+                ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                : "bg-white border-gray-200 text-gray-900 placeholder-gray-500"
+                } shadow-sm hover:shadow-md`}
+            />
           </div>
         </div>
 
         {/* Posts List */}
-        <div ref={postsContainerRef} className="flex-1 overflow-y-auto p-4 space-y-6 relative">
+        <div ref={postsContainerRef} className="flex-1 overflow-y-auto p-6 space-y-8 relative">
           {filteredPosts.map((post) => (
             <PostCard
               key={post.id}
@@ -283,11 +282,11 @@ export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
           ))}
 
           {filteredPosts.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-16">
               <div className={`text-gray-500 ${isDarkMode ? "text-gray-400" : ""}`}>
-                <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                <p className="text-xl font-medium mb-2">Không tìm thấy bài viết nào</p>
-                <p className="text-md">Thử thay đổi từ khóa tìm kiếm</p>
+                <MessageCircle className="h-20 w-20 mx-auto mb-4 opacity-50" />
+                <p className="text-2xl font-semibold mb-2">Không tìm thấy bài viết nào</p>
+                <p className="text-md text-gray-400">Thử thay đổi từ khóa tìm kiếm</p>
               </div>
             </div>
           )}
@@ -347,22 +346,22 @@ function PostCard({
 
   return (
     <div
-      className={`rounded-xl border p-6 transition-colors shadow-md ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+      className={`rounded-2xl border p-6 transition-all duration-300 shadow-lg hover:shadow-xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
     >
       {/* Post Header */}
       <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           <img
             src={post.author.avatar || "/placeholder.svg"}
             alt={post.author.name}
-            className="w-12 h-12 rounded-full object-cover"
+            className="w-14 h-14 rounded-full object-cover border-2 border-purple-500"
           />
           <div>
             <div className="flex items-center space-x-2">
-              <h3 className={`font-semibold text-lg ${isDarkMode ? "text-white" : "text-gray-900"}`}>{post.author.name}</h3>
+              <h3 className={`font-semibold text-xl tracking-tight ${isDarkMode ? "text-white" : "text-gray-900"}`}>{post.author.name}</h3>
               {post.author.verified && (
-                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                  <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -373,33 +372,33 @@ function PostCard({
               )}
             </div>
             {post.author.title && (
-              <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>{post.author.title}</p>
+              <p className={`text-sm font-medium ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>{post.author.title}</p>
             )}
-            <div className="flex items-center space-x-2 mt-1">
-              <span className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+            <div className="flex items-center space-x-2 mt-1.5">
+              <span className={`text-xs font-medium ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
                 {formatTimeAgo(post.timestamp)}
               </span>
               <div className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>{getVisibilityIcon()}</div>
               {post.location && (
-                <span className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>• {post.location}</span>
+                <span className={`text-xs font-medium ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>• {post.location}</span>
               )}
             </div>
           </div>
         </div>
-        <Button variant="ghost" size="sm" className="rounded-full">
+        <Button variant="ghost" size="sm" className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
           <MoreHorizontal className="h-5 w-5" />
         </Button>
       </div>
 
       {/* Post Content */}
-      <div className="mb-4">
-        <p className={`text-base leading-relaxed ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>{post.content}</p>
+      <div className="mb-5">
+        <p className={`text-base leading-relaxed font-normal ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>{post.content}</p>
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="flex flex-wrap gap-2 mt-4">
             {post.tags.map((tag) => (
-              <span key={tag} className="text-xs bg-purple-100 text-purple-600 px-3 py-1 rounded-full font-medium">
+              <span key={tag} className="text-xs bg-purple-100 text-purple-600 px-3 py-1.5 rounded-full font-medium hover:bg-purple-200 transition-colors duration-200">
                 #{tag}
               </span>
             ))}
@@ -409,25 +408,25 @@ function PostCard({
 
       {/* Post Media */}
       {post.images && post.images.length > 0 && (
-        <div className="mb-4">
+        <div className="mb-5">
           {post.images.length === 1 ? (
             <img
               src={post.images[0] || "/placeholder.svg"}
               alt="Post image"
-              className="w-full h-64 object-cover rounded-lg shadow-sm"
+              className="w-full h-72 object-cover rounded-xl shadow-md"
             />
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               {post.images.slice(0, 4).map((image, index) => (
                 <div key={index} className="relative">
                   <img
                     src={image || "/placeholder.svg"}
                     alt={`Post image ${index + 1}`}
-                    className="w-full h-32 object-cover rounded-lg shadow-sm"
+                    className="w-full h-36 object-cover rounded-lg shadow-md"
                   />
-                  {index === 3 && post.images!.length > 4 && (
+                  {index === 3 && post.images && post.images.length > 4 && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-semibold text-lg">+{post.images!.length - 4}</span>
+                      <span className="text-white font-semibold text-lg">+{post.images.length - 4}</span>
                     </div>
                   )}
                 </div>
@@ -438,8 +437,8 @@ function PostCard({
       )}
 
       {post.video && (
-        <div className="mb-4">
-          <div className="relative bg-gray-900 rounded-lg aspect-video flex items-center justify-center overflow-hidden shadow-sm">
+        <div className="mb-5">
+          <div className="relative bg-gray-900 rounded-xl aspect-video flex items-center justify-center overflow-hidden shadow-md">
             <img src={post.video} alt="Video preview" className="w-full h-full object-cover" />
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
               <div className="w-16 h-16 bg-white bg-opacity-30 rounded-full flex items-center justify-center cursor-pointer">
@@ -452,8 +451,8 @@ function PostCard({
       )}
 
       {post.attachments && post.attachments.length > 0 && (
-        <div className="mb-4">
-          <h4 className={`font-medium mb-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Tệp đính kèm:</h4>
+        <div className="mb-5">
+          <h4 className={`font-semibold text-sm mb-3 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Tệp đính kèm:</h4>
           <div className="space-y-2">
             {post.attachments.map((attachment, index) => (
               <a
@@ -461,7 +460,7 @@ function PostCard({
                 href={attachment.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`flex items-center space-x-2 p-3 rounded-lg transition-colors ${isDarkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-100 hover:bg-gray-200"}`}
+                className={`flex items-center space-x-2 p-3 rounded-lg transition-colors duration-200 ${isDarkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-100 hover:bg-gray-200"}`}
               >
                 <Paperclip className={`h-5 w-5 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`} />
                 <span className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>{attachment.name}</span>
@@ -473,26 +472,22 @@ function PostCard({
 
       {/* Post Stats */}
       <div
-        className={`flex items-center justify-between py-2 border-t border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
+        className={`flex items-center justify-between py-3 border-t border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
       >
-        <div className="flex items-center space-x-4 text-sm">
-          <span className={isDarkMode ? "text-gray-400" : "text-gray-500"}>{post.likes} lượt thích</span>
-          <span className={isDarkMode ? "text-gray-400" : "text-gray-500"}>{post.comments} bình luận</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Eye className={`h-4 w-4 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`} />
-          <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>{Math.floor(Math.random() * 1000) + 100}</span>
+        <div className="flex items-center space-x-6 text-sm font-medium">
+          <span className={isDarkMode ? "text-gray-400" : "text-gray-600"}>{post.likes} lượt thích</span>
+          <span className={isDarkMode ? "text-gray-400" : "text-gray-600"}>{post.comments} bình luận</span>
         </div>
       </div>
 
       {/* Post Actions */}
-      <div className="flex items-center justify-between pt-3">
-        <div className="flex items-center space-x-1">
+      <div className="flex items-center justify-between pt-4">
+        <div className="flex items-center space-x-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={onLike}
-            className={`flex items-center space-x-2 rounded-full px-4 py-2 ${post.isLiked ? "text-red-500" : isDarkMode ? "text-gray-400" : "text-gray-500"} hover:bg-red-500/10`}
+            className={`flex items-center space-x-2 rounded-full px-5 py-2.5 ${post.isLiked ? "text-red-500" : isDarkMode ? "text-gray-400" : "text-gray-600"} hover:bg-red-500/10 transition-all duration-200`}
           >
             <Heart className={`h-5 w-5 ${post.isLiked ? "fill-current" : ""}`} />
             <span>Thích</span>
@@ -501,7 +496,7 @@ function PostCard({
             variant="ghost"
             size="sm"
             onClick={onComment}
-            className={`rounded-full px-4 py-2 ${isDarkMode ? "text-gray-400" : "text-gray-500"} hover:bg-purple-500/10`}
+            className={`rounded-full px-5 py-2.5 ${isDarkMode ? "text-gray-400" : "text-gray-600"} hover:bg-purple-500/10 transition-all duration-200`}
           >
             <MessageCircle className="h-5 w-5 mr-2" />
             Bình luận
@@ -510,14 +505,17 @@ function PostCard({
             variant="ghost"
             size="sm"
             onClick={onShare}
-            className={`rounded-full px-4 py-2 ${isDarkMode ? "text-gray-400" : "text-gray-500"} hover:bg-blue-500/10`}
+            className={`rounded-full px-5 py-2.5 ${isDarkMode ? "text-gray-400" : "text-gray-600"} hover:bg-blue-500/10 transition-all duration-200`}
           >
+            <Bookmark className="h-5 w-5 mr-2" />
+            Chia sẻ
           </Button>
         </div>
       </div>
     </div>
   )
 }
+
 function CreatePostModal({
   isOpen,
   onClose,
@@ -644,39 +642,44 @@ function CreatePostModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
       <div
-        className={`rounded-xl p-6 max-w-2xl w-full mx-auto max-h-[95vh] overflow-y-auto shadow-2xl transition-colors ${isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}
+        className={`rounded-2xl p-8 max-w-2xl w-full mx-auto max-h-[90vh] overflow-y-auto shadow-2xl transition-all duration-300 ${isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}
       >
         <div className="flex items-center justify-between mb-6 border-b pb-4">
-          <h3 className={`text-2xl font-bold ${isDarkMode ? "text-white" : "text-gray-900"}`}>Tạo bài viết mới</h3>
-          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full w-8 h-8 hover:bg-gray-200 dark:hover:bg-gray-700">
-            <X className="h-5 w-5" />
+          <h3 className={`text-2xl font-bold tracking-tight ${isDarkMode ? "text-white" : "text-gray-900"}`}>Tạo bài viết mới</h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="rounded-full w-10 h-10 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
+          >
+            <X className="h-6 w-6" />
           </Button>
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-6">
           {/* User Info */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
             <img
               src="/placeholder.svg?height=40&width=40&text=U"
               alt="Your avatar"
-              className="w-12 h-12 rounded-full object-cover border-2 border-purple-500"
+              className="w-14 h-14 rounded-full object-cover border-2 border-purple-500"
             />
             <div>
-              <h4 className={`font-semibold text-lg ${isDarkMode ? "text-white" : "text-gray-900"}`}>Bạn</h4>
+              <h4 className={`font-semibold text-xl tracking-tight ${isDarkMode ? "text-white" : "text-gray-900"}`}>Bạn</h4>
               <div className="relative inline-block text-left">
                 <select
                   value={visibility}
                   onChange={(e) => setVisibility(e.target.value as any)}
-                  className={`text-sm font-medium border rounded-full px-3 py-1 pr-8 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors ${isDarkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-100 border-gray-300 text-gray-700"}`}
+                  className={`text-sm font-medium border rounded-full px-4 py-2 pr-10 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 ${isDarkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-100 border-gray-300 text-gray-700"}`}
                 >
                   <option value="public">🌍 Công khai</option>
                   <option value="friends">👥 Bạn bè</option>
                   <option value="private">🔒 Riêng tư</option>
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
-                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9l4.95 4.95z" /></svg>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700 dark:text-gray-300">
+                  <svg className="fill-current h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9l4.95 4.95z" /></svg>
                 </div>
               </div>
             </div>
@@ -687,10 +690,10 @@ function CreatePostModal({
             placeholder="Bạn đang nghĩ gì?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-base ${isDarkMode
+            className={`w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-base font-normal ${isDarkMode
               ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-              : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-              }`}
+              : "bg-white border-gray-200 text-gray-900 placeholder-gray-500"
+              } shadow-sm hover:shadow-md transition-all duration-200`}
             rows={6}
           />
 
@@ -702,21 +705,21 @@ function CreatePostModal({
               value={currentTagInput}
               onChange={(e) => setCurrentTagInput(e.target.value)}
               onKeyPress={handleAddTag}
-              className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode
+              className={`w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm ${isDarkMode
                 ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                }`}
+                : "bg-white border-gray-200 text-gray-900 placeholder-gray-500"
+                } shadow-sm hover:shadow-md transition-all duration-200`}
             />
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {tags.map((tag) => (
                   <span
                     key={tag}
-                    className={`text-sm px-3 py-1 rounded-full flex items-center transition-colors ${isDarkMode ? "bg-purple-700 text-white" : "bg-purple-100 text-purple-700"}`}
+                    className={`text-sm px-3 py-1.5 rounded-full flex items-center transition-all duration-200 ${isDarkMode ? "bg-purple-700 text-white" : "bg-purple-100 text-purple-700"} hover:shadow-md`}
                   >
                     #{tag}
-                    <button type="button" onClick={() => handleRemoveTag(tag)} className={`ml-2 rounded-full p-0.5 ${isDarkMode ? "hover:bg-purple-600" : "hover:bg-purple-200"}`}>
-                      <X className={`h-3 w-3 ${isDarkMode ? "text-white" : "text-purple-700"}`} />
+                    <button type="button" onClick={() => handleRemoveTag(tag)} className={`ml-2 rounded-full p-1 ${isDarkMode ? "hover:bg-purple-600" : "hover:bg-purple-200"}`}>
+                      <X className={`h-4 w-4 ${isDarkMode ? "text-white" : "text-purple-700"}`} />
                     </button>
                   </span>
                 ))}
@@ -730,20 +733,25 @@ function CreatePostModal({
             placeholder="Thêm vị trí..."
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode
+            className={`w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm ${isDarkMode
               ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-              : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-              }`}
+              : "bg-white border-gray-200 text-gray-900 placeholder-gray-500"
+              } shadow-sm hover:shadow-md transition-all duration-200`}
           />
 
           {/* Media Options & Upload */}
           <div className="flex flex-wrap items-center gap-3">
             <label htmlFor="image-upload" className="cursor-pointer">
-              <Button variant="outline" size="sm" asChild className={`rounded-full px-4 py-2 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}>
-                <>
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className={`rounded-full px-5 py-2.5 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"} shadow-sm hover:shadow-md transition-all duration-200`}
+              >
+                <div>
                   <ImageIcon className="h-5 w-5" />
                   <span>Ảnh</span>
-                </>
+                </div>
               </Button>
             </label>
             <input
@@ -756,11 +764,16 @@ function CreatePostModal({
             />
 
             <label htmlFor="video-upload" className="cursor-pointer">
-              <Button variant="outline" size="sm" asChild className={`rounded-full px-4 py-2 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}>
-                <>
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className={`rounded-full px-5 py-2.5 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"} shadow-sm hover:shadow-md transition-all duration-200`}
+              >
+                <div>
                   <Video className="h-5 w-5" />
                   <span>Video</span>
-                </>
+                </div>
               </Button>
             </label>
             <input
@@ -772,11 +785,16 @@ function CreatePostModal({
             />
 
             <label htmlFor="file-upload" className="cursor-pointer">
-              <Button variant="outline" size="sm" asChild className={`rounded-full px-4 py-2 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}>
-                <>
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className={`rounded-full px-5 py-2.5 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"} shadow-sm hover:shadow-md transition-all duration-200`}
+              >
+                <div>
                   <Paperclip className="h-5 w-5" />
                   <span>Tệp</span>
-                </>
+                </div>
               </Button>
             </label>
             <input
@@ -792,7 +810,7 @@ function CreatePostModal({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className={`rounded-full px-4 py-2 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}
+                className={`rounded-full px-5 py-2.5 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"} shadow-sm hover:shadow-md transition-all duration-200`}
               >
                 <Smile className="h-5 w-5" />
                 <span>Cảm xúc</span>
@@ -800,13 +818,13 @@ function CreatePostModal({
 
               {showEmojiPicker && (
                 <div
-                  className={`absolute bottom-full mb-2 left-0 w-64 p-3 rounded-lg shadow-xl grid grid-cols-6 gap-2 z-10 ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border border-gray-200"}`}
+                  className={`absolute bottom-full mb-3 left-0 w-72 p-4 rounded-xl shadow-xl grid grid-cols-6 gap-3 z-10 ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border border-gray-200"}`}
                 >
                   {emojis.map((emoji, index) => (
                     <span
                       key={index}
                       onClick={() => handleSelectEmoji(emoji)}
-                      className="cursor-pointer text-2xl hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md p-1 flex items-center justify-center transition-colors"
+                      className="cursor-pointer text-2xl hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg p-2 flex items-center justify-center transition-all duration-200"
                     >
                       {emoji}
                     </span>
@@ -817,52 +835,18 @@ function CreatePostModal({
           </div>
 
           {selectedImages.length > 0 && (
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mt-3">
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mt-4">
               {selectedImages.map((file, index) => (
                 <div key={index} className="relative aspect-square">
                   <img
                     src={URL.createObjectURL(file)}
                     alt={`Selected image ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg shadow-sm"
+                    className="w-full h-full object-cover rounded-lg shadow-md"
                   />
                   <button
                     type="button"
                     onClick={() => setSelectedImages(selectedImages.filter((_, i) => i !== index))}
-                    className="absolute top-1 right-1 bg-black bg-opacity-60 text-white rounded-full p-1 text-xs hover:bg-opacity-80 transition-colors"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {selectedVideo && (
-            <div className="relative mt-3">
-              <video src={URL.createObjectURL(selectedVideo)} controls className="w-full max-h-64 object-cover rounded-lg shadow-sm" />
-              <button
-                type="button"
-                onClick={() => setSelectedVideo(null)}
-                className="absolute top-2 right-2 bg-black bg-opacity-60 text-white rounded-full p-1.5 text-xs hover:bg-opacity-80 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-
-          {selectedAttachments.length > 0 && (
-            <div className="space-y-2 mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
-              <p className={`text-base font-medium mb-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Tệp đã chọn:</p>
-              {selectedAttachments.map((file, index) => (
-                <div key={index} className={`flex items-center justify-between p-2 rounded-lg ${isDarkMode ? "bg-gray-600 hover:bg-gray-500" : "bg-gray-100 hover:bg-gray-200"} transition-colors`}>
-                  <div className="flex items-center space-x-2">
-                    <Paperclip className={`h-5 w-5 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`} />
-                    <span className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>{file.name}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedAttachments(selectedAttachments.filter((_, i) => i !== index))}
-                    className={`text-sm font-medium rounded-full p-1 ${isDarkMode ? "text-red-400 hover:bg-red-900" : "text-red-600 hover:bg-red-100"}`}
+                    className="absolute top-2 right-2 bg-black bg-opacity-60 text-white rounded-full p-1.5 text-xs hover:bg-opacity-80 transition-all duration-200"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -871,14 +855,52 @@ function CreatePostModal({
             </div>
           )}
 
-          <div className="flex justify-end space-x-3 pt-4 border-t pt-4">
-            <Button variant="outline" onClick={onClose} className={`rounded-full px-5 py-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}>
+          {selectedVideo && (
+            <div className="relative mt-4">
+              <video src={URL.createObjectURL(selectedVideo)} controls className="w-full max-h-72 object-cover rounded-xl shadow-md" />
+              <button
+                type="button"
+                onClick={() => setSelectedVideo(null)}
+                className="absolute top-2 right-2 bg-black bg-opacity-60 text-white rounded-full p-1.5 text-xs hover:bg-opacity-80 transition-all duration-200"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          {selectedAttachments.length > 0 && (
+            <div className="space-y-2 mt-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm">
+              <p className={`text-base font-semibold mb-3 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Tệp đã chọn:</p>
+              {selectedAttachments.map((file, index) => (
+                <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${isDarkMode ? "bg-gray-600 hover:bg-gray-500" : "bg-gray-100 hover:bg-gray-200"} transition-all duration-200`}>
+                  <div className="flex items-center space-x-2">
+                    <Paperclip className={`h-5 w-5 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`} />
+                    <span className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>{file.name}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAttachments(selectedAttachments.filter((_, i) => i !== index))}
+                    className={`text-sm font-medium rounded-full p-1.5 ${isDarkMode ? "text-red-400 hover:bg-red-900" : "text-red-600 hover:bg-red-100"} transition-all duration-200`}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className={`rounded-full px-6 py-2.5 text-base font-medium ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"} shadow-sm hover:shadow-md transition-all duration-200`}
+            >
               Hủy
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={!content.trim() && selectedImages.length === 0 && !selectedVideo && selectedAttachments.length === 0}
-              className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 py-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-full px-7 py-2.5 text-base font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               Đăng bài
             </Button>
@@ -922,67 +944,72 @@ function CommentsModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
       <div
-        className={`rounded-xl max-w-2xl w-full mx-auto max-h-[95vh] overflow-hidden flex flex-col shadow-2xl ${isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}
+        className={`rounded-2xl max-w-2xl w-full mx-auto max-h-[90vh] overflow-hidden flex flex-col shadow-2xl ${isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}
       >
-        <div className={`p-4 border-b flex-shrink-0 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
+        <div className={`p-6 border-b flex-shrink-0 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
           <div className="flex items-center justify-between">
-            <h3 className={`text-xl font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>Bình luận</h3>
-            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full w-8 h-8 hover:bg-gray-200 dark:hover:bg-gray-700">
-              <X className="h-5 w-5" />
+            <h3 className={`text-2xl font-bold tracking-tight ${isDarkMode ? "text-white" : "text-gray-900"}`}>Bình luận</h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="rounded-full w-10 h-10 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
+            >
+              <X className="h-6 w-6" />
             </Button>
           </div>
         </div>
 
-        <div className={`p-4 border-b flex-shrink-0 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
-          <div className="flex items-start space-x-3">
+        <div className={`p-6 border-b flex-shrink-0 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
+          <div className="flex items-start space-x-4">
             <img
               src={post.author.avatar || "/placeholder.svg"}
               alt={post.author.name}
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-12 h-12 rounded-full object-cover border-2 border-purple-500"
             />
             <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
-                <h4 className={`font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>{post.author.name}</h4>
-                <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>{formatTimeAgo(post.timestamp)}</span>
+              <div className="flex items-center space-x-2 mb-2">
+                <h4 className={`font-semibold text-lg ${isDarkMode ? "text-white" : "text-gray-900"}`}>{post.author.name}</h4>
+                <span className={`text-sm font-medium ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>{formatTimeAgo(post.timestamp)}</span>
               </div>
-              <p className={`text-sm mt-1 ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>{post.content}</p>
+              <p className={`text-base font-normal ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>{post.content}</p>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {comments.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {comments.map((comment) => (
-                <div key={comment.id} className="flex items-start space-x-3">
+                <div key={comment.id} className="flex items-start space-x-4">
                   <img
                     src={comment.author.avatar || "/placeholder.svg"}
                     alt={comment.author.name}
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover border border-gray-300 dark:border-gray-600"
                   />
                   <div className="flex-1">
-                    <div className={`p-3 rounded-lg ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h5 className={`font-medium text-sm ${isDarkMode ? "text-white" : "text-gray-900"}`}>{comment.author.name}</h5>
-                        <span className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>{formatTimeAgo(comment.timestamp)}</span>
+                    <div className={`p-4 rounded-xl shadow-sm ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h5 className={`font-semibold text-sm ${isDarkMode ? "text-white" : "text-gray-900"}`}>{comment.author.name}</h5>
+                        <span className={`text-xs font-medium ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>{formatTimeAgo(comment.timestamp)}</span>
                       </div>
-                      <p className={`text-sm ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>{comment.content}</p>
+                      <p className={`text-sm font-normal ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>{comment.content}</p>
                     </div>
-                    <div className="flex items-center space-x-4 mt-2">
+                    <div className="flex items-center space-x-4 mt-3">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={`text-xs rounded-full px-3 ${comment.isLiked ? "text-red-500" : isDarkMode ? "text-gray-400" : "text-gray-500"} hover:bg-red-500/10`}
+                        className={`text-xs rounded-full px-4 py-2 ${comment.isLiked ? "text-red-500" : isDarkMode ? "text-gray-400" : "text-gray-600"} hover:bg-red-500/10 transition-all duration-200`}
                       >
-                        <Heart className={`h-3 w-3 mr-1 ${comment.isLiked ? "fill-current" : ""}`} />
+                        <Heart className={`h-4 w-4 mr-1.5 ${comment.isLiked ? "fill-current" : ""}`} />
                         {comment.likes}
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={`text-xs rounded-full px-3 ${isDarkMode ? "text-gray-400" : "text-gray-500"} hover:bg-purple-500/10`}
+                        className={`text-xs rounded-full px-4 py-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"} hover:bg-purple-500/10 transition-all duration-200`}
                       >
                         Trả lời
                       </Button>
@@ -992,33 +1019,33 @@ function CommentsModal({
               ))}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <MessageCircle className={`h-16 w-16 mx-auto mb-4 ${isDarkMode ? "text-gray-600" : "text-gray-300"}`} />
-              <p className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+            <div className="text-center py-12">
+              <MessageCircle className={`h-20 w-20 mx-auto mb-4 ${isDarkMode ? "text-gray-600" : "text-gray-300"}`} />
+              <p className={`text-lg font-medium ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Chưa có bình luận nào. Hãy là người đầu tiên!</p>
             </div>
           )}
         </div>
 
-        <div className={`p-4 border-t flex-shrink-0 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
-          <div className="flex items-center space-x-3">
-            <img src="/placeholder.svg?height=32&width=32&text=U" alt="Your avatar" className="w-9 h-9 rounded-full object-cover" />
-            <div className="flex-1 flex items-center space-x-2">
+        <div className={`p-6 border-t flex-shrink-0 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
+          <div className="flex items-center space-x-4">
+            <img src="/placeholder.svg?height=32&width=32&text=U" alt="Your avatar" className="w-10 h-10 rounded-full object-cover border border-gray-300 dark:border-gray-600" />
+            <div className="flex-1 flex items-center space-x-3">
               <input
                 type="text"
                 placeholder="Viết bình luận..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleSubmitComment()}
-                className={`flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode
+                className={`flex-1 px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm font-normal ${isDarkMode
                   ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                  : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                  }`}
+                  : "bg-white border-gray-200 text-gray-900 placeholder-gray-500"
+                  } shadow-sm hover:shadow-md transition-all duration-200`}
               />
               <Button
                 onClick={handleSubmitComment}
                 disabled={!newComment.trim()}
                 size="icon"
-                className="bg-purple-600 hover:bg-purple-700 rounded-full w-10 h-10 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-full w-12 h-12 shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
                 <Send className="h-5 w-5" />
               </Button>

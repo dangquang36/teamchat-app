@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { User, KeyRound, LogOut, Edit, Save, Camera, ArrowLeft, MoreHorizontal, Sun, Moon, CheckCircle, X, Phone, MessageCircle, Shield, AlertTriangle, AlertCircle, Info } from "lucide-react";
+import { User, KeyRound, LogOut, Edit, Save, Camera, ArrowLeft, MoreHorizontal, Sun, Moon, CheckCircle, X, Phone, MessageCircle, Smartphone, Globe, Shield, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 interface ProfileSectionProps {
     onLogout: () => void;
@@ -31,15 +31,74 @@ interface Device {
     ipAddress: string;
 }
 
-interface Notification {
-    id: string;
-    type: 'success' | 'error' | 'warning' | 'info';
-    title: string;
-    message: string;
-    duration?: number;
+interface ValidationErrors {
+    name?: string;
+    email?: string;
+    phone?: string;
+    dob?: string;
 }
 
-const translations = {
+interface translations {
+    [key: string]: {
+        profile: string;
+        settings: string;
+        security: string;
+        logout: string;
+        myProfile: string;
+        accountSettings: string;
+        securityPassword: string;
+        media: string;
+        viewAll: string;
+        personalInfo: string;
+        name: string;
+        dob: string;
+        email: string;
+        phone: string;
+        edit: string;
+        save: string;
+        cancel: string;
+        changePassword: string;
+        currentPassword: string;
+        newPassword: string;
+        confirmNewPassword: string;
+        updatePassword: string;
+        profileUpdated: string;
+        avatarUpdated: string;
+        passwordUpdated: string;
+        allMedia: string;
+        download: string;
+        more: string;
+        deviceManagement: string;
+        deviceName: string;
+        lastLogin: string;
+        ipAddress: string;
+        logoutDevice: string;
+        language: string;
+        selectLanguage: string;
+        twoFactorAuth: string;
+        enable2FA: string;
+        disable2FA: string;
+        setup2FA: string;
+        scanQRCode: string;
+        twoFAEnabled: string;
+        twoFADisabled: string;
+        nameRequired: string;
+        nameInvalid: string;
+        emailRequired: string;
+        emailInvalid: string;
+        phoneRequired: string;
+        phoneInvalid: string;
+        validationFailed: string;
+        currentPasswordRequired: string;
+        newPasswordRequired: string;
+        confirmPasswordRequired: string;
+        passwordTooShort: string;
+        passwordMismatch: string;
+        passwordWeak: string;
+    };
+}
+
+const translations: translations = {
     vi: {
         profile: "Hồ Sơ",
         settings: "Cài Đặt Tài Khoản",
@@ -48,7 +107,7 @@ const translations = {
         myProfile: "Hồ Sơ Của Tôi",
         accountSettings: "Cài Đặt Tài Khoản",
         securityPassword: "Bảo Mật và Mật Khẩu",
-        media: "PHƯƠNG TIỆN",
+        media: "Phương Tiện",
         viewAll: "Xem tất cả",
         personalInfo: "Thông Tin Cá Nhân",
         name: "Họ và Tên",
@@ -63,7 +122,7 @@ const translations = {
         newPassword: "Mật khẩu mới",
         confirmNewPassword: "Xác nhận mật khẩu mới",
         updatePassword: "Cập Nhật Mật Khẩu",
-        profileUpdated: "Cập nhật thông tin thành công!",
+        profileUpdated: "Cập nhật thông tin tài khoản thành công!",
         avatarUpdated: "Ảnh đại diện đã được thay đổi!",
         passwordUpdated: "Cập nhật mật khẩu thành công!",
         allMedia: "Tất Cả Phương Tiện",
@@ -74,36 +133,28 @@ const translations = {
         lastLogin: "Lần Đăng Nhập Cuối",
         ipAddress: "Địa Chỉ IP",
         logoutDevice: "Đăng Xuất Thiết Bị",
+        language: "Ngôn Ngữ",
+        selectLanguage: "Chọn Ngôn Ngữ",
         twoFactorAuth: "Xác Thực Hai Yếu Tố",
         enable2FA: "Bật Xác Thực Hai Yếu Tố",
         disable2FA: "Tắt Xác Thực Hai Yếu Tố",
+        setup2FA: "Thiết Lập Xác Thực Hai Yếu Tố",
         scanQRCode: "Quét mã QR bằng ứng dụng xác thực của bạn",
         twoFAEnabled: "Xác thực hai yếu tố đã được bật!",
         twoFADisabled: "Xác thực hai yếu tố đã được tắt!",
-        nameErrorNumbers: "Họ và tên không được chứa số",
-        nameErrorEmpty: "Họ và tên không được để trống",
-        nameErrorLength: "Họ và tên phải có ít nhất 2 ký tự",
-        dobErrorFuture: "Ngày sinh không thể là ngày trong tương lai",
-        dobErrorAge: "Bạn phải trên 18 tuổi",
-        dobErrorInvalid: "Ngày sinh không hợp lệ",
-        emailErrorFormat: "Định dạng email không hợp lệ",
-        emailErrorEmpty: "Email không được để trống",
-        phoneErrorFormat: "Số điện thoại không đúng định dạng Việt Nam",
-        phoneErrorEmpty: "Số điện thoại không được để trống",
-        validationFailed: "Kiểm tra dữ liệu thất bại",
-        formHasErrors: "Biểu mẫu có lỗi",
-        pleaseFix: "Vui lòng sửa các lỗi trước khi tiếp tục",
-        passwordMismatch: "Mật khẩu xác nhận không khớp",
-        passwordTooShort: "Mật khẩu phải có ít nhất 8 ký tự",
-        passwordWeak: "Mật khẩu quá yếu. Cần có chữ hoa, chữ thường, số và ký tự đặc biệt",
+        nameRequired: "Họ và tên là bắt buộc",
+        nameInvalid: "Họ và tên không được chứa số hoặc ký tự đặc biệt",
+        emailRequired: "Email là bắt buộc",
+        emailInvalid: "Định dạng email không hợp lệ",
+        phoneRequired: "Số điện thoại là bắt buộc",
+        phoneInvalid: "Số điện thoại không hợp lệ (phải có 10-11 chữ số)",
+        validationFailed: "Vui lòng kiểm tra lại thông tin đã nhập!",
         currentPasswordRequired: "Vui lòng nhập mật khẩu hiện tại",
-        networkError: "Lỗi kết nối mạng",
-        uploadError: "Lỗi tải lên",
-        fileTooLarge: "Tệp quá lớn. Kích thước tối đa là 5MB",
-        invalidFileType: "Loại tệp không được hỗ trợ",
-        requiredField: "Trường bắt buộc",
-        updateFailed: "Cập nhật thất bại",
-        somethingWentWrong: "Có lỗi xảy ra. Vui lòng thử lại",
+        newPasswordRequired: "Vui lòng nhập mật khẩu mới",
+        confirmPasswordRequired: "Vui lòng xác nhận mật khẩu mới",
+        passwordTooShort: "Mật khẩu phải có ít nhất 8 ký tự",
+        passwordMismatch: "Mật khẩu xác nhận không khớp",
+        passwordWeak: "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt",
     },
     en: {
         profile: "Profile",
@@ -113,7 +164,7 @@ const translations = {
         myProfile: "My Profile",
         accountSettings: "Account Settings",
         securityPassword: "Security and Password",
-        media: "MEDIA",
+        media: "Media",
         viewAll: "View All",
         personalInfo: "Personal Information",
         name: "Full Name",
@@ -139,36 +190,28 @@ const translations = {
         lastLogin: "Last Login",
         ipAddress: "IP Address",
         logoutDevice: "Log Out Device",
+        language: "Language",
+        selectLanguage: "Select Language",
         twoFactorAuth: "Two-Factor Authentication",
         enable2FA: "Enable Two-Factor Authentication",
         disable2FA: "Disable Two-Factor Authentication",
+        setup2FA: "Set Up Two-Factor Authentication",
         scanQRCode: "Scan the QR code with your authenticator app",
         twoFAEnabled: "Two-factor authentication enabled!",
         twoFADisabled: "Two-factor authentication disabled!",
-        nameErrorNumbers: "Name must not contain numbers",
-        nameErrorEmpty: "Name cannot be empty",
-        nameErrorLength: "Name must be at least 2 characters",
-        dobErrorFuture: "Date of birth cannot be in the future",
-        dobErrorAge: "You must be over 18 years old",
-        dobErrorInvalid: "Invalid date of birth",
-        emailErrorFormat: "Invalid email format",
-        emailErrorEmpty: "Email cannot be empty",
-        phoneErrorFormat: "Invalid Vietnamese phone number format",
-        phoneErrorEmpty: "Phone number cannot be empty",
-        validationFailed: "Validation failed",
-        formHasErrors: "Form has errors",
-        pleaseFix: "Please fix the errors before continuing",
-        passwordMismatch: "Password confirmation does not match",
-        passwordTooShort: "Password must be at least 8 characters",
-        passwordWeak: "Password too weak. Must contain uppercase, lowercase, numbers and special characters",
+        nameRequired: "Full name is required",
+        nameInvalid: "Full name cannot contain numbers or special characters",
+        emailRequired: "Email is required",
+        emailInvalid: "Invalid email format",
+        phoneRequired: "Phone number is required",
+        phoneInvalid: "Invalid phone number (must be 10-11 digits)",
+        validationFailed: "Please check the entered information!",
         currentPasswordRequired: "Please enter current password",
-        networkError: "Network connection error",
-        uploadError: "Upload error",
-        fileTooLarge: "File too large. Maximum size is 5MB",
-        invalidFileType: "Unsupported file type",
-        requiredField: "Required field",
-        updateFailed: "Update failed",
-        somethingWentWrong: "Something went wrong. Please try again",
+        newPasswordRequired: "Please enter new password",
+        confirmPasswordRequired: "Please confirm new password",
+        passwordTooShort: "Password must be at least 8 characters long",
+        passwordMismatch: "Password confirmation does not match",
+        passwordWeak: "Password must contain at least 1 uppercase, 1 lowercase, 1 number and 1 special character",
     },
 };
 
@@ -177,25 +220,99 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
     const [currentUser, setCurrentUser] = useState<UserData | null>(null);
     const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
     const [formData, setFormData] = useState({ name: "", email: "", phone: "", dob: "" });
+    const [isEditing, setIsEditing] = useState(false);
+    const [is2faEnabled, setIs2faEnabled] = useState(false);
+    const [showToast, setShowToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: "", type: 'success' });
+    const [language, setLanguage] = useState<'vi' | 'en'>('vi');
+    const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
     const [passwordData, setPasswordData] = useState({
         currentPassword: "",
         newPassword: "",
         confirmNewPassword: ""
     });
-    const [isEditing, setIsEditing] = useState(false);
-    const [is2faEnabled, setIs2faEnabled] = useState(false);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [language, setLanguage] = useState<'vi' | 'en'>('vi');
-    const [errors, setErrors] = useState<{ [key: string]: string }>({});
-    const [isLoading, setIsLoading] = useState(false);
+    const [passwordErrors, setPasswordErrors] = useState<{
+        currentPassword?: string | null;
+        newPassword?: string | null;
+        confirmNewPassword?: string | null;
+    }>({});
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [devices, setDevices] = useState<Device[]>([
         { id: "1", deviceName: "MacBook Pro", lastLogin: "2025-07-11 10:30", ipAddress: "192.168.1.1" },
         { id: "2", deviceName: "Windows Desktop", lastLogin: "2025-07-10 15:45", ipAddress: "192.168.1.2" },
     ]);
     const avatarInputRef = useRef<HTMLInputElement>(null);
-    const notificationIdRef = useRef(0);
 
     const t = translations[language];
+
+    // Validation functions
+    const validateName = (name: string): string | null => {
+        if (!name.trim()) return t.nameRequired;
+        const nameRegex = /^[a-zA-ZÀ-ỹ\s\-']+$/;
+        if (!nameRegex.test(name)) return t.nameInvalid;
+        return null;
+    };
+
+    const validateEmail = (email: string): string | null => {
+        if (!email.trim()) return t.emailRequired;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) return t.emailInvalid;
+        return null;
+    };
+
+    const validatePhone = (phone: string): string | null => {
+        if (!phone.trim()) return t.phoneRequired;
+        const phoneDigits = phone.replace(/\D/g, '');
+        if (phoneDigits.length < 10 || phoneDigits.length > 11) return t.phoneInvalid;
+        return null;
+    };
+
+    const validateCurrentPassword = (password: string): string | null => {
+        if (!password.trim()) return t.currentPasswordRequired;
+        return null;
+    };
+
+    const validateNewPassword = (password: string): string | null => {
+        if (!password.trim()) return t.newPasswordRequired;
+        if (password.length < 8) return t.passwordTooShort;
+        const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+        if (!strongPasswordRegex.test(password)) return t.passwordWeak;
+        return null;
+    };
+
+    const validateConfirmPassword = (password: string, confirmPassword: string): string | null => {
+        if (!confirmPassword.trim()) return t.confirmPasswordRequired;
+        if (password !== confirmPassword) return t.passwordMismatch;
+        return null;
+    };
+
+    const validatePasswordForm = (): boolean => {
+        const errors: { currentPassword?: string | null; newPassword?: string | null; confirmNewPassword?: string | null } = {};
+        const currentPasswordError = validateCurrentPassword(passwordData.currentPassword);
+        const newPasswordError = validateNewPassword(passwordData.newPassword);
+        const confirmPasswordError = validateConfirmPassword(passwordData.newPassword, passwordData.confirmNewPassword);
+
+        if (currentPasswordError) errors.currentPassword = currentPasswordError;
+        if (newPasswordError) errors.newPassword = newPasswordError;
+        if (confirmPasswordError) errors.confirmNewPassword = confirmPasswordError;
+
+        setPasswordErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const validateForm = (): boolean => {
+        const errors: ValidationErrors = {};
+        const nameError = validateName(formData.name);
+        const emailError = validateEmail(formData.email);
+        const phoneError = validatePhone(formData.phone);
+
+        if (nameError) errors.name = nameError;
+        if (emailError) errors.email = emailError;
+        if (phoneError) errors.phone = phoneError;
+
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
     const mediaItems: MediaItem[] = [
         { id: "1", type: "image", src: "/placeholder.svg?height=80&width=80&text=1", alt: "Media 1" },
@@ -207,492 +324,6 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
         { id: "7", type: "file", src: "/placeholder.docx", name: "Report.docx" },
         { id: "8", type: "image", src: "/placeholder.svg?height=80&width=80&text=4", alt: "Media 4" },
     ];
-
-    // Notification management
-    const addNotification = (notification: Omit<Notification, 'id'>) => {
-        const id = (++notificationIdRef.current).toString();
-        const newNotification = { ...notification, id };
-        setNotifications(prev => [...prev, newNotification]);
-
-        const duration = notification.duration || 5000;
-        setTimeout(() => {
-            removeNotification(id);
-        }, duration);
-    };
-
-    const removeNotification = (id: string) => {
-        setNotifications(prev => prev.filter(notif => notif.id !== id));
-    };
-
-    // Cleanup timeouts on unmount
-    useEffect(() => {
-        return () => {
-            Object.values(validationTimeoutRef.current).forEach(timeout => {
-                clearTimeout(timeout);
-            });
-        };
-    }, []);
-
-    // Optimized validation with memoization
-    const validateInputMemo = React.useCallback((name: string, value: string): string => {
-        if (!value.trim()) {
-            switch (name) {
-                case "name": return t.nameErrorEmpty;
-                case "email": return t.emailErrorEmpty;
-                case "phone": return t.phoneErrorEmpty;
-                default: return t.requiredField;
-            }
-        }
-
-        switch (name) {
-            case "name":
-                if (value.length < 2) return t.nameErrorLength;
-                if (/\d/.test(value)) return t.nameErrorNumbers;
-                return "";
-            case "dob":
-                const dobDate = new Date(value);
-                const today = new Date("2025-07-12");
-
-                if (isNaN(dobDate.getTime())) return t.dobErrorInvalid;
-                if (dobDate > today) return t.dobErrorFuture;
-
-                let age = today.getFullYear() - dobDate.getFullYear();
-                const monthDiff = today.getMonth() - dobDate.getMonth();
-                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDate.getDate())) {
-                    age--;
-                }
-                if (age < 18) return t.dobErrorAge;
-                return "";
-            case "email":
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return t.emailErrorFormat;
-                return "";
-            case "phone":
-                if (!/^(?:\+84|0)(3|5|7|8|9)\d{8}$/.test(value)) return t.phoneErrorFormat;
-                return "";
-            default:
-                return "";
-        }
-    }, [t]);
-
-    // Use the memoized validation function
-    const validateInput = validateInputMemo;
-
-    const validatePassword = (password: string): string[] => {
-        const errors: string[] = [];
-        if (password.length < 8) errors.push(t.passwordTooShort);
-        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(password)) {
-            errors.push(t.passwordWeak);
-        }
-        return errors;
-    };
-
-    // Debounced validation refs
-    const validationTimeoutRef = useRef<{ [key: string]: NodeJS.Timeout }>({});
-
-    // FIXED: Optimized real-time validation with debouncing - Prevents cursor loss
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-
-        // Cập nhật formData ngay lập tức để giữ cursor position
-        setFormData(prev => ({ ...prev, [name]: value }));
-
-        // Clear existing timeout
-        if (validationTimeoutRef.current[name]) {
-            clearTimeout(validationTimeoutRef.current[name]);
-        }
-
-        // Chỉ validate sau khi người dùng dừng gõ để tránh re-render liên tục
-        validationTimeoutRef.current[name] = setTimeout(() => {
-            const error = validateInput(name, value);
-            setErrors(prev => {
-                // Chỉ update nếu error thực sự thay đổi
-                if (prev[name] === error) return prev;
-
-                const newErrors = { ...prev };
-                if (error) {
-                    newErrors[name] = error;
-                } else {
-                    delete newErrors[name];
-                }
-                return newErrors;
-            });
-        }, 500); // Tăng debounce time lên 500ms
-    };
-
-    // FIXED: Password change handler - Prevents cursor loss
-    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-
-        // Cập nhật password data ngay lập tức
-        setPasswordData(prev => ({ ...prev, [name]: value }));
-
-        // Clear existing timeout
-        if (validationTimeoutRef.current[name]) {
-            clearTimeout(validationTimeoutRef.current[name]);
-        }
-
-        // Debounce password validation
-        validationTimeoutRef.current[name] = setTimeout(() => {
-            if (name === 'newPassword') {
-                const passwordErrors = validatePassword(value);
-                const errorMsg = passwordErrors.join(', ');
-                setErrors(prev => {
-                    if (prev.newPassword === errorMsg) return prev;
-                    return { ...prev, newPassword: errorMsg };
-                });
-            }
-
-            if (name === 'confirmNewPassword') {
-                const confirmError = passwordData.newPassword !== value ? t.passwordMismatch : "";
-                setErrors(prev => {
-                    if (prev.confirmNewPassword === confirmError) return prev;
-                    return { ...prev, confirmNewPassword: confirmError };
-                });
-            }
-        }, 500);
-    };
-
-    // Form submission
-    const handleSave = async () => {
-        if (!currentUser) return;
-
-        setIsLoading(true);
-
-        try {
-            const newErrors: { [key: string]: string } = {};
-            newErrors.name = validateInput("name", formData.name);
-            newErrors.dob = validateInput("dob", formData.dob);
-            newErrors.email = validateInput("email", formData.email);
-            newErrors.phone = validateInput("phone", formData.phone);
-
-            setErrors(newErrors);
-
-            const hasErrors = Object.values(newErrors).some(error => error);
-            if (hasErrors) {
-                addNotification({
-                    type: 'error',
-                    title: t.formHasErrors,
-                    message: t.pleaseFix,
-                    duration: 6000
-                });
-                return;
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            if (Math.random() < 0.1) {
-                throw new Error('Network error');
-            }
-
-            const updatedUser: UserData = { ...currentUser, ...formData };
-            setCurrentUser(updatedUser);
-            setIsEditing(false);
-
-            addNotification({
-                type: 'success',
-                title: t.profileUpdated,
-                message: 'Thông tin của bạn đã được cập nhật thành công.',
-                duration: 4000
-            });
-
-        } catch (error) {
-            addNotification({
-                type: 'error',
-                title: t.updateFailed,
-                message: t.somethingWentWrong,
-                duration: 6000
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handlePasswordUpdate = async () => {
-        setIsLoading(true);
-
-        try {
-            const newErrors: { [key: string]: string } = {};
-
-            if (!passwordData.currentPassword) {
-                newErrors.currentPassword = t.currentPasswordRequired;
-            }
-
-            const passwordErrors = validatePassword(passwordData.newPassword);
-            if (passwordErrors.length > 0) {
-                newErrors.newPassword = passwordErrors.join(', ');
-            }
-
-            if (passwordData.newPassword !== passwordData.confirmNewPassword) {
-                newErrors.confirmNewPassword = t.passwordMismatch;
-            }
-
-            setErrors(prev => ({ ...prev, ...newErrors }));
-
-            if (Object.values(newErrors).some(error => error)) {
-                addNotification({
-                    type: 'error',
-                    title: t.validationFailed,
-                    message: t.pleaseFix,
-                    duration: 6000
-                });
-                return;
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            setPasswordData({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
-            setErrors(prev => {
-                const { currentPassword, newPassword, confirmNewPassword, ...rest } = prev;
-                return rest;
-            });
-
-            addNotification({
-                type: 'success',
-                title: t.passwordUpdated,
-                message: 'Mật khẩu của bạn đã được thay đổi thành công.',
-                duration: 4000
-            });
-
-        } catch (error) {
-            addNotification({
-                type: 'error',
-                title: t.updateFailed,
-                message: t.networkError,
-                duration: 6000
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleCancel = () => {
-        if (currentUser) {
-            setFormData({
-                name: currentUser.name || "",
-                email: currentUser.email || "",
-                phone: currentUser.phone || "",
-                dob: currentUser.dob || "2004-06-22",
-            });
-        }
-        setErrors({});
-        setIsEditing(false);
-    };
-
-    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0] && currentUser) {
-            const file = e.target.files[0];
-
-            if (file.size > 5 * 1024 * 1024) {
-                addNotification({
-                    type: 'error',
-                    title: t.uploadError,
-                    message: t.fileTooLarge,
-                    duration: 5000
-                });
-                return;
-            }
-
-            if (!file.type.startsWith('image/')) {
-                addNotification({
-                    type: 'error',
-                    title: t.uploadError,
-                    message: t.invalidFileType,
-                    duration: 5000
-                });
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const updatedUser: UserData = { ...currentUser, avatar: reader.result as string };
-                setCurrentUser(updatedUser);
-                addNotification({
-                    type: 'success',
-                    title: t.avatarUpdated,
-                    message: 'Ảnh đại diện đã được thay đổi thành công.',
-                    duration: 3000
-                });
-            };
-            reader.onerror = () => {
-                addNotification({
-                    type: 'error',
-                    title: t.uploadError,
-                    message: t.somethingWentWrong,
-                    duration: 5000
-                });
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleDeviceLogout = (deviceId: string) => {
-        setDevices(devices.filter(device => device.id !== deviceId));
-        addNotification({
-            type: 'info',
-            title: t.logoutDevice,
-            message: 'Thiết bị đã được đăng xuất thành công.',
-            duration: 3000
-        });
-    };
-
-    const handle2FAChange = () => {
-        setIs2faEnabled(!is2faEnabled);
-        addNotification({
-            type: 'success',
-            title: is2faEnabled ? t.twoFADisabled : t.twoFAEnabled,
-            message: is2faEnabled ? 'Xác thực hai yếu tố đã được tắt.' : 'Xác thực hai yếu tố đã được bật.',
-            duration: 4000
-        });
-    };
-
-    // Notification component
-    const NotificationItem = ({ notification }: { notification: Notification }) => {
-        const getIcon = () => {
-            switch (notification.type) {
-                case 'success': return <CheckCircle className="w-5 h-5" />;
-                case 'error': return <AlertCircle className="w-5 h-5" />;
-                case 'warning': return <AlertTriangle className="w-5 h-5" />;
-                case 'info': return <Info className="w-5 h-5" />;
-            }
-        };
-
-        const getColorClasses = () => {
-            switch (notification.type) {
-                case 'success':
-                    return `bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700 text-green-800 dark:text-green-200`;
-                case 'error':
-                    return `bg-red-100 dark:bg-red-900 border-red-300 dark:border-red-700 text-red-800 dark:text-red-200`;
-                case 'warning':
-                    return `bg-yellow-100 dark:bg-yellow-900 border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200`;
-                case 'info':
-                    return `bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200`;
-            }
-        };
-
-        const getIconColor = () => {
-            switch (notification.type) {
-                case 'success': return 'text-green-500';
-                case 'error': return 'text-red-500';
-                case 'warning': return 'text-yellow-500';
-                case 'info': return 'text-blue-500';
-            }
-        };
-
-        return (
-            <div className={`${getColorClasses()} border rounded-lg p-4 shadow-lg max-w-sm flex items-start space-x-3 animate-slide-in-right`}>
-                <div className={getIconColor()}>
-                    {getIcon()}
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm mb-1">{notification.title}</p>
-                    <p className="text-sm opacity-90">{notification.message}</p>
-                </div>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeNotification(notification.id)}
-                    className="text-current hover:bg-white hover:bg-opacity-20 flex-shrink-0 w-6 h-6"
-                >
-                    <X className="w-4 h-4" />
-                </Button>
-            </div>
-        );
-    };
-
-    // Optimized Form field wrapper with better performance
-    const FormField = React.memo(({
-        label,
-        name,
-        type = "text",
-        value,
-        onChange,
-        readOnly = false,
-        required = false,
-        error = ""
-    }: {
-        label: string;
-        name: string;
-        type?: string;
-        value: string;
-        onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-        readOnly?: boolean;
-        required?: boolean;
-        error?: string;
-    }) => (
-        <div className="space-y-2">
-            <label className={`text-sm font-medium flex items-center ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
-                {label}
-                {required && <span className="text-red-500 ml-1">*</span>}
-            </label>
-            <input
-                type={type}
-                name={name}
-                value={value}
-                onChange={onChange}
-                readOnly={readOnly}
-                className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 ${isDarkMode ? "bg-gray-600 border-gray-500 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                    } ${!readOnly ? '' : 'cursor-not-allowed bg-opacity-50'} ${error ? 'border-red-500 focus:ring-red-300' : 'focus:border-purple-400'}`}
-                placeholder={readOnly ? "" : `Nhập ${label.toLowerCase()}...`}
-            />
-            {error && (
-                <div className="flex items-center space-x-2 mt-1 animate-slide-down">
-                    <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                    <p className="text-sm text-red-500">{error}</p>
-                </div>
-            )}
-        </div>
-    ));
-
-    const renderMediaItem = (item: MediaItem) => {
-        switch (item.type) {
-            case "image":
-                return (
-                    <img
-                        src={item.src}
-                        alt={item.alt}
-                        className="w-full h-full object-cover rounded-md transition-transform duration-200 hover:scale-105"
-                    />
-                );
-            case "video":
-                return (
-                    <video
-                        src={item.src}
-                        className="w-full h-full object-cover rounded-md"
-                        controls
-                    />
-                );
-            case "file":
-                return (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-md p-2 text-center">
-                        <span className="text-xl mb-1">📄</span>
-                        <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate w-full px-1">{item.name}</div>
-                        <Button size="sm" variant="outline" className="mt-2 text-xs">
-                            {t.download}
-                        </Button>
-                    </div>
-                );
-            default:
-                return null;
-        }
-    };
-
-    const NavButton = ({ activeView, targetView, onClick, children }: {
-        activeView: string;
-        targetView: string;
-        onClick: () => void;
-        children: React.ReactNode;
-    }) => (
-        <Button
-            variant={activeView === targetView ? "secondary" : "ghost"}
-            onClick={onClick}
-            className="w-full justify-start mb-2 px-4 py-2 rounded-lg text-left transition-colors duration-200
-                       hover:bg-gray-100 dark:hover:bg-gray-700
-                       data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 dark:data-[state=active]:bg-purple-900 dark:data-[state=active]:text-purple-300"
-            data-state={activeView === targetView ? "active" : "inactive"}
-        >
-            {children}
-        </Button>
-    );
 
     useEffect(() => {
         try {
@@ -712,70 +343,209 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                 setFormData(fallbackUser);
             }
         } catch (error) {
-            console.error("Failed to parse user data", error);
+            console.error("Failed to parse user data from localStorage", error);
             const fallbackUser = { name: "Admin User", email: "admin@example.com", phone: "0912345678", dob: "2004-06-22" };
             setCurrentUser(fallbackUser);
             setFormData(fallbackUser);
-            addNotification({
-                type: 'warning',
-                title: 'Cảnh báo',
-                message: 'Không thể tải dữ liệu người dùng. Sử dụng dữ liệu mặc định.',
-                duration: 5000
-            });
         }
     }, []);
 
+    useEffect(() => {
+        if (showToast.show) {
+            const timer = setTimeout(() => setShowToast({ show: false, message: "", type: 'success' }), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showToast]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        let error: string | null = null;
+        if (name === 'name') error = validateName(value);
+        else if (name === 'email') error = validateEmail(value);
+        else if (name === 'phone') error = validatePhone(value);
+        setValidationErrors(prev => ({ ...prev, [name]: error }));
+    };
+
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setPasswordData(prev => ({ ...prev, [name]: value }));
+        let error: string | null = null;
+        if (name === 'currentPassword') error = validateCurrentPassword(value);
+        else if (name === 'newPassword') {
+            error = validateNewPassword(value);
+            if (passwordData.confirmNewPassword) {
+                const confirmError = validateConfirmPassword(value, passwordData.confirmNewPassword);
+                setPasswordErrors(prev => ({ ...prev, confirmNewPassword: confirmError }));
+            }
+        } else if (name === 'confirmNewPassword') error = validateConfirmPassword(passwordData.newPassword, value);
+        setPasswordErrors(prev => ({ ...prev, [name]: error }));
+    };
+
+    const handleSave = () => {
+        if (!currentUser) return;
+        if (!validateForm()) {
+            setShowToast({ show: true, message: t.validationFailed, type: 'error' });
+            return;
+        }
+        const updatedUser: UserData = { ...currentUser, ...formData };
+        setCurrentUser(updatedUser);
+        setIsEditing(false);
+        setShowToast({ show: true, message: t.profileUpdated, type: 'success' });
+    };
+
+    const handleCancel = () => {
+        if (currentUser) {
+            setFormData({
+                name: currentUser.name || "",
+                email: currentUser.email || "",
+                phone: currentUser.phone || "",
+                dob: currentUser.dob || "2004-06-22",
+            });
+        }
+        setValidationErrors({});
+        setIsEditing(false);
+    };
+
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0] && currentUser) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const updatedUser: UserData = { ...currentUser, avatar: reader.result as string };
+                setCurrentUser(updatedUser);
+                setShowToast({ show: true, message: t.avatarUpdated, type: 'success' });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handlePasswordUpdate = () => {
+        if (!validatePasswordForm()) {
+            setShowToast({ show: true, message: t.validationFailed, type: 'error' });
+            return;
+        }
+        setPasswordData({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
+        setPasswordErrors({});
+        setShowToast({ show: true, message: t.passwordUpdated, type: 'success' });
+    };
+
+    const handleDeviceLogout = (deviceId: string) => {
+        setDevices(devices.filter(device => device.id !== deviceId));
+        setShowToast({ show: true, message: t.logoutDevice, type: 'success' });
+    };
+
+    const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setLanguage(e.target.value as 'vi' | 'en');
+    };
+
+    const handle2FAChange = () => {
+        setIs2faEnabled(!is2faEnabled);
+        setShowToast({ show: true, message: is2faEnabled ? t.twoFADisabled : t.twoFAEnabled, type: 'success' });
+    };
+
+    const toggleNewPasswordVisibility = () => {
+        setShowNewPassword(!showNewPassword);
+    };
+
+    const toggleConfirmPasswordVisibility = () => {
+        setShowConfirmPassword(!showConfirmPassword);
+    };
+
+    const renderMediaItem = (item: MediaItem) => {
+        switch (item.type) {
+            case "image":
+                return (
+                    <img
+                        src={item.src}
+                        alt={item.alt}
+                        className="w-full h-full object-cover rounded-lg shadow-md transition-transform duration-300 hover:scale-105"
+                    />
+                );
+            case "video":
+                return (
+                    <video
+                        src={item.src}
+                        className="w-full h-full object-cover rounded-lg shadow-md"
+                        controls
+                    />
+                );
+            case "file":
+                return (
+                    <div className={`w-full h-full flex flex-col items-center justify-center rounded-lg shadow-md p-4 ${isDarkMode ? "bg-gray-700" : "bg-gray-100"} transition-colors duration-200`}>
+                        <span className="text-2xl mb-2">📄</span>
+                        <div className={`text-sm font-medium truncate w-full text-center ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>{item.name}</div>
+                        <Button size="sm" variant="outline" className={`mt-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-600" : "border-gray-300 text-gray-600 hover:bg-gray-200"}`}>
+                            {t.download}
+                        </Button>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
+    const NavButton = ({ activeView, targetView, onClick, children }: {
+        activeView: string;
+        targetView: string;
+        onClick: () => void;
+        children: React.ReactNode;
+    }) => (
+        <Button
+            variant={activeView === targetView ? "default" : "ghost"}
+            onClick={onClick}
+            className={`w-full justify-start py-3 px-4 rounded-full text-lg font-medium transition-all duration-300 ${activeView === targetView
+                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
+                : isDarkMode
+                    ? "text-gray-300 hover:bg-gray-700"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+        >
+            {children}
+        </Button>
+    );
+
+    const ErrorMessage = ({ error }: { error?: string | null }) => {
+        if (!error) return null;
+        return (
+            <div className="flex items-center mt-2 text-red-500 text-sm">
+                <AlertCircle className="w-4 h-4 mr-2" />
+                {error}
+            </div>
+        );
+    };
+
     if (!currentUser) {
         return (
-            <div className={`flex items-center justify-center h-full ${isDarkMode ? 'bg-gray-900 text-gray-300' : 'bg-gray-50 text-gray-700'}`}>
-                <div className="text-center p-8 rounded-lg shadow-lg bg-white dark:bg-gray-800">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-                    <p>{language === 'vi' ? 'Đang tải dữ liệu người dùng...' : 'Loading user data...'}</p>
+            <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? "bg-gray-900 text-gray-300" : "bg-gray-100 text-gray-700"}`}>
+                <div className={`p-8 rounded-2xl shadow-xl ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-purple-500 mx-auto mb-4"></div>
+                    <p>{t.selectLanguage === 'vi' ? 'Đang tải dữ liệu người dùng...' : 'Loading user data...'}</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className={`flex h-screen overflow-hidden ${isDarkMode ? 'dark bg-gray-900 text-gray-100' : 'bg-gray-100 text-gray-800'}`}>
-            {/* Notification Container */}
-            <div className="fixed top-4 right-4 z-50 space-y-3">
-                {notifications.map((notification) => (
-                    <NotificationItem key={notification.id} notification={notification} />
-                ))}
-            </div>
-
-            <div className={`w-72 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r p-6 flex flex-col shadow-lg`}>
-                <div className="mb-10 text-center">
-                    <h2 className="text-3xl font-extrabold text-purple-600 dark:text-purple-400">{language === 'vi' ? 'Thiết Lập' : 'Settings'}</h2>
+        <div className={`min-h-screen flex ${isDarkMode ? "dark bg-gray-900 text-gray-100" : "bg-gray-100 text-gray-800"} transition-colors duration-300`}>
+            {/* Sidebar */}
+            <div className={`w-80 ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border-r p-6 flex flex-col shadow-lg`}>
+                <div className="mb-8 text-center">
+                    <h2 className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600">TeamChat</h2>
                 </div>
 
-                <nav className="flex-1 space-y-2">
-                    <NavButton
-                        activeView={view}
-                        targetView="profile"
-                        onClick={() => setView('profile')}
-                    >
+                <nav className="flex-1 space-y-3">
+                    <NavButton activeView={view} targetView="profile" onClick={() => setView('profile')}>
                         <User className="w-5 h-5 mr-3" />
-                        <span className="text-lg">{t.profile}</span>
+                        {t.profile}
                     </NavButton>
-
-                    <NavButton
-                        activeView={view}
-                        targetView="settings"
-                        onClick={() => setView('settings')}
-                    >
+                    <NavButton activeView={view} targetView="settings" onClick={() => setView('settings')}>
                         <Edit className="w-5 h-5 mr-3" />
-                        <span className="text-lg">{t.settings}</span>
+                        {t.settings}
                     </NavButton>
-
-                    <NavButton
-                        activeView={view}
-                        targetView="security"
-                        onClick={() => setView('security')}
-                    >
+                    <NavButton activeView={view} targetView="security" onClick={() => setView('security')}>
                         <KeyRound className="w-5 h-5 mr-3" />
-                        <span className="text-lg">{t.security}</span>
+                        {t.security}
                     </NavButton>
                 </nav>
 
@@ -784,16 +554,16 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                         <Button
                             variant="ghost"
                             onClick={toggleDarkMode}
-                            className="w-full justify-start mb-4"
+                            className={`w-full justify-start py-3 px-4 rounded-full text-lg font-medium ${isDarkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-600 hover:bg-gray-100"}`}
                         >
                             {isDarkMode ? <Sun className="w-5 h-5 mr-3" /> : <Moon className="w-5 h-5 mr-3" />}
-                            {language === 'vi' ? `Chế độ ${isDarkMode ? 'sáng' : 'tối'}` : `${isDarkMode ? 'Light' : 'Dark'} Mode`}
+                            {t.language === 'vi' ? `Chế độ ${isDarkMode ? 'sáng' : 'tối'}` : `${isDarkMode ? 'Light' : 'Dark'} Mode`}
                         </Button>
                     )}
                     <Button
                         variant="destructive"
                         onClick={onLogout}
-                        className="w-full text-lg py-3"
+                        className="w-full py-3 rounded-full text-lg font-medium mt-3"
                     >
                         <LogOut className="w-5 h-5 mr-3" />
                         {t.logout}
@@ -801,11 +571,12 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                 </div>
             </div>
 
-            <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
+            {/* Main Content */}
+            <div className="flex-1 p-8 overflow-y-auto">
                 {view === 'profile' && (
-                    <div className="max-w-5xl mx-auto animate-fade-in-up">
+                    <div className="max-w-5xl mx-auto">
                         <div className="flex items-center justify-between mb-8">
-                            <h1 className="text-4xl font-extrabold text-purple-700 dark:text-purple-300">{t.myProfile}</h1>
+                            <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600">{t.myProfile}</h1>
                             <Button variant="ghost" size="icon" className="text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-300">
                                 <MoreHorizontal className="w-6 h-6" />
                             </Button>
@@ -813,22 +584,20 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <div className="lg:col-span-2">
-                                <div className={`${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} rounded-2xl p-8 mb-8 shadow-xl transition-all duration-300 hover:shadow-2xl`}>
+                                <div className={`rounded-2xl p-8 shadow-xl transition-all duration-300 hover:shadow-2xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border`}>
                                     <div className="flex items-center mb-6">
                                         <div className="relative mr-6">
-                                            <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                                            <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg">
                                                 {currentUser.avatar ? (
                                                     <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
                                                 ) : (
-                                                    <div className="text-white text-4xl font-bold">
-                                                        {currentUser?.name?.charAt(0)?.toUpperCase() || "U"}
-                                                    </div>
+                                                    <div className="text-white text-4xl font-bold">{currentUser.name.charAt(0).toUpperCase()}</div>
                                                 )}
                                             </div>
                                             <button
                                                 onClick={() => avatarInputRef.current?.click()}
-                                                className="absolute -bottom-1 right-0 w-8 h-8 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center shadow-md border border-gray-200 dark:border-gray-600 transition-all duration-200 hover:scale-110"
-                                                title={language === 'vi' ? "Thay đổi ảnh đại diện" : "Change avatar"}
+                                                className="absolute -bottom-1 right-0 w-8 h-8 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center shadow-md border border-gray-200 dark:border-gray-600 transition-transform duration-200 hover:scale-110"
+                                                title={t.language === 'vi' ? "Thay đổi ảnh đại diện" : "Change avatar"}
                                             >
                                                 <Camera className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                                             </button>
@@ -838,54 +607,42 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                                 onChange={handleAvatarChange}
                                                 accept="image/*"
                                                 className="hidden"
+                                                aria-label="Upload avatar"
                                             />
                                         </div>
                                         <div>
-                                            <h2 className="text-3xl font-bold mb-1">
-                                                {currentUser?.name || "Admin User"}
-                                            </h2>
-                                            <p className="text-purple-600 dark:text-purple-400 text-lg">
-                                                {language === 'vi' ? 'Lập Trình Viên Frontend' : 'Frontend Developer'}
+                                            <h2 className="text-3xl font-bold">{currentUser.name}</h2>
+                                            <p className="text-lg bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600">
+                                                {t.language === 'vi' ? 'Lập Trình Viên Frontend' : 'Frontend Developer'}
                                             </p>
                                         </div>
                                     </div>
-
                                     <div className="mb-6">
-                                        <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed">
-                                            {language === 'vi'
+                                        <p className={`text-base leading-relaxed ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                                            {t.language === 'vi'
                                                 ? 'Hồ sơ chuyên nghiệp là phần giới thiệu trong CV của bạn, làm nổi bật những kỹ năng và trình độ phù hợp, thể hiện kinh nghiệm và mục tiêu nghề nghiệp.'
                                                 : 'A professional profile is the introduction in your CV, highlighting relevant skills and qualifications, showcasing experience and career goals.'}
                                         </p>
                                     </div>
-
                                     <div className="space-y-4">
-                                        <div className="flex items-center text-gray-700 dark:text-gray-300">
-                                            <User className="w-5 h-5 mr-4 text-purple-500 dark:text-purple-400" />
-                                            <span className="text-lg">
-                                                {currentUser?.name || t.name}
-                                            </span>
+                                        <div className={`flex items-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                                            <User className="w-5 h-5 mr-4 text-purple-500" />
+                                            <span className="text-lg">{currentUser.name}</span>
                                         </div>
-                                        <div className="flex items-center text-gray-700 dark:text-gray-300">
-                                            <Phone className="w-5 h-5 mr-4 text-purple-500 dark:text-purple-400" />
-                                            <span className="text-lg">
-                                                {currentUser?.phone || t.phone}
-                                            </span>
+                                        <div className={`flex items-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                                            <Phone className="w-5 h-5 mr-4 text-purple-500" />
+                                            <span className="text-lg">{currentUser.phone}</span>
                                         </div>
-                                        <div className="flex items-center text-gray-700 dark:text-gray-300">
-                                            <MessageCircle className="w-5 h-5 mr-4 text-purple-500 dark:text-purple-400" />
-                                            <span className="text-lg">
-                                                {currentUser?.email || t.email}
-                                            </span>
+                                        <div className={`flex items-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                                            <MessageCircle className="w-5 h-5 mr-4 text-purple-500" />
+                                            <span className="text-lg">{currentUser.email}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div className={`${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} rounded-2xl p-6 shadow-xl h-fit transition-all duration-300 hover:shadow-2xl`}>
+                            <div className={`rounded-2xl p-6 shadow-xl transition-all duration-300 hover:shadow-2xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border`}>
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                                        {t.media}
-                                    </h3>
+                                    <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t.media}</h3>
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -895,7 +652,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                         {t.viewAll}
                                     </Button>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 mb-2">
+                                <div className="grid grid-cols-2 gap-4">
                                     {mediaItems.slice(0, 3).map((item) => (
                                         <div key={item.id} className="aspect-video overflow-hidden rounded-lg shadow-sm">
                                             {renderMediaItem(item)}
@@ -904,7 +661,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                     {mediaItems.length > 3 && (
                                         <button
                                             onClick={() => setIsMediaModalOpen(true)}
-                                            className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg flex flex-col items-center justify-center text-xl font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 cursor-pointer"
+                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center text-xl font-semibold transition-all duration-200 ${isDarkMode ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-200 text-gray-600 hover:bg-gray-300"}`}
                                         >
                                             +{mediaItems.length - 3}
                                             <span className="text-sm">{t.more}</span>
@@ -915,38 +672,47 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                         </div>
                     </div>
                 )}
+
                 {view === 'settings' && (
-                    <div className="max-w-3xl mx-auto animate-fade-in-up">
-                        <h1 className="text-4xl font-extrabold text-purple-700 dark:text-purple-300 mb-8">{t.accountSettings}</h1>
-                        <div className={`${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} rounded-2xl p-8 mb-8 shadow-xl`}>
+                    <div className="max-w-3xl mx-auto">
+                        <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 mb-8">{t.accountSettings}</h1>
+                        <div className={`rounded-2xl p-8 shadow-xl transition-all duration-300 hover:shadow-2xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border`}>
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center">
                                     <div className="relative mr-5">
-                                        <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                                        <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg">
                                             {currentUser.avatar ? (
                                                 <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
                                             ) : (
-                                                currentUser?.name?.charAt(0)?.toUpperCase() || "U"
+                                                <div className="text-white text-3xl font-bold">{currentUser.name.charAt(0).toUpperCase()}</div>
                                             )}
                                         </div>
                                         <button
                                             onClick={() => avatarInputRef.current?.click()}
-                                            className="absolute -bottom-1 -right-1 w-7 h-7 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center shadow-md border border-gray-200 dark:border-gray-600 transition-all duration-200 hover:scale-110"
-                                            title={language === 'vi' ? "Thay đổi ảnh đại diện" : "Change avatar"}
+                                            className="absolute -bottom-1 -right-1 w-7 h-7 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center shadow-md border border-gray-200 dark:border-gray-600 transition-transform duration-200 hover:scale-110"
+                                            title={t.language === 'vi' ? "Thay đổi ảnh đại diện" : "Change avatar"}
                                         >
                                             <Camera className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                                         </button>
+                                        <input
+                                            type="file"
+                                            ref={avatarInputRef}
+                                            onChange={handleAvatarChange}
+                                            accept="image/*"
+                                            className="hidden"
+                                            aria-label="Upload avatar"
+                                        />
                                     </div>
                                     <div>
                                         <h3 className="text-2xl font-semibold">{currentUser.name}</h3>
-                                        <p className="text-base text-gray-600 dark:text-gray-300">{currentUser.email}</p>
+                                        <p className={`text-base ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>{currentUser.email}</p>
                                     </div>
                                 </div>
                                 <div className="flex space-x-3">
                                     {!isEditing ? (
                                         <Button
                                             onClick={() => setIsEditing(true)}
-                                            className="px-5 py-2 text-base"
+                                            className="px-5 py-2 text-base bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-full"
                                         >
                                             <Edit className="w-4 h-4 mr-2" />
                                             {t.edit}
@@ -955,21 +721,15 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                         <>
                                             <Button
                                                 onClick={handleSave}
-                                                disabled={isLoading}
-                                                className="px-5 py-2 text-base bg-green-500 hover:bg-green-600 disabled:opacity-50"
+                                                className="px-5 py-2 text-base bg-green-500 hover:bg-green-600 text-white rounded-full"
                                             >
-                                                {isLoading ? (
-                                                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
-                                                ) : (
-                                                    <Save className="w-4 h-4 mr-2" />
-                                                )}
+                                                <Save className="w-4 h-4 mr-2" />
                                                 {t.save}
                                             </Button>
                                             <Button
                                                 variant="outline"
                                                 onClick={handleCancel}
-                                                disabled={isLoading}
-                                                className="px-5 py-2 text-base border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+                                                className={`px-5 py-2 text-base rounded-full ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-600 hover:bg-gray-100"}`}
                                             >
                                                 {t.cancel}
                                             </Button>
@@ -977,66 +737,89 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                     )}
                                 </div>
                             </div>
-                        </div>
-                        <div className={`p-6 rounded-lg shadow-md mb-8 ${isDarkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"}`}>
-                            <h4 className={`text-lg font-semibold mb-4 border-b pb-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>{t.personalInfo}</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <FormField
-                                    label={t.name}
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleInputChange}
-                                    readOnly={!isEditing}
-                                    required
-                                    error={errors.name}
-                                />
-                                <FormField
-                                    label={t.dob}
-                                    name="dob"
-                                    type="date"
-                                    value={formData.dob}
-                                    onChange={handleInputChange}
-                                    readOnly={!isEditing}
-                                    required
-                                    error={errors.dob}
-                                />
-                                <FormField
-                                    label={t.email}
-                                    name="email"
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    readOnly={!isEditing}
-                                    required
-                                    error={errors.email}
-                                />
-                                <FormField
-                                    label={t.phone}
-                                    name="phone"
-                                    type="tel"
-                                    value={formData.phone}
-                                    onChange={handleInputChange}
-                                    readOnly={!isEditing}
-                                    required
-                                    error={errors.phone}
-                                />
+                            <div className="space-y-6">
+                                <div>
+                                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>{t.name}</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleInputChange}
+                                        disabled={!isEditing}
+                                        className={`w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 ${isDarkMode
+                                            ? "bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400"
+                                            : "bg-gray-50 border-gray-300 text-gray-800 placeholder-gray-500"
+                                            } ${validationErrors.name ? "border-red-500 focus:ring-red-500" : ""} disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:text-gray-500 dark:disabled:text-gray-400`}
+                                        aria-invalid={!!validationErrors.name}
+                                        aria-describedby={validationErrors.name ? "name-error" : undefined}
+                                    />
+                                    <ErrorMessage error={validationErrors.name} />
+                                </div>
+                                <div>
+                                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>{t.dob}</label>
+                                    <input
+                                        type="date"
+                                        name="dob"
+                                        value={formData.dob}
+                                        onChange={handleInputChange}
+                                        disabled={!isEditing}
+                                        className={`w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 ${isDarkMode
+                                            ? "bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400"
+                                            : "bg-gray-50 border-gray-300 text-gray-800 placeholder-gray-500"
+                                            } disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:text-gray-500 dark:disabled:text-gray-400`}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>{t.email}</label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        disabled={!isEditing}
+                                        className={`w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 ${isDarkMode
+                                            ? "bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400"
+                                            : "bg-gray-50 border-gray-300 text-gray-800 placeholder-gray-500"
+                                            } ${validationErrors.email ? "border-red-500 focus:ring-red-500" : ""} disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:text-gray-500 dark:disabled:text-gray-400`}
+                                        aria-invalid={!!validationErrors.email}
+                                        aria-describedby={validationErrors.email ? "email-error" : undefined}
+                                    />
+                                    <ErrorMessage error={validationErrors.email} />
+                                </div>
+                                <div>
+                                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>{t.phone}</label>
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleInputChange}
+                                        disabled={!isEditing}
+                                        className={`w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 ${isDarkMode
+                                            ? "bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400"
+                                            : "bg-gray-50 border-gray-300 text-gray-800 placeholder-gray-500"
+                                            } ${validationErrors.phone ? "border-red-500 focus:ring-red-500" : ""} disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:text-gray-500 dark:disabled:text-gray-400`}
+                                        aria-invalid={!!validationErrors.phone}
+                                        aria-describedby={validationErrors.phone ? "phone-error" : undefined}
+                                    />
+                                    <ErrorMessage error={validationErrors.phone} />
+                                </div>
                             </div>
                         </div>
-
-                        <div className={`${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} rounded-2xl p-8 mb-8 shadow-xl`}>
+                        <div className={`rounded-2xl p-8 shadow-xl transition-all duration-300 hover:shadow-2xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border mt-8`}>
                             <h3 className="text-2xl font-semibold mb-6">{t.deviceManagement}</h3>
                             <div className="space-y-4">
                                 {devices.map((device) => (
-                                    <div key={device.id} className={`flex items-center justify-between p-4 border rounded-lg ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                                    <div key={device.id} className={`flex items-center justify-between p-4 border rounded-lg ${isDarkMode ? "border-gray-600" : "border-gray-200"}`}>
                                         <div>
                                             <p className="font-medium">{t.deviceName}: {device.deviceName}</p>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">{t.lastLogin}: {device.lastLogin}</p>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">{t.ipAddress}: {device.ipAddress}</p>
+                                            <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>{t.lastLogin}: {device.lastLogin}</p>
+                                            <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>{t.ipAddress}: {device.ipAddress}</p>
                                         </div>
                                         <Button
                                             variant="destructive"
                                             size="sm"
                                             onClick={() => handleDeviceLogout(device.id)}
+                                            className="rounded-full"
                                         >
                                             {t.logoutDevice}
                                         </Button>
@@ -1046,8 +829,9 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                         </div>
                     </div>
                 )}
+
                 {view === 'security' && (
-                    <div className="max-w-3xl mx-auto animate-fade-in-up">
+                    <div className="max-w-3xl mx-auto">
                         <div className="flex items-center mb-8">
                             <Button
                                 variant="ghost"
@@ -1057,78 +841,112 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                             >
                                 <ArrowLeft className="w-6 h-6" />
                             </Button>
-                            <h1 className="text-4xl font-extrabold text-purple-700 dark:text-purple-300">{t.securityPassword}</h1>
+                            <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600">{t.securityPassword}</h1>
                         </div>
-
-                        <div className={`${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} rounded-2xl p-8 mb-8 shadow-xl`}>
+                        <div className={`rounded-2xl p-8 shadow-xl transition-all duration-300 hover:shadow-2xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border`}>
                             <h3 className="text-2xl font-semibold mb-6">{t.changePassword}</h3>
-
                             <div className="space-y-6">
-                                <FormField
-                                    label={t.currentPassword}
-                                    name="currentPassword"
-                                    type="password"
-                                    value={passwordData.currentPassword}
-                                    onChange={handlePasswordChange}
-                                    required
-                                    error={errors.currentPassword}
-                                />
-                                <FormField
-                                    label={t.newPassword}
-                                    name="newPassword"
-                                    type="password"
-                                    value={passwordData.newPassword}
-                                    onChange={handlePasswordChange}
-                                    required
-                                    error={errors.newPassword}
-                                />
-                                <FormField
-                                    label={t.confirmNewPassword}
-                                    name="confirmNewPassword"
-                                    type="password"
-                                    value={passwordData.confirmNewPassword}
-                                    onChange={handlePasswordChange}
-                                    required
-                                    error={errors.confirmNewPassword}
-                                />
-
+                                <div>
+                                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>{t.currentPassword}</label>
+                                    <input
+                                        type="password"
+                                        name="currentPassword"
+                                        value={passwordData.currentPassword}
+                                        onChange={handlePasswordChange}
+                                        className={`w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 ${isDarkMode
+                                            ? "bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400"
+                                            : "bg-gray-50 border-gray-300 text-gray-800 placeholder-gray-500"
+                                            } ${passwordErrors.currentPassword ? "border-red-500 focus:ring-red-500" : ""}`}
+                                        aria-invalid={!!passwordErrors.currentPassword}
+                                        aria-describedby={passwordErrors.currentPassword ? "currentPassword-error" : undefined}
+                                    />
+                                    <ErrorMessage error={passwordErrors.currentPassword} />
+                                </div>
+                                <div>
+                                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>{t.newPassword}</label>
+                                    <div className="relative">
+                                        <input
+                                            type={showNewPassword ? "text" : "password"}
+                                            name="newPassword"
+                                            value={passwordData.newPassword}
+                                            onChange={handlePasswordChange}
+                                            className={`w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 ${isDarkMode
+                                                ? "bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400"
+                                                : "bg-gray-50 border-gray-300 text-gray-800 placeholder-gray-500"
+                                                } ${passwordErrors.newPassword ? "border-red-500 focus:ring-red-500" : ""}`}
+                                            aria-invalid={!!passwordErrors.newPassword}
+                                            aria-describedby={passwordErrors.newPassword ? "newPassword-error" : undefined}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={toggleNewPasswordVisibility}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                            title={showNewPassword ? t.language === 'vi' ? "Ẩn mật khẩu" : "Hide password" : t.language === 'vi' ? "Hiện mật khẩu" : "Show password"}
+                                        >
+                                            {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                    <ErrorMessage error={passwordErrors.newPassword} />
+                                </div>
+                                <div>
+                                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>{t.confirmNewPassword}</label>
+                                    <div className="relative">
+                                        <input
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            name="confirmNewPassword"
+                                            value={passwordData.confirmNewPassword}
+                                            onChange={handlePasswordChange}
+                                            className={`w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 ${isDarkMode
+                                                ? "bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400"
+                                                : "bg-gray-50 border-gray-300 text-gray-800 placeholder-gray-500"
+                                                } ${passwordErrors.confirmNewPassword ? "border-red-500 focus:ring-red-500" : ""}`}
+                                            aria-invalid={!!passwordErrors.confirmNewPassword}
+                                            aria-describedby={passwordErrors.confirmNewPassword ? "confirmNewPassword-error" : undefined}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={toggleConfirmPasswordVisibility}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                            title={showConfirmPassword ? t.language === 'vi' ? "Ẩn mật khẩu" : "Hide password" : t.language === 'vi' ? "Hiện mật khẩu" : "Show password"}
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                    <ErrorMessage error={passwordErrors.confirmNewPassword} />
+                                </div>
                                 <div className="pt-2">
                                     <Button
                                         onClick={handlePasswordUpdate}
-                                        disabled={isLoading}
-                                        className="px-6 py-3 text-base"
+                                        className="px-6 py-3 text-base bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-full"
                                     >
-                                        {isLoading ? (
-                                            <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
-                                        ) : null}
                                         {t.updatePassword}
                                     </Button>
                                 </div>
                             </div>
                         </div>
-                        <div className={`${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'} rounded-2xl p-8 shadow-xl`}>
+                        <div className={`rounded-2xl p-8 shadow-xl transition-all duration-300 hover:shadow-2xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border mt-8`}>
                             <h3 className="text-2xl font-semibold mb-6">{t.twoFactorAuth}</h3>
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center">
-                                        <Shield className="w-5 h-5 mr-4 text-purple-500 dark:text-purple-400" />
+                                        <Shield className="w-5 h-5 mr-4 text-purple-500" />
                                         <span className="text-lg">{t.twoFactorAuth}</span>
                                     </div>
                                     <Button
                                         onClick={handle2FAChange}
-                                        className={`px-5 py-2 text-base ${is2faEnabled ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
+                                        className={`px-5 py-2 text-base rounded-full ${is2faEnabled ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"}`}
                                     >
                                         {is2faEnabled ? t.disable2FA : t.enable2FA}
                                     </Button>
                                 </div>
                                 {is2faEnabled && (
                                     <div>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t.scanQRCode}</p>
+                                        <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"} mb-4`}>{t.scanQRCode}</p>
                                         <div className="flex justify-center">
                                             <img
                                                 src="/placeholder.svg?height=150&width=150&text=QR"
                                                 alt="2FA QR Code"
-                                                className="w-32 h-32"
+                                                className="w-32 h activo-32 rounded-lg shadow-md"
                                             />
                                         </div>
                                     </div>
@@ -1137,33 +955,57 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                         </div>
                     </div>
                 )}
-            </div>
 
-            {isMediaModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 animate-fade-in">
-                    <div className={`${isDarkMode ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-800'} rounded-2xl p-8 max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative`}>
-                        <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-3xl font-bold text-purple-700 dark:text-purple-300">{t.allMedia}</h2>
+                {showToast.show && (
+                    <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
+                        <div className={`border rounded-lg p-4 shadow-lg max-w-sm flex items-start space-x-3 ${showToast.type === 'error'
+                            ? isDarkMode ? "bg-red-900 border-red-700" : "bg-red-100 border-red-300"
+                            : isDarkMode ? "bg-green-900 border-green-700" : "bg-green-100 border-green-300"}`}>
+                            {showToast.type === 'error' ? (
+                                <AlertCircle className="w-6 h-6 text-red-500" />
+                            ) : (
+                                <CheckCircle className="w-6 h-6 text-green-500" />
+                            )}
+                            <div>
+                                <p className={`font-semibold ${showToast.type === 'error' ? "text-red-800 dark:text-red-200" : "text-green-800 dark:text-green-200"}`}>{showToast.message}</p>
+                            </div>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => setIsMediaModalOpen(false)}
-                                className="absolute top-4 right-4 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400"
+                                onClick={() => setShowToast({ show: false, message: "", type: 'success' })}
+                                className={showToast.type === 'error' ? "text-red-600 dark:text-red-300 hover:text-red-800 dark:hover:text-red-100" : "text-green-600 dark:text-green-300 hover:text-green-800 dark:hover:text-green-100"}
                             >
-                                <X className="w-6 h-6" />
+                                <X className="w-4 h-4" />
                             </Button>
                         </div>
+                    </div>
+                )}
 
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                            {mediaItems.map((item) => (
-                                <div key={item.id} className="aspect-video overflow-hidden rounded-lg shadow-md transition-transform duration-200 hover:scale-105 hover:shadow-lg">
-                                    {renderMediaItem(item)}
-                                </div>
-                            ))}
+                {isMediaModalOpen && (
+                    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 animate-fade-in">
+                        <div className={`rounded-2xl p-8 max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl ${isDarkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"}`}>
+                            <div className="flex items-center justify-between mb-8">
+                                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600">{t.allMedia}</h2>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setIsMediaModalOpen(false)}
+                                    className="text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400"
+                                >
+                                    <X className="w-6 h-6" />
+                                </Button>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                                {mediaItems.map((item) => (
+                                    <div key={item.id} className="aspect-video overflow-hidden rounded-lg shadow-md transition-transform duration-300 hover:scale-105">
+                                        {renderMediaItem(item)}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

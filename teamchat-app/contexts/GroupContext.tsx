@@ -5,6 +5,12 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 
 // 1. Định nghĩa "hình dạng" của một kênh/nhóm
 export interface Group {
+    membersList: { id: string; name: string; avatar: string; role: string; }[];
+    createdBy: string;
+    createdAt: string;
+    type: "public" | "private";
+    banner: undefined;
+    icon: undefined;
     description: string;
     id: string;
     name: string;

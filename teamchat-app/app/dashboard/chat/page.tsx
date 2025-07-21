@@ -69,7 +69,5 @@ export default function ChatPage() {
                 </GroupProvider>
             </div>
         </div>
-
     );
-
 }

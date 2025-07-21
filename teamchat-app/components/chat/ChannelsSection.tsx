@@ -8,7 +8,11 @@ import { ChannelItem } from "./ChannelItem";
 import { ChannelDetails } from "./ChannelDetails";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "@/components/ui/use-toast";
+
+import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
+
 import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
+
 
 // Define the Message type if not imported from elsewhere
 type Message = {
@@ -29,7 +33,8 @@ export function ChannelsSection({ onCreatePost }: ChannelsSectionProps) {
     const [showChannelDetails, setShowChannelDetails] = useState(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-    // Define the Group type if not already imported
+
+
     type Group = {
         id: string;
         name: string;

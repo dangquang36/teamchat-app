@@ -237,9 +237,9 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                                         onClick={() => fileInputRef.current?.click()}
                                     />
                                     <AttachmentMenuItem
-                                        icon={<Folder className="h-5 w-5 text-yellow-500" />}
-                                        label="Chọn Thư Mục"
-                                        onClick={() => folderInputRef.current?.click()}
+                                        icon={<Folder className="h-5 w-5 text-blue-500" />}
+                                        label="Video"
+                                        onClick={() => videoInputRef.current?.click()}
                                     />
                                 </div>
                             )}

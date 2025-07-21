@@ -348,9 +348,6 @@ function PollMessage({
                                 Xem chi tiết
                             </Button>
                         )}
-                        <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
                     </div>
                 </div>
 

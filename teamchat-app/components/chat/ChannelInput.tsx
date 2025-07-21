@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Smile, Paperclip, X, ImageIcon, File as FileIcon, Folder, BarChart3 } from 'lucide-react';
+import { Send, Mic, Smile, Paperclip, X, ImageIcon, File as FileIcon, Video, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 
@@ -25,8 +25,7 @@ const AttachmentMenuItem = ({ icon, label, onClick, isDarkMode }: { icon: React.
     </button>
 );
 
-
-export function ChannelInput({ channelName, isChannel, onCreatePoll, onSendMessage, isDarkMode = false, }: ChannelInputProps) {
+export function ChannelInput({ channelName, isChannel, onCreatePoll, onSendMessage, isDarkMode = false }: ChannelInputProps) {
     // --- STATE MANAGEMENT ---
     const [inputValue, setInputValue] = useState('');
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -36,7 +35,7 @@ export function ChannelInput({ channelName, isChannel, onCreatePoll, onSendMessa
     // --- REFS ---
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
-    const folderInputRef = useRef<HTMLInputElement>(null);
+    const videoInputRef = useRef<HTMLInputElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
     const attachmentButtonRef = useRef<HTMLButtonElement>(null);
     const attachmentMenuRef = useRef<HTMLDivElement>(null);
@@ -63,7 +62,6 @@ export function ChannelInput({ channelName, isChannel, onCreatePoll, onSendMessa
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
-
 
     // --- HANDLERS ---
     const handleSend = () => {
@@ -139,8 +137,7 @@ export function ChannelInput({ channelName, isChannel, onCreatePoll, onSendMessa
                 {/* CÁC INPUT CHỌN TỆP (ẨN) */}
                 <input type="file" ref={imageInputRef} onChange={handleFileSelect} accept="image/*" multiple style={{ display: "none" }} />
                 <input type="file" ref={fileInputRef} onChange={handleFileSelect} multiple style={{ display: "none" }} />
-                {/* @ts-ignore: webkitdirectory is non-standard but widely supported */}
-                <input type="file" ref={folderInputRef} onChange={handleFileSelect} webkitdirectory="" directory="" multiple style={{ display: "none" }} />
+                <input type="file" ref={videoInputRef} onChange={handleFileSelect} accept="video/*" multiple style={{ display: "none" }} />
 
                 {/* NÚT MIC */}
                 <Button onClick={handleMicClick} variant="ghost" size="icon" className={`flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -184,7 +181,7 @@ export function ChannelInput({ channelName, isChannel, onCreatePoll, onSendMessa
                                     className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-lg w-48 z-10 ${isDarkMode ? 'bg-gray-700 border border-gray-600' : 'bg-white border'}`}>
                                     <AttachmentMenuItem isDarkMode={isDarkMode} icon={<ImageIcon className="h-5 w-5 text-green-500" />} label="Ảnh" onClick={() => imageInputRef.current?.click()} />
                                     <AttachmentMenuItem isDarkMode={isDarkMode} icon={<FileIcon className="h-5 w-5 text-purple-500" />} label="Chọn Tệp" onClick={() => fileInputRef.current?.click()} />
-                                    <AttachmentMenuItem isDarkMode={isDarkMode} icon={<Folder className="h-5 w-5 text-yellow-500" />} label="Chọn Thư Mục" onClick={() => folderInputRef.current?.click()} />
+                                    <AttachmentMenuItem isDarkMode={isDarkMode} icon={<Video className="h-5 w-5 text-yellow-500" />} label="Chọn Video" onClick={() => videoInputRef.current?.click()} />
                                     <AttachmentMenuItem
                                         icon={<BarChart3 className="h-5 w-5 text-blue-500" />}
                                         label="Tạo bình chọn"

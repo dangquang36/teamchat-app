@@ -75,13 +75,13 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
                     />
                     {/* 2. Thêm biểu tượng cho Kênh */}
                     <SidebarIcon
-                        icon={<Users className="h-6 w-6" />} // ✅ 3. Thay đổi icon ở đây
+                        icon={<Users className="h-6 w-6" />}
                         active={isActive("/dashboard/channels")}
                         onClick={() => handleNavigation("/dashboard/channels")}
                         tooltip="Kênh"
                     />
                     <SidebarIcon
-                        icon={<Newspaper className="h-6 w-6" />} // ✅ 4. Thay đổi icon ở đây
+                        icon={<Newspaper className="h-6 w-6" />}
                         active={isActive("/dashboard/posts")}
                         onClick={() => handleNavigation("/dashboard/posts")}
                         tooltip="Bài Đăng"

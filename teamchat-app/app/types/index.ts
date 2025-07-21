@@ -5,15 +5,29 @@ export interface Group {
     pinnedMessages: boolean;
 }
 
+
+interface ChatMessagesProps {
+    messages: Message[];
+    currentUser: UserProfile;
+    isDarkMode?: boolean;
+}
+
+
 export interface UserProfile {
     id: string;
     name: string;
     avatar: string;
-    online: boolean;
-    gender?: string;
-    dob?: string;
-    phone?: string;
-    email?: string;
+    coverPhotoUrl: string;
+    phone: string;
+    email: string;
+    birthday: string;
+    socialProfiles: {
+        facebook: string;
+        twitter: string;
+        instagram: string;
+        linkedin: string;
+    };
+    mutualGroups: number;
 }
 export interface Reaction {
     emoji: string;
@@ -40,11 +54,7 @@ export interface ChatHeaderProps {
     isDarkMode?: boolean;
 }
 
-export interface ChatMessagesProps {
-    messages: Message[];
-    currentUser: UserProfile;
-    isDarkMode?: boolean;
-}
+
 
 export interface ChatInputProps {
     onSendMessage: (text: string) => void;
@@ -147,18 +157,22 @@ export interface ChatInputProps {
     onCreatePoll?: (pollData: { question: string; options: string[] }) => void;
 }
 
-export interface ChatMessagesProps {
-    messages: Message[];
-    currentUser: UserProfile;
-    isDarkMode?: boolean;
-}
 
 export interface UserProfile {
     id: string;
     name: string;
-    email?: string;
     avatar: string;
-    online: boolean;
+    coverPhotoUrl: string;
+    phone: string;
+    email: string;
+    birthday: string;
+    socialProfiles: {
+        facebook: string;
+        twitter: string;
+        instagram: string;
+        linkedin: string;
+    };
+    mutualGroups: number;
 }
 
 export interface DirectMessage extends UserProfile {

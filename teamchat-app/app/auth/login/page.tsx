@@ -1,28 +1,39 @@
 "use client"
 
-import type React from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { MessageCircle, ArrowLeft } from "lucide-react"
-import Link from "next/link"
 import { apiClient } from "@/lib/api"
-import { useRouter } from "next/navigation"
+
+const loginSchema = z.object({
+  username: z.string().min(1, "Vui lòng nhập tên đăng nhập"),
+  password: z.string().min(1, "Vui lòng nhập mật khẩu"),
+})
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
   const router = useRouter()
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<{ username: string; password: string }>({
+    resolver: zodResolver(loginSchema),
+  })
+
+  const onSubmit = async (data: { username: string; password: string }) => {
     setIsLoading(true)
     setError("")
-
     try {
-      const res = await apiClient.login(username, password)
-
+      const res = await apiClient.login(data.username, data.password)
       if (res.success) {
         localStorage.setItem("userToken", res.data.token)
         localStorage.setItem("currentUser", JSON.stringify(res.data))
@@ -30,20 +41,21 @@ export default function LoginPage() {
       } else {
         setError(res.error || "Email hoặc mật khẩu không đúng")
       }
-    } catch (err) {
+    } catch {
       setError("Có lỗi xảy ra, vui lòng thử lại")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleBackToHome = () => {
-    router.push("/")
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-6">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-[#6a11cb] to-[#2575fc] flex items-center justify-center p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md"
+      >
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <MessageCircle className="h-8 w-8 text-purple-600" />
@@ -53,37 +65,25 @@ export default function LoginPage() {
           <p className="text-gray-600">Chào mừng bạn quay trở lại!</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
-              <div className="mt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBackToHome}
-                  className="text-purple-600 border-purple-600 hover:bg-purple-50"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Quay về trang chủ
-                </Button>
-              </div>
-            </div>
-          )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-4">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-              username
+              Tên đăng nhập
             </label>
             <input
               id="username"
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              {...register("username")}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               placeholder="Nhập tên đăng nhập"
-              required
             />
+            {errors.username && <p className="text-sm text-red-500 mt-1">{errors.username.message}</p>}
           </div>
 
           <div>
@@ -93,12 +93,11 @@ export default function LoginPage() {
             <input
               id="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              {...register("password")}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               placeholder="Nhập mật khẩu"
-              required
             />
+            {errors.password && <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>}
           </div>
 
           <div className="flex items-center justify-between">
@@ -112,20 +111,24 @@ export default function LoginPage() {
                 Ghi nhớ đăng nhập
               </label>
             </div>
-            <Link href="/forgot-password" className="text-sm text-purple-600 hover:text-purple-500">
+            <Link href="/auth/forgot-password" className="text-sm text-purple-600 hover:text-purple-500">
               Quên mật khẩu?
             </Link>
           </div>
 
-          <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="w-full bg-purple-600 hover:bg-purple-700"
+            disabled={isLoading}
+          >
             {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
           </Button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            Chưa có tài khoản?{" "}
-            <Link href="/register" className="text-purple-600 hover:text-purple-500 font-medium">
+            Chưa có tài khoản?{' '}
+            <Link href="/auth/register" className="text-purple-600 hover:text-purple-500 font-medium">
               Đăng ký ngay
             </Link>
           </p>
@@ -135,14 +138,14 @@ export default function LoginPage() {
           <Button
             type="button"
             variant="ghost"
-            onClick={handleBackToHome}
+            onClick={() => router.push("/")}
             className="text-purple-600 hover:text-purple-500"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Quay về trang chủ
           </Button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

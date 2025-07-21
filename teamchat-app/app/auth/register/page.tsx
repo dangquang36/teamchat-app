@@ -1,122 +1,83 @@
 "use client"
 
-import type React from "react"
-
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { MessageCircle, ArrowLeft } from "lucide-react"
-import Link from "next/link"
 import { apiClient } from "@/lib/api"
-import { useRouter } from "next/navigation"
+
+const schema = z
+  .object({
+    name: z.string().min(1, "Vui lòng nhập họ tên"),
+    email: z.string().email("Email không hợp lệ"),
+    phone: z.string().length(10, "Số điện thoại phải có 10 chữ số"),  // Changed to validate exactly 10 digits
+    password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
+    confirmPassword: z.string(),
+    terms: z.literal(true, {
+      errorMap: () => ({ message: "Bạn cần đồng ý với điều khoản" }),
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Mật khẩu xác nhận không khớp",
+    path: ["confirmPassword"],
+  })
 
 export default function RegisterPage() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-  })
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
   const router = useRouter()
+  const [serverError, setServerError] = useState("")
+  const [termsError, setTermsError] = useState<string>("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(schema),
+  })
 
-    // Validate passwords match
-    if (formData.password !== formData.confirmPassword) {
-      setError("Mật khẩu xác nhận không khớp")
-      setIsLoading(false)
-      return
+  const onSubmit = async (data: any) => {
+    if (!data.terms) {
+      setTermsError("Bạn cần đồng ý với điều khoản sử dụng");
+      return;
     }
-
-    // Validate password length
-    if (formData.password.length < 6) {
-      setError("Mật khẩu phải có ít nhất 6 ký tự")
-      setIsLoading(false)
-      return
-    }
+    setTermsError("");
 
     try {
-      //     // Simulate API call
-      //     await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      //     // Check if email already exists
-      //     const users = JSON.parse(localStorage.getItem("registeredUsers") || "[]")
-      //     const existingUser = users.find((u: any) => u.email === formData.email)
-
-      //     if (existingUser) {
-      //       setError("Email này đã được đăng ký")
-      //       setIsLoading(false)
-      //       return
-      //     }
-
-      //     // Save new user
-      //     const newUser = {
-      //       id: Date.now(),
-      //       name: formData.name,
-      //       email: formData.email,
-      //       phone: formData.phone,
-      //       password: formData.password,
-      //       createdAt: new Date().toISOString(),
-      //     }
-
-      //     users.push(newUser)
-      //     localStorage.setItem("registeredUsers", JSON.stringify(users))
-
-      //     // Auto login after registration
-      //     localStorage.setItem("userToken", "logged-in-" + Date.now())
-      //     localStorage.setItem("currentUser", JSON.stringify(newUser))
-
-      //     // Redirect to main app
-      //     router.push("/")
-      //   } catch (err) {
-      //     setError("Có lỗi xảy ra, vui lòng thử lại")
-      //   } finally {
-      //     setIsLoading(false)
-      //   }
-      // }
       const res = await apiClient.register({
-        name: formData.name,
-        username: formData.email.split("@")[0],
-        password: formData.password,
-        phone: formData.phone,
-        email: formData.email,
+        name: data.name,
+        username: data.email.split("@")[0],
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
       })
+
       if (!res.success) {
-        setError(res.error || "Đăng ký thất bại")
+        setServerError(res.error || "Đăng ký thất bại")
         return
       }
 
-      // Lưu token và user
       localStorage.setItem("userToken", res.data.token)
       localStorage.setItem("currentUser", JSON.stringify(res.data))
 
-      router.push("/login")
-    } catch (err) {
-      setError("Có lỗi xảy ra, vui lòng thử lại")
-    } finally {
-      setIsLoading(false)
+      router.push("/auth/login")
+    } catch {
+      setServerError("Có lỗi xảy ra, vui lòng thử lại")
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
-  }
-
-  const handleBackToHome = () => {
-    router.push("/")
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-6">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-[#6a11cb] to-[#2575fc] flex items-center justify-center p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md"
+      >
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <MessageCircle className="h-8 w-8 text-purple-600" />
@@ -126,38 +87,23 @@ export default function RegisterPage() {
           <p className="text-gray-600">Tạo tài khoản mới để bắt đầu</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
-              <div className="mt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBackToHome}
-                  className="text-purple-600 border-purple-600 hover:bg-purple-50"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Quay về trang chủ
-                </Button>
-              </div>
-            </div>
-          )}
+        {serverError && <p className="text-sm text-red-500 mb-4">{serverError}</p>}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
               Họ và tên
             </label>
             <input
               id="name"
-              name="name"
               type="text"
-              value={formData.name}
-              onChange={handleChange}
+              {...register("name")}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               placeholder="Nhập họ và tên"
-              required
             />
+            {typeof errors.name?.message === "string" && (
+              <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>
+            )}
           </div>
 
           <div>
@@ -166,14 +112,14 @@ export default function RegisterPage() {
             </label>
             <input
               id="email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
+              type="text"
+              {...register("email")}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               placeholder="Nhập email của bạn"
-              required
             />
+            {typeof errors.email?.message === "string" && (
+              <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
+            )}
           </div>
 
           <div>
@@ -182,14 +128,14 @@ export default function RegisterPage() {
             </label>
             <input
               id="phone"
-              name="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={handleChange}
+              type="text"
+              {...register("phone")}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               placeholder="Nhập số điện thoại"
-              required
             />
+            {typeof errors.phone?.message === "string" && (
+              <p className="text-sm text-red-500 mt-1">{errors.phone.message}</p>
+            )}
           </div>
 
           <div>
@@ -198,14 +144,14 @@ export default function RegisterPage() {
             </label>
             <input
               id="password"
-              name="password"
               type="password"
-              value={formData.password}
-              onChange={handleChange}
+              {...register("password")}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               placeholder="Nhập mật khẩu"
-              required
             />
+            {typeof errors.password?.message === "string" && (
+              <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
+            )}
           </div>
 
           <div>
@@ -214,40 +160,43 @@ export default function RegisterPage() {
             </label>
             <input
               id="confirmPassword"
-              name="confirmPassword"
               type="password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
+              {...register("confirmPassword")}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               placeholder="Nhập lại mật khẩu"
-              required
             />
+            {typeof errors.confirmPassword?.message === "string" && (
+              <p className="text-sm text-red-500 mt-1">{errors.confirmPassword.message}</p>
+            )}
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-start">
             <input
               id="terms"
               type="checkbox"
-              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-              required
+              {...register("terms")}
+              className="h-4 w-4 mt-1 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
             />
-            <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-              Tôi đồng ý với{" "}
+            <label htmlFor="terms" className="ml-2 text-sm text-gray-700">
+              Tôi đồng ý với {" "}
               <Link href="/terms" className="text-purple-600 hover:text-purple-500">
                 Điều khoản sử dụng
               </Link>
             </label>
+            {typeof errors.terms?.message === "string" && (
+              <p className="text-sm text-red-500 mt-1">{errors.terms.message}</p>
+            )}
           </div>
 
-          <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700" disabled={isLoading}>
-            {isLoading ? "Đang đăng ký..." : "Đăng ký"}
+          <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700" disabled={isSubmitting}>
+            {isSubmitting ? "Đang đăng ký..." : "Đăng ký"}
           </Button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            Đã có tài khoản?{" "}
-            <Link href="/login" className="text-purple-600 hover:text-purple-500 font-medium">
+            Đã có tài khoản? {" "}
+            <Link href="/auth/login" className="text-purple-600 hover:text-purple-500 font-medium">
               Đăng nhập ngay
             </Link>
           </p>
@@ -257,14 +206,16 @@ export default function RegisterPage() {
           <Button
             type="button"
             variant="ghost"
-            onClick={handleBackToHome}
+            onClick={() => router.push("/")}
             className="text-purple-600 hover:text-purple-500"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Quay về trang chủ
           </Button>
         </div>
-      </div>
+
+
+      </motion.div>
     </div>
   )
 }

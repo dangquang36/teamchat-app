@@ -1,17 +1,4 @@
-export interface Message {
-    reactions: any;
-    reactions: boolean;
-    id: string;
-    from: string;
-    text?: string;
-    time: string;
-    type?: string;
-    poll?: {
-        question: string;
-        options: { text: string; votes: number }[];
-        voters: string[];
-    };
-}
+
 
 export interface DirectMessage {
     id: string;
@@ -29,11 +16,6 @@ export interface UserProfile {
     online: boolean;
 }
 
-export interface ChatMessagesProps {
-    messages: Message[];
-    currentUser: UserProfile;
-    isDarkMode?: boolean;
-}
 
 export interface ChatInputProps {
     onSendMessage: (message: string) => void;

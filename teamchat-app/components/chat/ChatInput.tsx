@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon, Folder, BarChart2 } from "lucide-react";
+import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon, Folder } from "lucide-react";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import { ChatInputProps } from "@/app/types";
-import { PollCreator } from "@/components/modals/PollCreator";
 
 declare global {
     interface Window {
@@ -12,17 +11,12 @@ declare global {
     }
 }
 
-interface ExtendedChatInputProps extends ChatInputProps {
-    onCreatePoll?: (pollData: { question: string; options: string[] }) => void;
-}
-
-export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: ExtendedChatInputProps) {
+export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps) {
     const [message, setMessage] = useState("");
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [isListening, setIsListening] = useState(false);
     const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [showPollCreator, setShowPollCreator] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
@@ -142,7 +136,7 @@ export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: E
                             className={`flex items-center justify-between p-2 rounded ${isDarkMode ? "bg-gray-700" : "bg-gray-100"
                                 }`}
                         >
-                            <span className={`text-sm truncate max-w-xs ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                            <span className={`text-sm truncate max-w-xs ${isDarkMode ? "text-gray-300" : "text-gray-700"}`} >
                                 {file.name}
                             </span>
                             <button
@@ -154,15 +148,6 @@ export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: E
                         </div>
                     ))}
                 </div>
-            )}
-
-            {/* Poll Creator Modal */}
-            {showPollCreator && onCreatePoll && (
-                <PollCreator
-                    onClose={() => setShowPollCreator(false)}
-                    onCreatePoll={onCreatePoll}
-                    isDarkMode={isDarkMode}
-                />
             )}
 
             <div className="flex items-center space-x-3">
@@ -256,15 +241,6 @@ export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: E
                                         label="Chọn Thư Mục"
                                         onClick={() => folderInputRef.current?.click()}
                                     />
-
-                                    <AttachmentMenuItem
-                                        icon={<BarChart2 className="h-5 w-5 text-blue-500" />}
-                                        label="Tạo Bình Chọn"
-                                        onClick={() => {
-                                            setShowPollCreator(true);
-                                            setShowAttachmentMenu(false);
-                                        }}
-                                    />
                                 </div>
                             )}
                         </div>
@@ -288,13 +264,6 @@ export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: E
                 >
                     <Send className="h-4 w-4" />
                 </Button>
-            </div>
-
-            <div
-                className={`mt-2 text-xs flex items-center ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}
-            >
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                Victoria Lane đang nhập
             </div>
         </div>
     );

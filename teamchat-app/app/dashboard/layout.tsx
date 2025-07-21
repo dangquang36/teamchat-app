@@ -14,15 +14,12 @@ import {
     Hash // 1. Import biểu tượng Hash
 } from "lucide-react";
 import { SidebarIcon } from "@/components/common/SidebarIcon";
+import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 
-export default function DashboardLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    const [isDarkMode, setIsDarkMode] = useState(false);
+function LayoutUI({ children }: { children: React.ReactNode }) {
     const [currentPath, setCurrentPath] = useState("");
     const router = useRouter();
+    const { isDarkMode, toggleDarkMode } = useTheme(); // ✅ 3. Lấy trạng thái từ Context
 
     useEffect(() => {
         // Check authentication
@@ -31,50 +28,17 @@ export default function DashboardLayout({
             router.push("/login");
             return;
         }
-
         // Set current path
         setCurrentPath(window.location.pathname);
-
-        // Load dark mode preference
-        const savedDarkMode = localStorage.getItem("darkMode");
-        if (savedDarkMode) {
-            const isDark = JSON.parse(savedDarkMode);
-            setIsDarkMode(isDark);
-            if (isDark) {
-                document.documentElement.classList.add("dark");
-                document.body.classList.add("dark");
-            } else {
-                document.documentElement.classList.remove("dark");
-                document.body.classList.remove("dark");
-            }
-        }
     }, [router]);
 
-    const toggleDarkMode = () => {
-        const newDarkMode = !isDarkMode;
-        setIsDarkMode(newDarkMode);
-        localStorage.setItem("darkMode", JSON.stringify(newDarkMode));
-
-        if (newDarkMode) {
-            document.documentElement.classList.add("dark");
-            document.body.classList.add("dark");
-        } else {
-            document.documentElement.classList.remove("dark");
-            document.body.classList.remove("dark");
-        }
-
-        // Dispatch custom event để notify các component khác
-        window.dispatchEvent(new CustomEvent("darkModeChange", {
-            detail: { isDarkMode: newDarkMode }
-        }));
-    };
 
     const handleNavigation = (route: string) => {
         setCurrentPath(route);
         router.push(route);
     };
 
-    const isActive = (path: string) => currentPath === path;
+    const isActive = (path: string) => currentPath.startsWith(path);
 
     return (
         <div className={`flex h-screen overflow-hidden transition-colors ${isDarkMode ? "bg-gray-900" : "bg-gray-100"}`}>
@@ -154,3 +118,16 @@ export default function DashboardLayout({
         </div>
     );
 }
+
+export default function DashboardLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    return (
+        <ThemeProvider>
+            <LayoutUI>{children}</LayoutUI>
+        </ThemeProvider>
+    );
+}
+

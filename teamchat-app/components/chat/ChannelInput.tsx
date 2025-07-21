@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Smile, Paperclip, X, ImageIcon, File as FileIcon, Folder } from 'lucide-react';
+import { Send, Mic, Smile, Paperclip, X, ImageIcon, File as FileIcon, Folder, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 
 // Định nghĩa lại interface cho props để bao gồm cả hàm gửi file
 interface ChannelInputProps {
     channelName: string;
-    // Cập nhật onSendMessage để có thể nhận cả text, files và emojis
+    isChannel: boolean;
+    onCreatePoll: () => void;
     onSendMessage: (data: { text: string; files: File[] }) => void;
     isDarkMode?: boolean;
 }
@@ -25,7 +26,7 @@ const AttachmentMenuItem = ({ icon, label, onClick, isDarkMode }: { icon: React.
 );
 
 
-export function ChannelInput({ channelName, onSendMessage, isDarkMode = false }: ChannelInputProps) {
+export function ChannelInput({ channelName, isChannel, onCreatePoll, onSendMessage, isDarkMode = false, }: ChannelInputProps) {
     // --- STATE MANAGEMENT ---
     const [inputValue, setInputValue] = useState('');
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -38,6 +39,7 @@ export function ChannelInput({ channelName, onSendMessage, isDarkMode = false }:
     const folderInputRef = useRef<HTMLInputElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
     const attachmentButtonRef = useRef<HTMLButtonElement>(null);
+    const attachmentMenuRef = useRef<HTMLDivElement>(null);
 
     // --- EFFECT ĐỂ ĐÓNG CÁC POPUP KHI CLICK RA NGOÀI ---
     useEffect(() => {
@@ -47,7 +49,12 @@ export function ChannelInput({ channelName, onSendMessage, isDarkMode = false }:
                 setShowEmojiPicker(false);
             }
             // Đóng Attachment Menu
-            if (attachmentButtonRef.current && !attachmentButtonRef.current.contains(event.target as Node)) {
+            if (
+                attachmentButtonRef.current &&
+                !attachmentButtonRef.current.contains(event.target as Node) &&
+                attachmentMenuRef.current && // Đảm bảo menu đang tồn tại
+                !attachmentMenuRef.current.contains(event.target as Node) // Kiểm tra click có nằm ngoài menu không
+            ) {
                 setShowAttachmentMenu(false);
             }
         }
@@ -55,7 +62,7 @@ export function ChannelInput({ channelName, onSendMessage, isDarkMode = false }:
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [emojiPickerRef, attachmentButtonRef]);
+    }, []);
 
 
     // --- HANDLERS ---
@@ -173,10 +180,21 @@ export function ChannelInput({ channelName, onSendMessage, isDarkMode = false }:
                             {/* MENU ĐÍNH KÈM */}
                             {showAttachmentMenu && (
                                 <div
+                                    ref={attachmentMenuRef}
                                     className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-lg w-48 z-10 ${isDarkMode ? 'bg-gray-700 border border-gray-600' : 'bg-white border'}`}>
                                     <AttachmentMenuItem isDarkMode={isDarkMode} icon={<ImageIcon className="h-5 w-5 text-green-500" />} label="Ảnh" onClick={() => imageInputRef.current?.click()} />
                                     <AttachmentMenuItem isDarkMode={isDarkMode} icon={<FileIcon className="h-5 w-5 text-purple-500" />} label="Chọn Tệp" onClick={() => fileInputRef.current?.click()} />
                                     <AttachmentMenuItem isDarkMode={isDarkMode} icon={<Folder className="h-5 w-5 text-yellow-500" />} label="Chọn Thư Mục" onClick={() => folderInputRef.current?.click()} />
+                                    <AttachmentMenuItem
+                                        icon={<BarChart3 className="h-5 w-5 text-blue-500" />}
+                                        label="Tạo bình chọn"
+                                        onClick={() => {
+                                            console.log('onCreatePoll clicked');
+                                            setShowAttachmentMenu(false);
+                                            onCreatePoll();
+                                        }}
+                                        isDarkMode={isDarkMode}
+                                    />
                                 </div>
                             )}
                         </div>

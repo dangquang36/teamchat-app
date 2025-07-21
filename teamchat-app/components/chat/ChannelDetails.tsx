@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Edit2, Save, Mail, UserMinus, UserPlus } from "lucide-react";
+import { X, Edit2, Save, Mail, UserMinus, UserPlus, Newspaper } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 interface Channel {
     id: string;
@@ -30,8 +31,13 @@ export function ChannelDetails({ channel, isDarkMode, onClose, currentUser }: Ch
     const [channelDesc, setChannelDesc] = useState(channel.description);
     const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
     const [inviteEmail, setInviteEmail] = useState("");
+    const router = useRouter();
 
     const isLeader = currentUser.role === "leader";
+
+    const handleNavigateToPosts = () => {
+        router.push(`/dashboard/posts`);
+    };
 
     const handleSaveName = async () => {
         try {
@@ -139,165 +145,193 @@ export function ChannelDetails({ channel, isDarkMode, onClose, currentUser }: Ch
 
     return (
         <div
-            className="w-full sm:w-80 border-l p-4 transition-colors h-screen overflow-y-auto bg-white border-gray-200 text-black"
+            className={`w-full sm:w-80 border-l p-4 transition-colors h-screen overflow-y-auto ${isDarkMode
+                ? "bg-gray-800 border-gray-700 text-gray-200"
+                : "bg-white border-gray-200 text-gray-900"
+                }`}
         >
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold">Thông tin kênh</h2>
                 <Button variant="ghost" size="sm" onClick={onClose}>
-                    <X className="h-5 w-5 text-black" />
+                    <X className={`h-5 w-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`} />
                 </Button>
             </div>
-            <Accordion type="single" collapsible className="w-full">
+
+            <Accordion type="multiple" className="w-full" defaultValue={['info', 'members']}>
+                {/* --- Phần thông tin --- */}
                 <AccordionItem value="info">
                     <AccordionTrigger>Thông tin</AccordionTrigger>
-                    <AccordionContent>
-                        <div className="space-y-4">
-                            <div className="relative group">
-                                <h3 className="text-sm font-semibold">Tên kênh</h3>
-                                {isEditingName ? (
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            value={channelName}
-                                            onChange={(e) => setChannelName(e.target.value)}
-                                            className="text-sm bg-white text-black border-gray-300"
-                                        />
-                                        <Button size="sm" onClick={handleSaveName} className="bg-white text-black hover:bg-gray-100">
-                                            <Save className="h-4 w-4 text-black" />
+                    <AccordionContent className="space-y-4">
+                        <Button variant="outline" size="sm" onClick={handleNavigateToPosts} className="w-full">
+                            <Newspaper className="h-4 w-4 mr-2" />
+                            Xem bài đăng
+                        </Button>
+                        {/* Sửa Tên kênh */}
+                        <div className="relative group">
+                            <h3 className="text-sm font-semibold mb-1">Tên kênh</h3>
+                            {isEditingName ? (
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        value={channelName}
+                                        onChange={(e) => setChannelName(e.target.value)}
+                                        className={`text-sm h-9 ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                                    />
+                                    {/* ✅ KẾT NỐI HÀM LƯU TÊN */}
+                                    <Button size="sm" onClick={handleSaveName}>
+                                        <Save className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <p className="text-sm py-2">{channelName}</p>
+                                    {isLeader && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="opacity-0 group-hover:opacity-100 h-7 w-7"
+                                            onClick={() => setIsEditingName(true)}
+                                        >
+                                            <Edit2 className="h-4 w-4" />
                                         </Button>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-sm">{channelName}</p>
-                                        {isLeader && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="opacity-0 group-hover:opacity-100 bg-white text-black hover:bg-gray-100"
-                                                onClick={() => setIsEditingName(true)}
-                                            >
-                                                <Edit2 className="h-4 w-4 text-black" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="relative group">
-                                <h3 className="text-sm font-semibold">Mô tả</h3>
-                                {isEditingDesc ? (
-                                    <div className="flex flex-col gap-2">
-                                        <Textarea
-                                            value={channelDesc}
-                                            onChange={(e) => setChannelDesc(e.target.value)}
-                                            className="text-sm bg-white text-black border-gray-300"
-                                        />
-                                        <Button size="sm" onClick={handleSaveDesc} className="bg-white text-black hover:bg-gray-100">
-                                            <Save className="h-4 w-4 text-black" />
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* ✅ THÊM LẠI PHẦN SỬA MÔ TẢ */}
+                        <div className="relative group">
+                            <h3 className="text-sm font-semibold mb-1">Mô tả</h3>
+                            {isEditingDesc ? (
+                                <div className="flex flex-col items-end gap-2">
+                                    <Textarea
+                                        value={channelDesc}
+                                        onChange={(e) => setChannelDesc(e.target.value)}
+                                        className={`text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                                    />
+                                    <Button size="sm" onClick={handleSaveDesc}>
+                                        <Save className="h-4 w-4" /> Lưu
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex items-start justify-between">
+                                    <p className="text-sm py-2 pr-2 whitespace-pre-wrap">{channelDesc || "Không có mô tả."}</p>
+                                    {isLeader && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="opacity-0 group-hover:opacity-100 h-7 w-7 flex-shrink-0"
+                                            onClick={() => setIsEditingDesc(true)}
+                                        >
+                                            <Edit2 className="h-4 w-4" />
                                         </Button>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-sm">{channelDesc}</p>
-                                        {isLeader && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="opacity-0 group-hover:opacity-100 bg-white text-black hover:bg-gray-100"
-                                                onClick={() => setIsEditingDesc(true)}
-                                            >
-                                                <Edit2 className="h-4 w-4 text-black" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </AccordionContent>
                 </AccordionItem>
+
+                {/* --- Phần thành viên --- */}
                 <AccordionItem value="members">
                     <AccordionTrigger>Thành viên</AccordionTrigger>
                     <AccordionContent>
-                        <div className="space-y-4">
-                            <p className="text-sm">{channel.members} Thành viên</p>
-                            <Button onClick={() => setIsMemberModalOpen(true)} className="bg-white text-black hover:bg-gray-100">
+                        <div className="space-y-2">
+                            <p className="text-sm mb-2">{channel.members} Thành viên</p>
+                            {/* ✅ SỬA NÚT QUẢN LÝ THÀNH VIÊN */}
+                            <Button variant="outline" size="sm" onClick={() => setIsMemberModalOpen(true)} className="w-full">
                                 Quản lý thành viên
                             </Button>
+                            {/* ✅ SỬA NÚT RỜI KÊNH */}
                             {!isLeader && (
-                                <Button variant="destructive" onClick={handleLeaveChannel} className="bg-white text-black hover:bg-gray-100">
+                                <Button variant="destructive" size="sm" onClick={handleLeaveChannel} className="w-full">
                                     Rời kênh
                                 </Button>
                             )}
                         </div>
                     </AccordionContent>
                 </AccordionItem>
+
+                {/* --- Phần tin nhắn ghim --- */}
                 <AccordionItem value="pinned">
                     <AccordionTrigger>Tin nhắn ghim</AccordionTrigger>
                     <AccordionContent>
-                        {channel.pinnedMessages.length > 0 ? (
-                            channel.pinnedMessages.map((msg, index) => (
-                                <div
-                                    key={index}
-                                    className="p-2 rounded-lg relative group bg-gray-100"
-                                >
-                                    <p className="text-sm text-black">{msg.text}</p>
-                                    <p className="text-xs text-gray-600">
-                                        Pinned by {msg.pinnedBy} at {msg.time}
-                                    </p>
-                                    {isLeader && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-white text-black hover:bg-gray-100"
-                                            onClick={() => handleUnpinMessage(index)}
-                                        >
-                                            <X className="h-4 w-4 text-black" />
-                                        </Button>
-                                    )}
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-sm text-gray-500">Không có tin nhắn ghim</p>
-                        )}
+                        <div className="space-y-2">
+                            {channel.pinnedMessages.length > 0 ? (
+                                channel.pinnedMessages.map((msg, index) => (
+                                    // ✅ SỬA PHẦN NỀN VÀ CHỮ
+                                    <div
+                                        key={index}
+                                        className={`p-2 rounded-lg relative group ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}
+                                    >
+                                        <p className={`text-sm ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>{msg.text}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Ghim bởi {msg.pinnedBy} lúc {msg.time}
+                                        </p>
+                                        {isLeader && (
+                                            // ✅ SỬA NÚT BỎ GHIM
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 h-7 w-7"
+                                                onClick={() => handleUnpinMessage(index)}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-gray-500">Không có tin nhắn ghim</p>
+                            )}
+                        </div>
                     </AccordionContent>
                 </AccordionItem>
             </Accordion>
 
+            {/* --- Dialog quản lý thành viên --- */}
             <Dialog open={isMemberModalOpen} onOpenChange={setIsMemberModalOpen}>
-                <DialogContent className="bg-white text-black">
+                {/* ✅ SỬA NỀN VÀ CHỮ CỦA DIALOG */}
+                <DialogContent className={isDarkMode ? "bg-gray-900 border-gray-700 text-white" : "bg-white text-black"}>
                     <DialogHeader>
                         <DialogTitle>Quản lý thành viên</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="flex gap-2">
+                            {/* ✅ SỬA INPUT MỜI */}
                             <Input
                                 placeholder="Email để mời"
                                 value={inviteEmail}
                                 onChange={(e) => setInviteEmail(e.target.value)}
-                                className="bg-white text-black border-gray-300"
+                                className={isDarkMode ? "bg-gray-800 border-gray-600" : "bg-white border-gray-300"}
                             />
-                            <Button onClick={handleInviteMember} disabled={!isLeader} className="bg-white text-black hover:bg-gray-100">
-                                <UserPlus className="h-4 w-4 mr-2 text-black" /> Mời
+                            {/* ✅ SỬA NÚT MỜI */}
+                            <Button onClick={handleInviteMember} disabled={!isLeader}>
+                                <UserPlus className="h-4 w-4 mr-2" /> Mời
                             </Button>
                         </div>
                         <div className="space-y-2 max-h-60 overflow-y-auto">
                             {channel.membersList.map((member) => (
+                                // ✅ SỬA NỀN KHI HOVER
                                 <div
                                     key={member.id}
-                                    className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-100"
+                                    className={`flex justify-between items-center p-2 rounded-lg ${isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"}`}
                                 >
                                     <div>
-                                        <p className="text-sm text-black">{member.username}</p>
-                                        <p className="text-xs text-gray-600">
+                                        {/* ✅ SỬA MÀU CHỮ */}
+                                        <p className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-900"}`}>{member.username}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
                                             {member.role === "leader" ? "Trưởng nhóm" : "Thành viên"}
                                         </p>
                                     </div>
                                     {isLeader && member.id !== currentUser.id && (
+                                        // ✅ SỬA NÚT KICK
                                         <Button
                                             variant="ghost"
-                                            size="sm"
+                                            size="icon"
                                             onClick={() => handleKickMember(member.id)}
-                                            className="bg-white text-black hover:bg-gray-100"
+                                            className="h-8 w-8 text-red-500 hover:bg-red-500/10"
                                         >
-                                            <UserMinus className="h-4 w-4 text-black" />
+                                            <UserMinus className="h-4 w-4" />
                                         </Button>
                                     )}
                                 </div>
@@ -305,7 +339,7 @@ export function ChannelDetails({ channel, isDarkMode, onClose, currentUser }: Ch
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsMemberModalOpen(false)} className="bg-white text-black hover:bg-gray-100">
+                        <Button variant="outline" onClick={() => setIsMemberModalOpen(false)}>
                             Đóng
                         </Button>
                     </DialogFooter>

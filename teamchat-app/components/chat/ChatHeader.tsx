@@ -55,18 +55,6 @@ export function ChatHeader({
                     <Phone className="h-5 w-5" />
                 </Button>
 
-                {/* Video Call cũ (Modal) */}
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`${isDarkMode
-                        ? "text-gray-400 hover:text-gray-200"
-                        : "text-gray-500 hover:text-gray-700"
-                        }`}
-                    onClick={onVideoCall}
-                >
-                    <Video className="h-5 w-5" />
-                </Button>
 
                 {/* Video Call mới (LiveKit) */}
                 <VideoCallButton

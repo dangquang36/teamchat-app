@@ -1,4 +1,3 @@
-// src/app/channels/layout.tsx
 'use client';
 
 import { GroupProvider } from "@/contexts/GroupContext";

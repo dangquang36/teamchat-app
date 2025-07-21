@@ -20,12 +20,12 @@ export function ChannelItem({
     return (
         <div
             className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${active
-                    ? isDarkMode
-                        ? "bg-purple-900/50"
-                        : "bg-purple-50"
-                    : isDarkMode
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-50"
+                ? isDarkMode
+                    ? "bg-purple-900/50"
+                    : "bg-purple-50"
+                : isDarkMode
+                    ? "hover:bg-gray-700"
+                    : "hover:bg-gray-50"
                 }`}
             onClick={onClick}
         >
@@ -44,12 +44,12 @@ export function ChannelItem({
                 <div className="flex items-center justify-between mb-1">
                     <h4
                         className={`font-medium truncate ${active
-                                ? isDarkMode
-                                    ? "text-purple-400"
-                                    : "text-purple-600"
-                                : isDarkMode
-                                    ? "text-white"
-                                    : "text-gray-900"
+                            ? isDarkMode
+                                ? "text-purple-400"
+                                : "text-purple-600"
+                            : isDarkMode
+                                ? "text-white"
+                                : "text-gray-900"
                             }`}
                     >
                         {name}

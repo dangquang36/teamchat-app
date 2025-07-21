@@ -24,12 +24,12 @@ export function ChatItem({
     return (
         <div
             className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${active
-                    ? isDarkMode
-                        ? "bg-purple-900/50"
-                        : "bg-purple-50"
-                    : isDarkMode
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-50"
+                ? isDarkMode
+                    ? "bg-purple-900/50"
+                    : "bg-purple-50"
+                : isDarkMode
+                    ? "hover:bg-gray-700"
+                    : "hover:bg-gray-50"
                 }`}
             onClick={onClick}
         >
@@ -45,10 +45,10 @@ export function ChatItem({
                 <div className="flex items-center justify-between mb-1">
                     <h4
                         className={`font-medium truncate ${active
-                                ? "text-purple-400"
-                                : isDarkMode
-                                    ? "text-white"
-                                    : "text-gray-900"
+                            ? "text-purple-400"
+                            : isDarkMode
+                                ? "text-white"
+                                : "text-gray-900"
                             }`}
                     >
                         {name}
@@ -61,12 +61,12 @@ export function ChatItem({
                 </div>
                 <p
                     className={`text-sm truncate ${unread
-                            ? isDarkMode
-                                ? "text-gray-200 font-medium"
-                                : "text-gray-900 font-medium"
-                            : isDarkMode
-                                ? "text-gray-400"
-                                : "text-gray-500"
+                        ? isDarkMode
+                            ? "text-gray-200 font-medium"
+                            : "text-gray-900 font-medium"
+                        : isDarkMode
+                            ? "text-gray-400"
+                            : "text-gray-500"
                         }`}
                 >
                     {message}

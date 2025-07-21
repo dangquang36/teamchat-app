@@ -1,31 +1,33 @@
 "use client"
 
-import type React from "react"
-
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { MessageCircle, ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+
+const schema = z.object({
+  email: z.string().email("Vui lòng nhập email hợp lệ"),
+})
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("")
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [error, setError] = useState("")
   const router = useRouter()
+  const [isSubmitted, setIsSubmitted] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<{ email: string }>({
+    resolver: zodResolver(schema),
+  })
 
-    // Basic email validation
-    if (!email || !email.includes("@")) {
-      setError("Vui lòng nhập email hợp lệ")
-      return
-    }
-
-    // Handle forgot password logic here
-    console.log("Forgot password request:", email)
+  const onSubmit = async (data: { email: string }) => {
+    console.log("Sending forgot password request for:", data.email)
     setIsSubmitted(true)
   }
 
@@ -36,7 +38,12 @@ export default function ForgotPasswordPage() {
   if (isSubmitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-6">
-        <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md text-center"
+        >
           <div className="flex items-center justify-center gap-2 mb-6">
             <MessageCircle className="h-8 w-8 text-purple-600" />
             <span className="text-2xl font-bold text-gray-900">TeamChat</span>
@@ -52,69 +59,47 @@ export default function ForgotPasswordPage() {
 
           <div className="space-y-4">
             <Button className="w-full bg-purple-600 hover:bg-purple-700">Mở ứng dụng email</Button>
-            <Link href="/login" className="block">
+            <Link href="/auth/login" className="block">
               <Button variant="outline" className="w-full">
                 Quay lại đăng nhập
               </Button>
             </Link>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleBackToHome}
-              className="w-full text-purple-600 hover:text-purple-500"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Quay về trang chủ
-            </Button>
           </div>
-        </div>
+        </motion.div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-6">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-[#6a11cb] to-[#2575fc] flex items-center justify-center p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md"
+      >
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <MessageCircle className="h-8 w-8 text-purple-600" />
             <span className="text-2xl font-bold text-gray-900">TeamChat</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Quên mật khẩu?</h1>
-          <p className="text-gray-600">Nhập email của bạn và chúng tôi sẽ gửi hướng dẫn đặt lại mật khẩu</p>
+          <p className="text-gray-600">Nhập email của bạn để nhận hướng dẫn đặt lại mật khẩu.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
-              <div className="mt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBackToHome}
-                  className="text-purple-600 border-purple-600 hover:bg-purple-50"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Quay về trang chủ
-                </Button>
-              </div>
-            </div>
-          )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               Email
             </label>
             <input
               id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              {...register("email")}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               placeholder="Nhập email của bạn"
-              required
             />
+            {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>}
           </div>
 
           <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
@@ -123,23 +108,13 @@ export default function ForgotPasswordPage() {
         </form>
 
         <div className="mt-6 text-center">
-          <Link href="/login" className="text-purple-600 hover:text-purple-500 font-medium">
+          <Link href="/auth/login" className="text-purple-600 hover:text-purple-500 font-medium">
             ← Quay lại đăng nhập
           </Link>
         </div>
 
-        <div className="mt-4 text-center">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={handleBackToHome}
-            className="text-purple-600 hover:text-purple-500"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Quay về trang chủ
-          </Button>
-        </div>
-      </div>
+
+      </motion.div>
     </div>
   )
 }

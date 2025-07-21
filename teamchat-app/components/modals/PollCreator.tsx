@@ -78,8 +78,8 @@ export function PollCreator({ onClose, onCreatePoll, isDarkMode = false }: PollC
                             onChange={(e) => setQuestion(e.target.value)}
                             placeholder="Nhập câu hỏi bình chọn..."
                             className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500 poll-input ${isDarkMode
-                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                                ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                                 }`}
                         />
                     </div>
@@ -93,8 +93,8 @@ export function PollCreator({ onClose, onCreatePoll, isDarkMode = false }: PollC
                                     onChange={(e) => handleOptionChange(index, e.target.value)}
                                     placeholder={`Tùy chọn ${index + 1}`}
                                     className={`flex-1 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode
-                                            ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                            : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                                        ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                                         }`}
                                 />
                                 {options.length > 2 && (

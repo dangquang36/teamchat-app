@@ -4,7 +4,7 @@ import { Phone, Video, Download, Paperclip as FileMessageIcon, BarChart3, Plus, 
 import { Button } from '@/components/ui/button';
 import { VideoCall } from '../VideoCall';
 import { AudioCallModal } from '../AudioCallModal';
-import { ChannelInput } from '../ChannelInput';
+import { ChannelInput } from './ChannelInput';
 import { UserProfileModal, UserProfile } from '../UserProfileModal';
 
 interface Group {
@@ -100,14 +100,14 @@ function PollResultsModal({
             <div className={`w-full max-w-lg mx-4 rounded-lg max-h-[80vh] overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex justify-between items-center">
-                        <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`} >
                             Kết quả bình chọn
                         </h3>
                         <Button onClick={onClose} variant="ghost" size="sm">
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
-                    <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} >
                         {poll.question}
                     </p>
                 </div>
@@ -136,7 +136,7 @@ function PollResultsModal({
 
                                 {!poll.isAnonymous && option.votes.length > 0 && (
                                     <div className="space-y-2">
-                                        <h4 className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        <h4 className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`} >
                                             Người đã vote:
                                         </h4>
                                         <div className="flex flex-wrap gap-2">
@@ -147,14 +147,14 @@ function PollResultsModal({
                                                         alt={vote.userName}
                                                         className="w-6 h-6 rounded-full"
                                                     />
-                                                    <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                    <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`} >
                                                         {vote.userName}
                                                     </span>
                                                 </div>
                                             ))}
                                             {option.votes.length > 6 && (
                                                 <div className="flex items-center p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-                                                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} >
                                                         +{option.votes.length - 6} khác
                                                     </span>
                                                 </div>
@@ -177,6 +177,7 @@ function PollResultsModal({
         </div>
     );
 }
+
 
 // THÊM MỚI: Component PollMessage chi tiết hơn
 function PollMessage({
@@ -864,9 +865,7 @@ export function ChannelView({ channel, isDarkMode = false }: ChannelViewProps) {
                     <Button onClick={() => setAudioCallMode('outgoing')} variant="ghost" size="sm" title="Thực hiện cuộc gọi thoại">
                         <Phone className="h-5 w-5" />
                     </Button>
-                    <Button onClick={() => setIsCreatePollModalOpen(true)} variant="ghost" size="sm" title="Tạo cuộc bình chọn">
-                        <BarChart3 className="h-5 w-5" />
-                    </Button>
+
                 </div>
             </div>
 
@@ -928,6 +927,8 @@ export function ChannelView({ channel, isDarkMode = false }: ChannelViewProps) {
                 channelName={channel.name}
                 onSendMessage={handleSendMessage}
                 isDarkMode={isDarkMode}
+                isChannel={true}
+                onCreatePoll={() => setIsCreatePollModalOpen(true)}
             />
 
             {audioCallMode !== 'none' && (

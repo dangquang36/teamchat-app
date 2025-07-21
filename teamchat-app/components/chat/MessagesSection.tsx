@@ -8,6 +8,8 @@ import { ChatInput } from "./ChatInput";
 import { UserProfileModal } from "@/components/modals/UserProfileModal";
 import type { UserProfile } from "@/app/types";
 
+
+
 // Định nghĩa các interface cần thiết
 interface Reaction {
     emoji: string;
@@ -39,6 +41,8 @@ interface Message {
     type?: 'text' | 'poll';
     poll?: Poll;
 }
+
+
 
 interface DirectMessage {
     id: string;

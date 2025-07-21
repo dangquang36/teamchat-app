@@ -1,5 +1,6 @@
 import React from "react";
-import { Users } from "lucide-react";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ChannelItemProps {
     name: string;
@@ -8,6 +9,7 @@ interface ChannelItemProps {
     time?: string;
     active: boolean;
     onClick: () => void;
+    onDelete: () => void;
     isDarkMode?: boolean;
 }
 
@@ -18,11 +20,20 @@ export function ChannelItem({
     time,
     active,
     onClick,
+    onDelete,
     isDarkMode = false,
 }: ChannelItemProps) {
+
+    // ✅ THÊM HÀM NÀY VÀO
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Ngăn sự kiện click lan ra div cha
+        onDelete(); // Gọi hàm onDelete được truyền từ component cha
+    };
+
     return (
         <div
-            className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${active
+            // ✅ Thêm class "group" để hiệu ứng hover cho nút xóa hoạt động
+            className={`group flex items-center p-3 rounded-lg cursor-pointer transition-colors relative ${active
                 ? isDarkMode
                     ? "bg-purple-900/50"
                     : "bg-purple-50"
@@ -34,10 +45,8 @@ export function ChannelItem({
         >
             <div className="w-10 h-10 rounded-lg flex-shrink-0 mr-3">
                 {avatar ? (
-                    // Nếu có avatar, hiển thị ảnh
                     <img src={avatar} alt={name} className="w-full h-full rounded-lg object-cover" />
                 ) : (
-                    // Nếu không có, hiển thị chữ cái đầu tiên của tên nhóm
                     <div className={`w-full h-full rounded-lg flex items-center justify-center ${isDarkMode ? "bg-purple-800" : "bg-purple-100"}`}>
                         <span className={`font-bold text-lg ${isDarkMode ? "text-purple-300" : "text-purple-600"}`}>
                             {name.charAt(0).toUpperCase()}
@@ -65,6 +74,15 @@ export function ChannelItem({
                     {members}
                 </p>
             </div>
+
+            <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-1/2 right-2 -translate-y-1/2 h-7 w-7 text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={handleDelete}
+            >
+                <X className="h-4 w-4" />
+            </Button>
         </div>
     );
 }

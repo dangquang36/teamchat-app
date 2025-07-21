@@ -18,6 +18,7 @@ export interface Group {
 interface GroupContextType {
     groups: Group[];
     addGroup: (groupData: Omit<Group, 'membersList' | 'createdBy' | 'createdAt'>) => void;
+    deleteGroup: (groupId: string) => void;
 }
 
 // 3. Tạo Context
@@ -57,7 +58,11 @@ export const GroupProvider = ({ children }: { children: ReactNode }) => {
         setGroups(prevGroups => [...prevGroups, newGroup]);
     }
 
-    const value = { groups, addGroup };
+    const deleteGroup = (groupId: string) => {
+        setGroups(prevGroups => prevGroups.filter(group => group.id !== groupId));
+    };
+
+    const value = { groups, addGroup, deleteGroup };
 
     return (
         <GroupContext.Provider value={value}>

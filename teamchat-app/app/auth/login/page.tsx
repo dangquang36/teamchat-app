@@ -12,8 +12,21 @@ import { MessageCircle, ArrowLeft } from "lucide-react"
 import { apiClient } from "@/lib/api"
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Vui lòng nhập tên đăng nhập"),
-  password: z.string().min(1, "Vui lòng nhập mật khẩu"),
+  username: z
+    .string()
+    .min(1, "Vui lòng nhập tên đăng nhập")
+    .min(3, "Tên đăng nhập phải có ít nhất 3 ký tự")
+    .max(20, "Tên đăng nhập không được vượt quá 20 ký tự")
+    .regex(/^[a-zA-Z]+$/, "Tên đăng nhập chỉ được chứa chữ cái, không được chứa số hoặc ký tự đặc biệt"),
+  password: z
+    .string()
+    .min(1, "Vui lòng nhập mật khẩu")
+    .min(8, "Mật khẩu phải có ít nhất 8 ký tự")
+    .max(50, "Mật khẩu không được vượt quá 50 ký tự")
+    .regex(/[A-Z]/, "Mật khẩu phải chứa ít nhất một chữ cái in hoa")
+    .regex(/[a-z]/, "Mật khẩu phải chứa ít nhất một chữ cái thường")
+    .regex(/[0-9]/, "Mật khẩu phải chứa ít nhất một số")
+    .regex(/[^a-zA-Z0-9]/, "Mật khẩu phải chứa ít nhất một ký tự đặc biệt"),
 })
 
 export default function LoginPage() {
@@ -27,6 +40,7 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<{ username: string; password: string }>({
     resolver: zodResolver(loginSchema),
+    mode: "onChange", // Kích hoạt xác thực thời gian thực
   })
 
   const onSubmit = async (data: { username: string; password: string }) => {
@@ -39,7 +53,7 @@ export default function LoginPage() {
         localStorage.setItem("currentUser", JSON.stringify(res.data))
         router.push("/")
       } else {
-        setError(res.error || "Email hoặc mật khẩu không đúng")
+        setError(res.error || "Tên đăng nhập hoặc mật khẩu không đúng")
       }
     } catch {
       setError("Có lỗi xảy ra, vui lòng thử lại")

@@ -13,13 +13,34 @@ import { apiClient } from "@/lib/api"
 
 const schema = z
   .object({
-    name: z.string().min(1, "Vui lòng nhập họ tên"),
-    email: z.string().email("Email không hợp lệ"),
-    phone: z.string().length(10, "Số điện thoại phải có 10 chữ số"),
-    password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
-    confirmPassword: z.string(),
+    name: z
+      .string()
+      .min(1, "Vui lòng nhập họ và tên")
+      .min(2, "Họ và tên phải có ít nhất 2 ký tự")
+      .max(50, "Họ và tên không được vượt quá 50 ký tự")
+      .regex(/^[a-zA-Z\s]+$/, "Họ và tên chỉ được chứa chữ cái và khoảng trắng, không được chứa số hoặc ký tự đặc biệt"),
+    email: z
+      .string()
+      .min(1, "Vui lòng nhập email")
+      .email("Email không hợp lệ")
+      .max(100, "Email không được vượt quá 100 ký tự"),
+    phone: z
+      .string()
+      .min(1, "Vui lòng nhập số điện thoại")
+      .length(10, "Số điện thoại phải có đúng 10 chữ số")
+      .regex(/^[0-9]+$/, "Số điện thoại chỉ được chứa số"),
+    password: z
+      .string()
+      .min(1, "Vui lòng nhập mật khẩu")
+      .min(8, "Mật khẩu phải có ít nhất 8 ký tự")
+      .max(50, "Mật khẩu không được vượt quá 50 ký tự")
+      .regex(/[A-Z]/, "Mật khẩu phải chứa ít nhất một chữ cái in hoa")
+      .regex(/[a-z]/, "Mật khẩu phải chứa ít nhất một chữ cái thường")
+      .regex(/[0-9]/, "Mật khẩu phải chứa ít nhất một số")
+      .regex(/[^a-zA-Z0-9]/, "Mật khẩu phải chứa ít nhất một ký tự đặc biệt"),
+    confirmPassword: z.string().min(1, "Vui lòng xác nhận mật khẩu"),
     terms: z.literal(true, {
-      errorMap: () => ({ message: "Bạn cần đồng ý với điều khoản" }),
+      errorMap: () => ({ message: "Bạn cần đồng ý với điều khoản sử dụng" }),
     }),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -38,14 +59,15 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
+    mode: "onChange", // Kích hoạt xác thực thời gian thực
   })
 
   const onSubmit = async (data: any) => {
     if (!data.terms) {
-      setTermsError("Bạn cần đồng ý với điều khoản sử dụng");
-      return;
+      setTermsError("Bạn cần đồng ý với điều khoản sử dụng")
+      return
     }
-    setTermsError("");
+    setTermsError("")
 
     try {
       const res = await apiClient.register({
@@ -98,7 +120,7 @@ export default function RegisterPage() {
               id="name"
               type="text"
               {...register("name")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus-outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập họ và tên"
             />
             {typeof errors.name?.message === "string" && (
@@ -114,7 +136,7 @@ export default function RegisterPage() {
               id="email"
               type="text"
               {...register("email")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus-outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập email của bạn"
             />
             {typeof errors.email?.message === "string" && (
@@ -130,7 +152,7 @@ export default function RegisterPage() {
               id="phone"
               type="text"
               {...register("phone")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus-outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập số điện thoại"
             />
             {typeof errors.phone?.message === "string" && (
@@ -146,7 +168,7 @@ export default function RegisterPage() {
               id="password"
               type="password"
               {...register("password")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus-outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập mật khẩu"
             />
             {typeof errors.password?.message === "string" && (
@@ -162,7 +184,7 @@ export default function RegisterPage() {
               id="confirmPassword"
               type="password"
               {...register("confirmPassword")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus-outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập lại mật khẩu"
             />
             {typeof errors.confirmPassword?.message === "string" && (

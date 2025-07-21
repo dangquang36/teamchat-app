@@ -80,7 +80,7 @@ export default function LoginPage() {
               id="username"
               type="text"
               {...register("username")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập tên đăng nhập"
             />
             {errors.username && <p className="text-sm text-red-500 mt-1">{errors.username.message}</p>}
@@ -94,7 +94,7 @@ export default function LoginPage() {
               id="password"
               type="password"
               {...register("password")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập mật khẩu"
             />
             {errors.password && <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>}

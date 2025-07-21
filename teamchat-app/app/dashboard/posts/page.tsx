@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PostsSection } from "@/components/PostsSection";
+import { PostsSection } from "@/components/modals/PostsSection";
 
 export default function PostsPage() {
     const [isDarkMode, setIsDarkMode] = useState(false);

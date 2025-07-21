@@ -5,7 +5,7 @@ import { ChatItem } from './ChatItem';
 import { ChatHeader } from './ChatHeader';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
-import { UserProfileModal } from '@/components/modals/UserProfileModal';
+import { UserProfileModal } from '@/components/modals/UserProfileModalChat';
 import type { UserProfile, DirectMessage, Message, Poll } from '@/app/types';
 
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];

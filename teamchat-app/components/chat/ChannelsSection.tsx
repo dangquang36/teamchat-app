@@ -8,9 +8,6 @@ import { ChannelItem } from "./ChannelItem";
 import { ChannelDetails } from "./ChannelDetails";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "@/components/ui/use-toast";
-
-import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
-
 import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 
 

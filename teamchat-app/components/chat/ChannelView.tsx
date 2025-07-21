@@ -792,8 +792,6 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
                     <Button onClick={() => setAudioCallMode("outgoing")} variant="ghost" size="sm" title="Thực hiện cuộc gọi thoại">
 
 
-                    <Button onClick={() => setAudioCallMode('outgoing')} variant="ghost" size="sm" title="Thực hiện cuộc gọi thoại">
-
                         <Phone className="h-5 w-5" />
                     </Button>
                     <Button onClick={() => setIsCallingVideo(true)} variant="ghost" size="sm" title="Thực hiện cuộc gọi video">

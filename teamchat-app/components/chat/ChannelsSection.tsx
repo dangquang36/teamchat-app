@@ -22,11 +22,22 @@ interface ChannelsSectionProps {
 export function ChannelsSection({ onCreatePost }: ChannelsSectionProps) {
     const { isDarkMode } = useTheme();
     const [isCreateGroupModalOpen, setCreateGroupModalOpen] = useState(false);
-    const { groups, addGroup } = useGroups();
+    const { groups, addGroup, deleteGroup } = useGroups();
     const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
     const [showChannelDetails, setShowChannelDetails] = useState(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [channelMessages, setChannelMessages] = useState<Record<string, Message[]>>({});
+
+    const handleDeleteGroup = (groupId: string) => {
+        if (window.confirm("Bạn có chắc chắn muốn xóa kênh này không?")) {
+            deleteGroup(groupId);
+            // Nếu kênh đang được chọn bị xóa, hãy bỏ chọn nó
+            if (selectedChannelId === groupId) {
+                setSelectedChannelId(null);
+            }
+        }
+    };
+
 
     const handleCreateGroup = (data: GroupData) => {
         console.log("Dữ liệu nhóm mới để gửi lên API:", data);
@@ -122,6 +133,7 @@ export function ChannelsSection({ onCreatePost }: ChannelsSectionProps) {
                                     active={selectedChannelId === group.id}
                                     isDarkMode={isDarkMode}
                                     onClick={() => setSelectedChannelId(group.id)}
+                                    onDelete={() => handleDeleteGroup(group.id)}
                                 />
                             ))}
                         </div>

@@ -61,12 +61,12 @@ export function ChannelList({
                             active={selectedChannelId === group.id}
                             isDarkMode={isDarkMode}
                             onClick={() => onSelectChannel(group.id)}
+                            onDelete={() => onDeleteGroup(group.id)}
                         />
                     ))}
                 </div>
             </div>
 
-            {/* ✅ Cập nhật lại props cho CreateGroupModal */}
             {isCreateGroupModalOpen && (
                 <CreateGroupModal
                     isOpen={isCreateGroupModalOpen}

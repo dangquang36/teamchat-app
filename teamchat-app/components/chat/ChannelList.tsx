@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import { useGroups } from "@/contexts/GroupContext";
 import { CreateGroupModal } from "@/components/ui/CreateGroupModal";
 import { ChannelItem } from "./ChannelItem";
-import { Group } from "@/contexts/GroupContext"; // ✅ Dùng Group đã cập nhật có pinnedMessages
+import { Group } from "@/contexts/GroupContext";
 
 interface ChannelListProps {
     selectedChannelId: string | null;

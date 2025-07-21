@@ -152,9 +152,7 @@ export function ChannelDetails({ channel, isDarkMode, onClose, currentUser }: Ch
         >
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold">Thông tin kênh</h2>
-                <Button variant="ghost" size="sm" onClick={onClose}>
-                    <X className={`h-5 w-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`} />
-                </Button>
+
             </div>
 
             <Accordion type="multiple" className="w-full" defaultValue={['info', 'members']}>

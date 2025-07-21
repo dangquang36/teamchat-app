@@ -1,50 +1,59 @@
-// File: contexts/GroupContext.tsx
-
 'use client';
 import { createContext, useContext, useState, ReactNode } from 'react';
 
 // 1. Định nghĩa "hình dạng" của một kênh/nhóm
 export interface Group {
-    membersList: { id: string; name: string; avatar: string; role: string; }[];
+    id: string;
+    name: string;
+    description: string;
+    members: number;
+    membersList: { id: string; username: string; role: "leader" | "member" }[];
     createdBy: string;
     createdAt: string;
     type: "public" | "private";
-    banner: undefined;
-    icon: undefined;
-    description: string;
-    id: string;
-    name: string;
-    members: number;
+    avatar?: string;
 }
 
-// 2. Định nghĩa những gì Context sẽ cung cấp
+// ✅ 2. Cập nhật kiểu dữ liệu cho hàm addGroup
 interface GroupContextType {
     groups: Group[];
-    addGroup: (groupData: { name: string }) => void;
+    addGroup: (groupData: Omit<Group, 'membersList' | 'createdBy' | 'createdAt'>) => void;
 }
 
 // 3. Tạo Context
 const GroupContext = createContext<GroupContextType | undefined>(undefined);
 
-// 4. Tạo Provider (Nhà cung cấp) - Component này sẽ bao bọc ứng dụng của chúng ta
+// 4. Tạo Provider (Nhà cung cấp)
 export const GroupProvider = ({ children }: { children: ReactNode }) => {
-    // Dữ liệu ban đầu, giống trong hình của bạn
+    // ✅ Cung cấp đủ các trường cho dữ liệu ban đầu
     const [groups, setGroups] = useState<Group[]>([
         {
-            id: 'landing-design', name: 'Landing Design', members: 23,
-            description: ''
+            id: 'landing-design',
+            name: 'Landing Design',
+            description: 'Kênh thảo luận về dự án Landing Page.',
+            members: 23,
+            type: "public",
+            createdBy: "admin",
+            createdAt: new Date().toISOString(),
+            membersList: [
+                { id: "user1", username: "Admin", role: "leader" }
+            ],
+            // avatar: 'url_to_avatar.png' // Tùy chọn
         }
     ]);
 
-    // Hàm để thêm một nhóm mới vào danh sách
-    const addGroup = (groupData: { name: string }) => {
-        console.log("2. GroupContext đã nhận được yêu cầu thêm kênh:", groupData.name); // <-- THÊM DÒNG NÀY
+    // ✅ Cập nhật hàm addGroup để tạo object Group hoàn chỉnh
+    const addGroup = (groupData: Omit<Group, 'membersList' | 'createdBy' | 'createdAt'>) => {
+        console.log("GroupContext đã nhận yêu cầu thêm kênh:", groupData.name);
+
         const newGroup: Group = {
-            id: `channel-${Date.now()}`,
-            name: groupData.name,
-            members: 1,
-            description: ''
+            ...groupData,
+            // Thêm các trường mặc định cho một nhóm mới
+            membersList: [{ id: "currentUser", username: "Bạn", role: "leader" }], // Người tạo là leader
+            createdBy: "currentUser", // Thay bằng ID người dùng hiện tại
+            createdAt: new Date().toISOString()
         };
+
         setGroups(prevGroups => [...prevGroups, newGroup]);
     }
 

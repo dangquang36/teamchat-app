@@ -1,12 +1,12 @@
-import React, { useState } from "react"; // ❌ Bỏ useEffect
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Search, Plus } from "lucide-react";
 import { useGroups } from "@/contexts/GroupContext";
-import { CreateGroupModal } from "@/components/ui/CreateGroupModal";
+import { CreateGroupModal, GroupData } from "@/components/ui/CreateGroupModal";
 import { ChannelView } from "./ChannelView";
 import { ChannelItem } from "./ChannelItem";
 import { ChannelDetails } from "./ChannelDetails";
-import { useTheme } from "@/contexts/ThemeContext"; // ✅ 1. Import hook useTheme
+import { useTheme } from "@/contexts/ThemeContext";
 
 // Define the Message type if not imported from elsewhere
 type Message = {
@@ -15,26 +15,41 @@ type Message = {
     pinnedBy?: string;
 };
 
-// ❌ 2. Bỏ prop isDarkMode khỏi interface
 interface ChannelsSectionProps {
     onCreatePost: () => void;
 }
 
 export function ChannelsSection({ onCreatePost }: ChannelsSectionProps) {
-    const { isDarkMode } = useTheme(); // ✅ 3. Lấy trạng thái sáng/tối từ context
-
-    // ❌ 4. Xóa tất cả state và useEffect liên quan đến dark mode
-    // const [currentDarkMode, setCurrentDarkMode] = useState(isDarkMode);
-    // useEffect(() => { ... });
-
-    // --- Các state và logic còn lại của component giữ nguyên ---
+    const { isDarkMode } = useTheme();
     const [isCreateGroupModalOpen, setCreateGroupModalOpen] = useState(false);
-    const { groups } = useGroups();
+    const { groups, addGroup } = useGroups();
     const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
     const [showChannelDetails, setShowChannelDetails] = useState(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [channelMessages, setChannelMessages] = useState<Record<string, Message[]>>({});
 
+    const handleCreateGroup = (data: GroupData) => {
+        console.log("Dữ liệu nhóm mới để gửi lên API:", data);
+
+        const newGroup = {
+            id: `group-${Date.now()}`,
+            name: data.name,
+            description: `This is the ${data.name} channel for team collaboration.`,
+            members: 1, // Bắt đầu với 1 thành viên (người tạo)
+            type: data.type,
+            avatar: data.avatar ? URL.createObjectURL(data.avatar) : undefined // Dùng undefined nếu không có avatar
+        };
+        addGroup(newGroup);
+
+        setCreateGroupModalOpen(false); // Đóng modal
+    };
+
+    const toggleChannelDetails = () => {
+        if (!selectedChannelId) return;
+        setShowChannelDetails(prev => !prev);
+    };
+
+    // Làm giàu dữ liệu group với thông tin giả lập (để render)
     const enrichedGroups = groups.map((group) => ({
         ...group,
         description: `This is the ${group.name} channel for team collaboration.`,
@@ -42,12 +57,12 @@ export function ChannelsSection({ onCreatePost }: ChannelsSectionProps) {
             { text: "Welcome to the channel!", time: "10:00 AM", pinnedBy: "System" },
         ],
         membersList: [
-            { id: "user1", username: "User One", role: "leader" as "leader" | "member" },
-            { id: "user2", username: "User Two", role: "member" as "leader" | "member" },
-            ...Array.from({ length: 21 }, (_, i) => ({
+            { id: "user1", username: "User One", role: "leader" as const },
+            { id: "user2", username: "User Two", role: "member" as const },
+            ...Array.from({ length: group.members - 2 > 0 ? group.members - 2 : 0 }, (_, i) => ({
                 id: `user${i + 3}`,
                 username: `User ${i + 3}`,
-                role: "member" as "leader" | "member",
+                role: "member" as const,
             })),
         ],
         createdBy: "admin",
@@ -61,33 +76,13 @@ export function ChannelsSection({ onCreatePost }: ChannelsSectionProps) {
     );
 
     return (
-        // ✅ 5. Dùng isDarkMode từ context
-        <div className={`flex flex-col h-screen ${isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}>
-            {/* Header with Search */}
-            <div className={`p-4 border-b flex-shrink-0 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                <div className="relative w-full">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Tìm kiếm kênh theo tên..."
-                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode
-                            ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                            : "bg-white border-gray-300 text-gray-900"
-                            }`}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        aria-label="Tìm kiếm kênh theo tên"
-                    />
-                </div>
-            </div>
-
-            {/* Main Content */}
+        <div className={`flex h-screen ${isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}>
             <div className="flex flex-1 overflow-hidden">
-                {/* Sidebar (Channels) */}
+                {/* Cột danh sách kênh (bên trái) */}
                 <div className={`w-80 border-r flex flex-col ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
                     <div className="p-4 border-b flex-shrink-0">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className={`text-xl font-bold flex items-center gap-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                        <div className="flex items-center justify-between">
+                            <h2 className={`text-xl font-bold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
                                 Kênh
                             </h2>
                             <Button
@@ -100,61 +95,74 @@ export function ChannelsSection({ onCreatePost }: ChannelsSectionProps) {
                             </Button>
                         </div>
                     </div>
-
                     <div className="flex-1 overflow-y-auto px-4 py-3">
+                        <div className="relative mb-4">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Tìm kiếm kênh..."
+                                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode
+                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                    : "bg-white border-gray-300 text-gray-900"
+                                    }`}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
                         <h3 className={`text-xs font-semibold uppercase tracking-wider ${isDarkMode ? "text-gray-400" : "text-gray-500"} mb-3`}>
                             TẤT CẢ KÊNH
                         </h3>
                         <div className="space-y-1">
-                            {filteredChannels.length > 0 ? (
-                                filteredChannels.map((group) => (
-                                    <ChannelItem
-                                        key={group.id}
-                                        name={group.name}
-                                        members={`${group.members} Thành viên`}
-                                        active={selectedChannelId === group.id}
-                                        isDarkMode={isDarkMode} // ✅ Dùng isDarkMode từ context
-                                        onClick={() => {
-                                            setSelectedChannelId(group.id);
-                                            setShowChannelDetails(true);
-                                        }}
-                                    />
-                                ))
-                            ) : (
-                                <p className={`text-sm py-2 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Không tìm thấy kênh nào.</p>
-                            )}
+                            {filteredChannels.map((group) => (
+                                <ChannelItem
+                                    key={group.id}
+                                    name={group.name}
+                                    members={`${group.members} Thành viên`}
+                                    avatar={group.avatar}
+                                    active={selectedChannelId === group.id}
+                                    isDarkMode={isDarkMode}
+                                    onClick={() => setSelectedChannelId(group.id)}
+                                />
+                            ))}
                         </div>
                     </div>
                 </div>
 
-                {/* Chat Area */}
+                {/* Khu vực chat chính (ở giữa) */}
                 <div className="flex-1 flex flex-col">
                     {selectedChannel ? (
                         <ChannelView
                             channel={selectedChannel}
-                            isDarkMode={isDarkMode} // ✅ Dùng isDarkMode từ context
+                            isDarkMode={isDarkMode}
+                            onToggleDetails={toggleChannelDetails}
                         />
                     ) : (
                         <div className={`flex-1 flex items-center justify-center text-center p-4 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
-                            <p className="text-lg">Chọn một kênh từ thanh bên để bắt đầu trò chuyện hoặc tạo một kênh mới!</p>
+                            <p className="text-lg">Chọn một kênh để bắt đầu!</p>
                         </div>
                     )}
                 </div>
 
-                {/* Channel Details Sidebar (Right) */}
-                {selectedChannel && showChannelDetails && (
-                    <ChannelDetails
-                        channel={selectedChannel}
-                        isDarkMode={isDarkMode} // ✅ Dùng isDarkMode từ context
-                        onClose={() => setShowChannelDetails(false)}
-                        currentUser={{ id: "user1", role: "leader" }}
-                    />
-                )}
+                {/* Cột thông tin kênh (bên phải) */}
+                <div className={`transition-all duration-300 ease-in-out ${showChannelDetails && selectedChannel ? 'w-80' : 'w-0'}`}>
+                    {selectedChannel && (
+                        <ChannelDetails
+                            channel={selectedChannel}
+                            isDarkMode={isDarkMode}
+                            onClose={() => setShowChannelDetails(false)}
+                            currentUser={{ id: "user1", role: "leader" }}
+                        />
+                    )}
+                </div>
             </div>
 
-            {/* Create Group Modal */}
+            {/* Modal tạo nhóm */}
             {isCreateGroupModalOpen && (
-                <CreateGroupModal onClose={() => setCreateGroupModalOpen(false)} />
+                <CreateGroupModal
+                    isOpen={isCreateGroupModalOpen}
+                    onClose={() => setCreateGroupModalOpen(false)}
+                    onCreateGroup={handleCreateGroup}
+                />
             )}
         </div>
     );

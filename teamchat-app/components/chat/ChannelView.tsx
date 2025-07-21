@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Phone, Video, Download, Paperclip as FileMessageIcon, BarChart3, Plus, X, Users, Clock, CheckCircle, Circle, Eye, MoreHorizontal } from 'lucide-react';
+import { Phone, Video, Download, Paperclip as FileMessageIcon, BarChart3, Plus, X, Users, Clock, CheckCircle, Circle, Eye, MoreHorizontal, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VideoCall } from '../VideoCall';
 import { AudioCallModal } from '../AudioCallModal';
@@ -11,6 +11,12 @@ interface Group {
     id: string;
     name: string;
     members: number;
+}
+
+interface ChannelViewProps {
+    channel: Group;
+    isDarkMode?: boolean;
+    onToggleDetails: () => void;
 }
 
 // THÊM MỚI: Interface chi tiết cho cuộc bình chọn
@@ -50,10 +56,6 @@ interface Message {
     timestamp: Date;
 }
 
-interface ChannelViewProps {
-    channel: Group;
-    isDarkMode?: boolean;
-}
 
 const otherUser: UserProfile = {
     id: 'user-123',
@@ -631,7 +633,7 @@ function CreatePollModal({
     );
 }
 
-export function ChannelView({ channel, isDarkMode = false }: ChannelViewProps) {
+export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: ChannelViewProps) {
     const [isCallingVideo, setIsCallingVideo] = useState(false);
     const [audioCallMode, setAudioCallMode] = useState<'none' | 'outgoing' | 'incoming'>('none');
     const [isProfileModalOpen, setProfileModalOpen] = useState(false);
@@ -865,7 +867,9 @@ export function ChannelView({ channel, isDarkMode = false }: ChannelViewProps) {
                     <Button onClick={() => setAudioCallMode('outgoing')} variant="ghost" size="sm" title="Thực hiện cuộc gọi thoại">
                         <Phone className="h-5 w-5" />
                     </Button>
-
+                    <Button onClick={onToggleDetails} variant="ghost" size="sm" title="Xem thông tin kênh">
+                        <Info className="h-5 w-5" />
+                    </Button>
                 </div>
             </div>
 

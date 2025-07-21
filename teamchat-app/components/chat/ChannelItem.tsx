@@ -1,8 +1,10 @@
 import React from "react";
+import { Users } from "lucide-react";
 
 interface ChannelItemProps {
     name: string;
     members: string;
+    avatar?: string;
     time?: string;
     active: boolean;
     onClick: () => void;
@@ -12,6 +14,7 @@ interface ChannelItemProps {
 export function ChannelItem({
     name,
     members,
+    avatar,
     time,
     active,
     onClick,
@@ -29,17 +32,20 @@ export function ChannelItem({
                 }`}
             onClick={onClick}
         >
-            <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${isDarkMode ? "bg-purple-800" : "bg-purple-100"
-                    }`}
-            >
-                <span
-                    className={`font-semibold text-sm ${isDarkMode ? "text-purple-300" : "text-purple-600"
-                        }`}
-                >
-                    #
-                </span>
+            <div className="w-10 h-10 rounded-lg flex-shrink-0 mr-3">
+                {avatar ? (
+                    // Nếu có avatar, hiển thị ảnh
+                    <img src={avatar} alt={name} className="w-full h-full rounded-lg object-cover" />
+                ) : (
+                    // Nếu không có, hiển thị chữ cái đầu tiên của tên nhóm
+                    <div className={`w-full h-full rounded-lg flex items-center justify-center ${isDarkMode ? "bg-purple-800" : "bg-purple-100"}`}>
+                        <span className={`font-bold text-lg ${isDarkMode ? "text-purple-300" : "text-purple-600"}`}>
+                            {name.charAt(0).toUpperCase()}
+                        </span>
+                    </div>
+                )}
             </div>
+
             <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
                     <h4
@@ -54,16 +60,8 @@ export function ChannelItem({
                     >
                         {name}
                     </h4>
-                    {time && (
-                        <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-2 flex-shrink-0">
-                            {time}
-                        </span>
-                    )}
                 </div>
-                <p
-                    className={`text-sm truncate ${isDarkMode ? "text-gray-400" : "text-gray-500"
-                        }`}
-                >
+                <p className={`text-sm truncate ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
                     {members}
                 </p>
             </div>

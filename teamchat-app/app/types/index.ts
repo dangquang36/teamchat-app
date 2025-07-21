@@ -133,6 +133,7 @@ export interface Message {
     text?: string;
     time: string;
     reactions: Reaction[];
+    type?: 'text' | 'poll' | 'file' | 'image';
 }
 
 export interface PollOption {
@@ -178,4 +179,7 @@ export interface UserProfile {
 export interface DirectMessage extends UserProfile {
     message: string;
 }
-
+export interface DirectMessage extends UserProfile {
+    message: string;
+    online: boolean;
+}

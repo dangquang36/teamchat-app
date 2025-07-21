@@ -21,5 +21,11 @@ export default function SettingsPage() {
         router.push("/");
     };
 
-    return <SettingsSection onLogout={handleLogout} isDarkMode={isDarkMode} />;
+    return (
+        <div style={{ display: 'flex', height: '100vh' }}>
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+                <SettingsSection onLogout={handleLogout} isDarkMode={isDarkMode} />
+            </div>
+        </div>
+    );
 }

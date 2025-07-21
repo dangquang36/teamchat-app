@@ -1,5 +1,5 @@
 import React from 'react';
-import { PostsSection } from '@/components/PostsSection';
+import { PostsSection } from '@/components/modals/PostsSection';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 

@@ -6,13 +6,12 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { X, Phone, MessageSquare, ChevronRight, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
-// Định nghĩa cấu trúc dữ liệu cho một người dùng, chi tiết hơn
 export interface UserProfile {
     id: string;
     name: string;
-    email?: string; // email và phone có thể không bắt buộc
+    email?: string;
     phone?: string;
-    avatarUrl: string;
+    avatar: string;
     coverPhotoUrl?: string;
     online?: boolean;
     mutualGroups?: number;
@@ -22,8 +21,6 @@ export interface UserProfile {
         instagram?: string;
         linkedin?: string;
     };
-    gender?: 'Nam' | 'Nữ' | 'Khác';
-    birthday?: string;
 }
 
 interface UserProfileModalProps {
@@ -31,8 +28,25 @@ interface UserProfileModalProps {
     onClose: () => void;
     onSendMessage?: (userId: string) => void;
     onStartCall?: (user: UserProfile) => void;
-    isDarkMode?: boolean;
 }
+
+// Component cho icon mạng xã hội có thể bấm được
+const SocialIcon = ({ href, children }: { href?: string, children: React.ReactNode }) => {
+    if (!href) {
+        return (
+            <Button variant="outline" size="icon" className="cursor-not-allowed opacity-50">
+                {children}
+            </Button>
+        );
+    }
+    return (
+        <a href={href} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="icon">
+                {children}
+            </Button>
+        </a>
+    );
+};
 
 export function UserProfileModal({ user, onClose, onSendMessage, onStartCall }: UserProfileModalProps) {
     const { isDarkMode } = useTheme();
@@ -41,7 +55,7 @@ export function UserProfileModal({ user, onClose, onSendMessage, onStartCall }: 
         return null;
     }
 
-    // Hàm trợ giúp nhỏ để render các link media
+    // Một hàm trợ giúp nhỏ để render các link media
     const MediaLink = ({ label }: { label: string }) => (
         <a href="#" className={`text-sm hover:underline ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
             {label}
@@ -51,7 +65,6 @@ export function UserProfileModal({ user, onClose, onSendMessage, onStartCall }: 
     return (
         <Dialog open={!!user} onOpenChange={onClose}>
             <DialogContent className={`p-0 border-0 max-w-sm overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-
 
                 {/* --- Phần Header & Avatar --- */}
                 <div className="relative">
@@ -67,7 +80,7 @@ export function UserProfileModal({ user, onClose, onSendMessage, onStartCall }: 
                     {/* Avatar */}
                     <div className="absolute top-16 left-1/2 -translate-x-1/2">
                         <img
-                            src={user.avatarUrl}
+                            src={user.avatar} // ✅ Đã sửa thành user.avatar
                             alt={user.name}
                             className="w-24 h-24 rounded-full object-cover border-4 shadow-lg"
                             style={{ borderColor: isDarkMode ? '#1f2937' : 'white' }}
@@ -116,10 +129,10 @@ export function UserProfileModal({ user, onClose, onSendMessage, onStartCall }: 
                     <div>
                         <h3 className={`text-sm font-medium mb-3 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Social Profiles</h3>
                         <div className="flex gap-3">
-                            <Button variant="outline" size="icon"><Facebook className="h-4 w-4" /></Button>
-                            <Button variant="outline" size="icon"><Twitter className="h-4 w-4" /></Button>
-                            <Button variant="outline" size="icon"><Instagram className="h-4 w-4" /></Button>
-                            <Button variant="outline" size="icon"><Linkedin className="h-4 w-4" /></Button>
+                            <SocialIcon href={user.socialProfiles?.facebook}><Facebook className="h-4 w-4" /></SocialIcon>
+                            <SocialIcon href={user.socialProfiles?.twitter}><Twitter className="h-4 w-4" /></SocialIcon>
+                            <SocialIcon href={user.socialProfiles?.instagram}><Instagram className="h-4 w-4" /></SocialIcon>
+                            <SocialIcon href={user.socialProfiles?.linkedin}><Linkedin className="h-4 w-4" /></SocialIcon>
                         </div>
                     </div>
 

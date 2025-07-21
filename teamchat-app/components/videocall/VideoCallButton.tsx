@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { VideoCallRoom } from './VideoCallRoom';
-import { Video } from 'lucide-react';
+import { Video, X, Copy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface VideoCallButtonProps {
     contactName: string;
@@ -14,32 +15,19 @@ export const VideoCallButton: React.FC<VideoCallButtonProps> = ({
     contactName,
     currentUserName,
 }) => {
+    const { isDarkMode } = useTheme();
     const [isInCall, setIsInCall] = useState(false);
     const [roomName, setRoomName] = useState('');
     const [showRoomInput, setShowRoomInput] = useState(false);
     const [inputRoomName, setInputRoomName] = useState('');
     const [actualUserName, setActualUserName] = useState(currentUserName);
 
-    // Lấy user name thực từ localStorage hoặc profile
     useEffect(() => {
         const savedUserName = localStorage.getItem('currentUserName');
-        const userToken = localStorage.getItem('userToken');
-
-        // Kiểm tra xem có thông tin user trong localStorage không
         if (savedUserName) {
             setActualUserName(savedUserName);
-        } else if (userToken) {
-            // Nếu có token, có thể decode để lấy user info
-            try {
-                const userInfo = JSON.parse(userToken);
-                setActualUserName(userInfo.name || currentUserName);
-            } catch {
-                setActualUserName(currentUserName);
-            }
         }
-
-        console.log('🔍 Current user detected:', actualUserName);
-    }, [currentUserName]);
+    }, []);
 
     const startCall = () => {
         setShowRoomInput(true);
@@ -50,27 +38,17 @@ export const VideoCallButton: React.FC<VideoCallButtonProps> = ({
             alert('Vui lòng nhập tên room!');
             return;
         }
-
         setRoomName(inputRoomName.trim());
         setIsInCall(true);
         setShowRoomInput(false);
-
-        console.log('🚀 Joining room:', inputRoomName, 'as:', actualUserName);
     };
 
     const createNewRoom = () => {
-        const timestamp = Date.now();
-        const newRoomName = `call-${actualUserName.toLowerCase().replace(/\s/g, '')}-${timestamp}`;
+        const newRoomName = `call-${Date.now()}`;
         setRoomName(newRoomName);
         setIsInCall(true);
         setShowRoomInput(false);
-
-        console.log('🚀 Creating new room:', newRoomName, 'as:', actualUserName);
-
-        // Copy room name to clipboard
-        navigator.clipboard.writeText(newRoomName).then(() => {
-            console.log('📋 Room name copied to clipboard');
-        });
+        navigator.clipboard.writeText(newRoomName);
     };
 
     const endCall = () => {
@@ -83,20 +61,17 @@ export const VideoCallButton: React.FC<VideoCallButtonProps> = ({
     // Modal nhập room name
     if (showRoomInput) {
         return (
-            <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+                <div className={`rounded-lg p-6 max-w-md w-full mx-4 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'}`}>
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold">Tham gia Video Call</h3>
-                        <button
-                            onClick={() => setShowRoomInput(false)}
-                            className="text-gray-500 hover:text-gray-700 text-xl"
-                        >
-                            ×
-                        </button>
+                        <Button variant="ghost" size="icon" onClick={() => setShowRoomInput(false)} className="h-8 w-8">
+                            <X className="h-4 w-4" />
+                        </Button>
                     </div>
 
                     <div className="mb-4">
-                        <p className="text-sm text-blue-600 mb-2">Bạn đang đăng nhập: <strong>{actualUserName}</strong></p>
+                        <p className={`text-sm mb-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Bạn đang đăng nhập: <strong>{actualUserName}</strong></p>
                         <label className="block text-sm font-medium mb-2">
                             Tên Room (để gọi cùng người khác):
                         </label>
@@ -105,28 +80,24 @@ export const VideoCallButton: React.FC<VideoCallButtonProps> = ({
                             value={inputRoomName}
                             onChange={(e) => setInputRoomName(e.target.value)}
                             placeholder="Nhập tên room để tham gia..."
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                    joinRoom();
-                                }
-                            }}
+                            className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
+                            onKeyPress={(e) => e.key === 'Enter' && joinRoom()}
                         />
                     </div>
 
                     <div className="space-y-2">
                         <Button
                             onClick={joinRoom}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                             disabled={!inputRoomName.trim()}
                         >
                             🔗 Tham gia Room
                         </Button>
 
                         <div className="flex items-center my-3">
-                            <div className="flex-1 border-t border-gray-300"></div>
-                            <span className="px-3 text-gray-500 text-sm">hoặc</span>
-                            <div className="flex-1 border-t border-gray-300"></div>
+                            <div className={`flex-1 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}></div>
+                            <span className={`px-3 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>hoặc</span>
+                            <div className={`flex-1 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}></div>
                         </div>
 
                         <Button
@@ -136,56 +107,45 @@ export const VideoCallButton: React.FC<VideoCallButtonProps> = ({
                             ➕ Tạo Room mới
                         </Button>
                     </div>
-
-                    <Button
-                        onClick={() => setShowRoomInput(false)}
-                        variant="outline"
-                        className="w-full mt-4"
-                    >
-                        Hủy
-                    </Button>
                 </div>
             </div>
         );
     }
 
-    // Video call interface
+    // Giao diện cuộc gọi
     if (isInCall) {
         return (
-            <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden">
-                    <div className="flex justify-between items-center mb-4">
+            <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+                <div className={`rounded-lg max-w-6xl w-full mx-4 h-[90vh] overflow-hidden flex flex-col ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
+                    <div className={`flex justify-between items-center p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                         <div>
                             <h2 className="text-xl font-bold">Video Call với {contactName}</h2>
-                            <p className="text-sm text-blue-600">Bạn: {actualUserName}</p>
                             <div className="flex items-center space-x-2 mt-2">
-                                <p className="text-sm text-gray-600">Room: </p>
-                                <code className="bg-gray-100 px-2 py-1 rounded text-sm">{roomName}</code>
-                                <button
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(roomName);
-                                        alert('Room name đã được copy!');
-                                    }}
-                                    className="text-blue-600 hover:text-blue-700 text-sm"
+                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Room: </p>
+                                <code className={`px-2 py-1 rounded text-sm ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>{roomName}</code>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => navigator.clipboard.writeText(roomName)}
+                                    className="h-7 w-7"
                                     title="Copy room name"
                                 >
-                                    📋
-                                </button>
+                                    <Copy className="h-4 w-4" />
+                                </Button>
                             </div>
                         </div>
-                        <button
-                            onClick={endCall}
-                            className="text-gray-500 hover:text-gray-700 text-2xl"
-                        >
-                            ×
-                        </button>
+                        <Button variant="ghost" size="icon" onClick={endCall}>
+                            <X className="h-5 w-5" />
+                        </Button>
                     </div>
 
-                    <VideoCallRoom
-                        roomName={roomName}
-                        participantName={actualUserName}  // Sử dụng actualUserName
-                        onLeave={endCall}
-                    />
+                    <div className="flex-1 overflow-hidden">
+                        <VideoCallRoom
+                            roomName={roomName}
+                            participantName={actualUserName}
+                            onLeave={endCall}
+                        />
+                    </div>
                 </div>
             </div>
         );
@@ -195,7 +155,6 @@ export const VideoCallButton: React.FC<VideoCallButtonProps> = ({
         <Button
             variant="ghost"
             size="sm"
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
             onClick={startCall}
             title="Gọi video LiveKit"
         >

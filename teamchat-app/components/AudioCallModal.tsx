@@ -3,6 +3,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Phone, PhoneOff, Mic, MicOff, Users } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface AudioCallModalProps {
     channelName: string;
@@ -18,6 +19,7 @@ const audioParticipants = [
 
 export function AudioCallModal({ channelName, onClose, mode }: AudioCallModalProps) {
     const [isMuted, setIsMuted] = useState(false);
+    const { isDarkMode } = useTheme();
     const [callStatus, setCallStatus] = useState<'incoming' | 'connecting' | 'ringing' | 'connected'>(mode === 'incoming' ? 'incoming' : 'connecting');
     const [callDuration, setCallDuration] = useState(0);
 
@@ -62,9 +64,10 @@ export function AudioCallModal({ channelName, onClose, mode }: AudioCallModalPro
 
     return (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 text-center">
-                <h3 className="text-2xl font-semibold mb-2 text-gray-900 dark:text-white">#{channelName}</h3>
-                <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">{getStatusText()}</p>
+            {/* ✅ 3. Áp dụng isDarkMode vào đây */}
+            <div className={`rounded-lg p-8 max-w-md w-full mx-4 text-center ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <h3 className={`text-2xl font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>#{channelName}</h3>
+                <p className={`text-lg mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{getStatusText()}</p>
 
                 <div className="flex flex-wrap justify-center items-center gap-4 mb-8">
                     {audioParticipants.map(p => (
@@ -72,7 +75,7 @@ export function AudioCallModal({ channelName, onClose, mode }: AudioCallModalPro
                             <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-blue-400 rounded-full flex items-center justify-center text-white font-bold text-xl">
                                 {p.initial}
                             </div>
-                            <span className="text-sm mt-2 text-gray-700 dark:text-gray-300">{p.name}</span>
+                            <span className={`text-sm mt-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{p.name}</span>
                         </div>
                     ))}
                 </div>
@@ -83,19 +86,19 @@ export function AudioCallModal({ channelName, onClose, mode }: AudioCallModalPro
                             <button onClick={onClose} className="w-16 h-16 bg-red-500 text-white rounded-full flex items-center justify-center" title="Từ chối">
                                 <PhoneOff className="h-7 w-7" />
                             </button>
-                            <button onClick={handleAcceptCall} className="w-16 h-16 bg-green-500 text-white rounded-full flex items-center justify-center" title="Nghe">
+                            <button onClick={() => setCallStatus('connected')} className="w-16 h-16 bg-green-500 text-white rounded-full flex items-center justify-center" title="Nghe">
                                 <Phone className="h-7 w-7" />
                             </button>
                         </>
                     ) : (
                         <>
-                            <button onClick={() => setIsMuted(!isMuted)} className={`w-14 h-14 rounded-full flex items-center justify-center ${isMuted ? 'bg-red-500' : 'bg-gray-200 dark:bg-gray-600'} text-gray-800 dark:text-white`}>
+                            <button onClick={() => setIsMuted(!isMuted)} className={`w-14 h-14 rounded-full flex items-center justify-center ${isMuted ? 'bg-red-500' : (isDarkMode ? 'bg-gray-600' : 'bg-gray-200')} ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                                 {isMuted ? <MicOff /> : <Mic />}
                             </button>
                             <button onClick={onClose} className="w-14 h-14 bg-red-500 text-white rounded-full flex items-center justify-center">
                                 <Phone className="rotate-[135deg]" />
                             </button>
-                            <button className="w-14 h-14 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white rounded-full flex items-center justify-center">
+                            <button className={`w-14 h-14 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-gray-600 text-white' : 'bg-gray-200 text-gray-800'}`}>
                                 <Users />
                             </button>
                         </>

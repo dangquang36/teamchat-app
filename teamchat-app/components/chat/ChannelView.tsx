@@ -861,11 +861,12 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
                     <p className="text-sm text-gray-500">{channel.members} thành viên</p>
                 </div>
                 <div className="flex items-center space-x-2">
-                    <Button onClick={() => setIsCallingVideo(true)} variant="ghost" size="sm" title="Thực hiện cuộc gọi video">
-                        <Video className="h-5 w-5" />
-                    </Button>
+
                     <Button onClick={() => setAudioCallMode('outgoing')} variant="ghost" size="sm" title="Thực hiện cuộc gọi thoại">
                         <Phone className="h-5 w-5" />
+                    </Button>
+                    <Button onClick={() => setIsCallingVideo(true)} variant="ghost" size="sm" title="Thực hiện cuộc gọi video">
+                        <Video className="h-5 w-5" />
                     </Button>
                     <Button onClick={onToggleDetails} variant="ghost" size="sm" title="Xem thông tin kênh">
                         <Info className="h-5 w-5" />

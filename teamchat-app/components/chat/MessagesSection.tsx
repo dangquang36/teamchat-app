@@ -365,13 +365,6 @@ export function MessagesSection({
                             >
                                 TIN NHẮN TRỰC TIẾP
                             </h3>
-                            <Button
-                                onClick={handleAddDirectMessage}
-                                size="sm"
-                                className="bg-green-500 hover:bg-green-600 text-white w-6 h-6 rounded-full p-0"
-                            >
-                                <Plus className="h-3 w-3" />
-                            </Button>
                         </div>
                         <div className="space-y-1">
                             {filteredDirectMessages.map((dm) => (

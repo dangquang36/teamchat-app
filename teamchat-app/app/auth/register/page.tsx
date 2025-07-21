@@ -15,7 +15,7 @@ const schema = z
   .object({
     name: z.string().min(1, "Vui lòng nhập họ tên"),
     email: z.string().email("Email không hợp lệ"),
-    phone: z.string().length(10, "Số điện thoại phải có 10 chữ số"),  // Changed to validate exactly 10 digits
+    phone: z.string().length(10, "Số điện thoại phải có 10 chữ số"),
     password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
     confirmPassword: z.string(),
     terms: z.literal(true, {
@@ -98,7 +98,7 @@ export default function RegisterPage() {
               id="name"
               type="text"
               {...register("name")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập họ và tên"
             />
             {typeof errors.name?.message === "string" && (
@@ -114,7 +114,7 @@ export default function RegisterPage() {
               id="email"
               type="text"
               {...register("email")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập email của bạn"
             />
             {typeof errors.email?.message === "string" && (
@@ -130,7 +130,7 @@ export default function RegisterPage() {
               id="phone"
               type="text"
               {...register("phone")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập số điện thoại"
             />
             {typeof errors.phone?.message === "string" && (
@@ -146,7 +146,7 @@ export default function RegisterPage() {
               id="password"
               type="password"
               {...register("password")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập mật khẩu"
             />
             {typeof errors.password?.message === "string" && (
@@ -162,7 +162,7 @@ export default function RegisterPage() {
               id="confirmPassword"
               type="password"
               {...register("confirmPassword")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập lại mật khẩu"
             />
             {typeof errors.confirmPassword?.message === "string" && (
@@ -213,8 +213,6 @@ export default function RegisterPage() {
             Quay về trang chủ
           </Button>
         </div>
-
-
       </motion.div>
     </div>
   )

@@ -577,11 +577,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                     <div className="max-w-5xl mx-auto">
                         <div className="flex items-center justify-between mb-8">
                             <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600">{t.myProfile}</h1>
-                            <Button variant="ghost" size="icon" className="text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-300">
-                                <MoreHorizontal className="w-6 h-6" />
-                            </Button>
                         </div>
-
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <div className="lg:col-span-2">
                                 <div className={`rounded-2xl p-8 shadow-xl transition-all duration-300 hover:shadow-2xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border`}>

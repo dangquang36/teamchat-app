@@ -27,9 +27,13 @@ export default function ProfilePage() {
     };
 
     return (
-        <ProfileSection
-            isDarkMode={isDarkMode}
-            onLogout={handleLogout}
-        />
+        <div style={{ display: 'flex', height: '100vh' }}>
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+                <ProfileSection
+                    isDarkMode={isDarkMode}
+                    onLogout={handleLogout}
+                />
+            </div>
+        </div>
     );
 }

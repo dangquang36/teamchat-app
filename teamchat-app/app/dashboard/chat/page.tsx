@@ -52,18 +52,24 @@ export default function ChatPage() {
     }, []);
 
     return (
-        <GroupProvider>
-            <div className="flex h-full">
-                <MessagesSection
-                    onVideoCall={() => setShowVideoCall(true)}
-                    onAudioCall={() => setShowAudioCall(true)}
-                    isDarkMode={isDarkMode}
-                />
+        <div style={{ display: 'flex', height: '100vh' }}>
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+                <GroupProvider>
+                    <div className="flex h-full">
+                        <MessagesSection
+                            onVideoCall={() => setShowVideoCall(true)}
+                            onAudioCall={() => setShowAudioCall(true)}
+                            isDarkMode={isDarkMode}
+                        />
 
-                {/* Modals */}
-                {showVideoCall && <VideoCallModal onClose={() => setShowVideoCall(false)} />}
-                {showAudioCall && <AudioCallModal onClose={() => setShowAudioCall(false)} />}
+                        {/* Modals */}
+                        {showVideoCall && <VideoCallModal onClose={() => setShowVideoCall(false)} />}
+                        {showAudioCall && <AudioCallModal onClose={() => setShowAudioCall(false)} />}
+                    </div>
+                </GroupProvider>
             </div>
-        </GroupProvider>
+        </div>
+
     );
+
 }

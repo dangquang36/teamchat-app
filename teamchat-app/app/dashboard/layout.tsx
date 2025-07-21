@@ -98,9 +98,9 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
                     <button
                         onClick={toggleDarkMode}
                         className="w-12 h-12 rounded-lg flex items-center justify-center text-white/70 hover:bg-white/20 hover:text-white transition-colors"
-                        title={isDarkMode ? "Chế độ sáng" : "Chế độ tối"}
+                        title={isDarkMode ? "Chế độ tối" : "Chế độ sáng"}
                     >
-                        {isDarkMode ? <Sun className="h-6 w-6" /> : <Moon className="h-6 w-6" />}
+                        {isDarkMode ? <Moon className="h-6 w-6" /> : <Sun className="h-6 w-6" />}
                     </button>
                 </div>
 

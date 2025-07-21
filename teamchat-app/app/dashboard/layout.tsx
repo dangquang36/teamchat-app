@@ -11,6 +11,8 @@ import {
     Sun,
     Moon,
     Plus,
+    Users,
+    Newspaper,
     Hash // 1. Import biểu tượng Hash
 } from "lucide-react";
 import { SidebarIcon } from "@/components/common/SidebarIcon";
@@ -73,13 +75,13 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
                     />
                     {/* 2. Thêm biểu tượng cho Kênh */}
                     <SidebarIcon
-                        icon={<Hash className="h-6 w-6" />}
+                        icon={<Users className="h-6 w-6" />}
                         active={isActive("/dashboard/channels")}
                         onClick={() => handleNavigation("/dashboard/channels")}
                         tooltip="Kênh"
                     />
                     <SidebarIcon
-                        icon={<Plus className="h-6 w-6" />}
+                        icon={<Newspaper className="h-6 w-6" />}
                         active={isActive("/dashboard/posts")}
                         onClick={() => handleNavigation("/dashboard/posts")}
                         tooltip="Bài Đăng"

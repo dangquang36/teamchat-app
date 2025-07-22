@@ -61,10 +61,9 @@ export default function ChatPage() {
                             onAudioCall={() => setShowAudioCall(true)}
                             isDarkMode={isDarkMode}
                         />
-
                         {/* Modals */}
-                        {showVideoCall && <VideoCallModal onClose={() => setShowVideoCall(false)} />}
-                        {showAudioCall && <AudioCallModal onClose={() => setShowAudioCall(false)} />}
+                        {showVideoCall && <VideoCallModal onClose={() => setShowVideoCall(false)} userName={""} />}
+                        {showAudioCall && <AudioCallModal onClose={() => setShowAudioCall(false)} userName={""} callStatus={"connecting"} />}
                     </div>
                 </GroupProvider>
             </div>

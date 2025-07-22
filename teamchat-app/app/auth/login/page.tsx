@@ -17,7 +17,7 @@ const loginSchema = z.object({
     .min(1, "Vui lòng nhập tên đăng nhập")
     .min(3, "Tên đăng nhập phải có ít nhất 3 ký tự")
     .max(20, "Tên đăng nhập không được vượt quá 20 ký tự")
-    .regex(/^[a-zA-ZÀ-ỹ0-9\s\-'.,&()/]+$/, "Tên chỉ được chứa chữ cái, số, dấu cách, và các ký tự đặc biệt như - ' . , & ( ) /"),
+    .regex(/^[a-zA-ZÀ-ỹ0-9\s]+$/, "Tên chỉ được chứa chữ cái, số, dấu cách"),
   password: z
     .string()
     .min(1, "Vui lòng nhập mật khẩu")

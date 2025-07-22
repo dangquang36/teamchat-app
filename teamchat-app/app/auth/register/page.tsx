@@ -16,9 +16,9 @@ const schema = z
     name: z
       .string()
       .min(1, "Vui lòng nhập Tên")
-      .min(2, "Tên phải có ít nhất 2 ký tự")
-      .max(50, "Tên không được vượt quá 50 ký tự")
-      .regex(/^[a-zA-ZÀ-ỹ0-9\s\-'.,&()/]+$/, "Tên chỉ được chứa chữ cái, số, dấu cách, và các ký tự đặc biệt như - ' . , & ( ) /"),
+      .min(3, "Tên phải có ít nhất 3 ký tự")
+      .max(20, "Tên không được vượt quá 20 ký tự")
+      .regex(/^[a-zA-ZÀ-ỹ0-9\s]+$/, "Tên chỉ được chứa chữ cái, số, dấu cách"),
     email: z
       .string()
       .min(1, "Vui lòng nhập email")

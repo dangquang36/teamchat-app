@@ -180,8 +180,8 @@ export function ChannelInput({ channelName, isChannel, onCreatePoll, onSendMessa
                                     ref={attachmentMenuRef}
                                     className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-lg w-48 z-10 ${isDarkMode ? 'bg-gray-700 border border-gray-600' : 'bg-white border'}`}>
                                     <AttachmentMenuItem isDarkMode={isDarkMode} icon={<ImageIcon className="h-5 w-5 text-green-500" />} label="Ảnh" onClick={() => imageInputRef.current?.click()} />
-                                    <AttachmentMenuItem isDarkMode={isDarkMode} icon={<FileIcon className="h-5 w-5 text-purple-500" />} label="Chọn Tệp" onClick={() => fileInputRef.current?.click()} />
-                                    <AttachmentMenuItem isDarkMode={isDarkMode} icon={<Video className="h-5 w-5 text-yellow-500" />} label="Chọn Video" onClick={() => videoInputRef.current?.click()} />
+                                    <AttachmentMenuItem isDarkMode={isDarkMode} icon={<FileIcon className="h-5 w-5 text-purple-500" />} label="Tệp" onClick={() => fileInputRef.current?.click()} />
+                                    <AttachmentMenuItem isDarkMode={isDarkMode} icon={<Video className="h-5 w-5 text-yellow-500" />} label="Video" onClick={() => videoInputRef.current?.click()} />
                                     <AttachmentMenuItem
                                         icon={<BarChart3 className="h-5 w-5 text-blue-500" />}
                                         label="Tạo bình chọn"

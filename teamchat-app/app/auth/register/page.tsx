@@ -8,17 +8,17 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { MessageCircle, ArrowLeft } from "lucide-react"
+import { MessageCircle, ArrowLeft, Eye, EyeOff } from "lucide-react"
 import { apiClient } from "@/lib/api"
 
 const schema = z
   .object({
     name: z
       .string()
-      .min(1, "Vui lòng nhập họ và tên")
-      .min(2, "Họ và tên phải có ít nhất 2 ký tự")
-      .max(50, "Họ và tên không được vượt quá 50 ký tự")
-      .regex(/^[a-zA-Z\s]+$/, "Họ và tên chỉ được chứa chữ cái và khoảng trắng, không được chứa số hoặc ký tự đặc biệt"),
+      .min(1, "Vui lòng nhập Tên")
+      .min(2, "Tên phải có ít nhất 2 ký tự")
+      .max(50, "Tên không được vượt quá 50 ký tự")
+      .regex(/^[a-zA-ZÀ-ỹ0-9\s\-'.,&()/]+$/, "Tên chỉ được chứa chữ cái, số, dấu cách, và các ký tự đặc biệt như - ' . , & ( ) /"),
     email: z
       .string()
       .min(1, "Vui lòng nhập email")
@@ -52,6 +52,8 @@ export default function RegisterPage() {
   const router = useRouter()
   const [serverError, setServerError] = useState("")
   const [termsError, setTermsError] = useState<string>("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const {
     register,
@@ -59,7 +61,7 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
-    mode: "onChange", // Kích hoạt xác thực thời gian thực
+    mode: "onChange",
   })
 
   const onSubmit = async (data: any) => {
@@ -114,14 +116,14 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              Họ và tên
+              Tên đăng nhập
             </label>
             <input
               id="name"
               type="text"
               {...register("name")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus-outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
-              placeholder="Nhập họ và tên"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
+              placeholder="Nhập tên đăng nhập của bạn"
             />
             {typeof errors.name?.message === "string" && (
               <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>
@@ -136,7 +138,7 @@ export default function RegisterPage() {
               id="email"
               type="text"
               {...register("email")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus-outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập email của bạn"
             />
             {typeof errors.email?.message === "string" && (
@@ -152,7 +154,7 @@ export default function RegisterPage() {
               id="phone"
               type="text"
               {...register("phone")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus-outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
               placeholder="Nhập số điện thoại"
             />
             {typeof errors.phone?.message === "string" && (
@@ -164,13 +166,22 @@ export default function RegisterPage() {
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
               Mật khẩu
             </label>
-            <input
-              id="password"
-              type="password"
-              {...register("password")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus-outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
-              placeholder="Nhập mật khẩu"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                {...register("password")}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
+                placeholder="Nhập mật khẩu"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
             {typeof errors.password?.message === "string" && (
               <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>
             )}
@@ -180,13 +191,22 @@ export default function RegisterPage() {
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
               Xác nhận mật khẩu
             </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              {...register("confirmPassword")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus-outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
-              placeholder="Nhập lại mật khẩu"
-            />
+            <div className="relative">
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                {...register("confirmPassword")}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
+                placeholder="Nhập lại mật khẩu"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
             {typeof errors.confirmPassword?.message === "string" && (
               <p className="text-sm text-red-500 mt-1">{errors.confirmPassword.message}</p>
             )}

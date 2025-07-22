@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { MessageCircle, ArrowLeft } from "lucide-react"
+import { MessageCircle, ArrowLeft, Eye, EyeOff } from "lucide-react"
 import { apiClient } from "@/lib/api"
 
 const loginSchema = z.object({
@@ -17,7 +17,7 @@ const loginSchema = z.object({
     .min(1, "Vui lòng nhập tên đăng nhập")
     .min(3, "Tên đăng nhập phải có ít nhất 3 ký tự")
     .max(20, "Tên đăng nhập không được vượt quá 20 ký tự")
-    .regex(/^[a-zA-Z]+$/, "Tên đăng nhập chỉ được chứa chữ cái, không được chứa số hoặc ký tự đặc biệt"),
+    .regex(/^[a-zA-ZÀ-ỹ0-9\s\-'.,&()/]+$/, "Tên chỉ được chứa chữ cái, số, dấu cách, và các ký tự đặc biệt như - ' . , & ( ) /"),
   password: z
     .string()
     .min(1, "Vui lòng nhập mật khẩu")
@@ -33,6 +33,7 @@ export default function LoginPage() {
   const router = useRouter()
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -40,7 +41,7 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<{ username: string; password: string }>({
     resolver: zodResolver(loginSchema),
-    mode: "onChange", // Kích hoạt xác thực thời gian thực
+    mode: "onChange",
   })
 
   const onSubmit = async (data: { username: string; password: string }) => {
@@ -104,13 +105,22 @@ export default function LoginPage() {
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
               Mật khẩu
             </label>
-            <input
-              id="password"
-              type="password"
-              {...register("password")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
-              placeholder="Nhập mật khẩu"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                {...register("password")}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
+                placeholder="Nhập mật khẩu"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
             {errors.password && <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>}
           </div>
 

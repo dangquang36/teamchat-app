@@ -94,7 +94,59 @@ const config: Config = {
 	plugins: [require("tailwindcss-animate")],
 };
 export default config;
-export const translations: translations = {
+// Define the type for translations
+interface TranslationSet {
+	profile: string;
+	settings: string;
+	security: string;
+	logout: string;
+	myProfile: string;
+	accountSettings: string;
+	securityPassword: string;
+	media: string;
+	viewAll: string;
+	personalInfo: string;
+	name: string;
+	dob: string;
+	email: string;
+	phone: string;
+	edit: string;
+	save: string;
+	cancel: string;
+	changePassword: string;
+	currentPassword: string;
+	newPassword: string;
+	confirmNewPassword: string;
+	updatePassword: string;
+	profileUpdated: string;
+	avatarUpdated: string;
+	passwordUpdated: string;
+	allMedia: string;
+	download: string;
+	more: string;
+	deviceManagement: string;
+	deviceName: string;
+	lastLogin: string;
+	ipAddress: string;
+	logoutDevice: string;
+	twoFactorAuth: string;
+	enable2FA: string;
+	disable2FA: string;
+	setup2FA: string;
+	scanQRCode: string;
+	twoFAEnabled: string;
+	twoFADisabled: string;
+	// Optional fields for English
+	language?: string;
+	selectLanguage?: string;
+}
+
+interface Translations {
+	vi: TranslationSet;
+	en: TranslationSet;
+}
+
+export const translations: Translations = {
 	vi: {
 		profile: "Hồ Sơ",
 		settings: "Cài Đặt Tài Khoản",
@@ -106,7 +158,7 @@ export const translations: translations = {
 		media: "PHƯƠNG TIỆN",
 		viewAll: "Xem tất cả",
 		personalInfo: "Thông Tin Cá Nhân",
-		name: "Họ và Tên",
+		name: "Tên của bạn",
 		dob: "Ngày Sinh",
 		email: "Email",
 		phone: "Số Điện Thoại",

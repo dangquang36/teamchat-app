@@ -183,3 +183,4 @@ export interface DirectMessage extends UserProfile {
     message: string;
     online: boolean;
 }
+

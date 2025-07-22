@@ -110,7 +110,7 @@ const translations: translations = {
         media: "Phương Tiện",
         viewAll: "Xem tất cả",
         personalInfo: "Thông Tin Cá Nhân",
-        name: "Họ và Tên",
+        name: "Tên của bạn",
         dob: "Ngày Sinh",
         email: "Email",
         phone: "Số Điện Thoại",
@@ -142,8 +142,8 @@ const translations: translations = {
         scanQRCode: "Quét mã QR bằng ứng dụng xác thực của bạn",
         twoFAEnabled: "Xác thực hai yếu tố đã được bật!",
         twoFADisabled: "Xác thực hai yếu tố đã được tắt!",
-        nameRequired: "Họ và tên là bắt buộc",
-        nameInvalid: "Họ và tên không được chứa số hoặc ký tự đặc biệt",
+        nameRequired: "Tên là bắt buộc",
+        nameInvalid: "Tên chỉ được chứa chữ cái, số, dấu cách, và các ký tự đặc biệt như - ' . , & ( ) /",
         emailRequired: "Email là bắt buộc",
         emailInvalid: "Định dạng email không hợp lệ",
         phoneRequired: "Số điện thoại là bắt buộc",
@@ -200,7 +200,7 @@ const translations: translations = {
         twoFAEnabled: "Two-factor authentication enabled!",
         twoFADisabled: "Two-factor authentication disabled!",
         nameRequired: "Full name is required",
-        nameInvalid: "Full name cannot contain numbers or special characters",
+        nameInvalid: "Name can only contain letters, numbers, spaces, and special characters like - ' . , & ( ) /",
         emailRequired: "Email is required",
         emailInvalid: "Invalid email format",
         phoneRequired: "Phone number is required",
@@ -248,7 +248,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
     // Validation functions
     const validateName = (name: string): string | null => {
         if (!name.trim()) return t.nameRequired;
-        const nameRegex = /^[a-zA-ZÀ-ỹ\s\-']+$/;
+        const nameRegex = /^[a-zA-ZÀ-ỹ0-9\s\-'.,&()/]+$/; // Updated to allow numbers
         if (!nameRegex.test(name)) return t.nameInvalid;
         return null;
     };
@@ -942,7 +942,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                             <img
                                                 src="/placeholder.svg?height=150&width=150&text=QR"
                                                 alt="2FA QR Code"
-                                                className="w-32 h activo-32 rounded-lg shadow-md"
+                                                className="w-32 h-32 rounded-lg shadow-md"
                                             />
                                         </div>
                                     </div>

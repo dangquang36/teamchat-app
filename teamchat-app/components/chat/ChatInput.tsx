@@ -233,7 +233,7 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                                     />
                                     <AttachmentMenuItem
                                         icon={<FileIcon className="h-5 w-5 text-purple-500" />}
-                                        label="Chọn Tệp"
+                                        label="Tệp"
                                         onClick={() => fileInputRef.current?.click()}
                                     />
                                     <AttachmentMenuItem

@@ -21,7 +21,7 @@ import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 function LayoutUI({ children }: { children: React.ReactNode }) {
     const [currentPath, setCurrentPath] = useState("");
     const router = useRouter();
-    const { isDarkMode, toggleDarkMode } = useTheme(); // ✅ 3. Lấy trạng thái từ Context
+    const { isDarkMode, toggleDarkMode } = useTheme();
 
     useEffect(() => {
         // Check authentication
@@ -65,7 +65,7 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
                         active={isActive("/dashboard/profile")}
                         onClick={() => handleNavigation("/dashboard/profile")}
                         tooltip="Hồ Sơ"
-                        badge="3"
+                        badge=""
                     />
                     <SidebarIcon
                         icon={<MessageCircle className="h-6 w-6" />}
@@ -85,7 +85,7 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
                         active={isActive("/dashboard/posts")}
                         onClick={() => handleNavigation("/dashboard/posts")}
                         tooltip="Bài Đăng"
-                        badge="5"
+                        badge=""
                     />
                     <SidebarIcon
                         icon={<HelpCircle className="h-6 w-6" />}

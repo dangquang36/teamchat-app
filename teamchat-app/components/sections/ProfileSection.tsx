@@ -143,7 +143,7 @@ const translations: translations = {
         twoFAEnabled: "Xác thực hai yếu tố đã được bật!",
         twoFADisabled: "Xác thực hai yếu tố đã được tắt!",
         nameRequired: "Tên là bắt buộc",
-        nameInvalid: "Tên chỉ được chứa chữ cái, số, dấu cách, và các ký tự đặc biệt như - ' . , & ( ) /",
+        nameInvalid: "Tên chỉ được chứa chữ cái, số, dấu cách",
         emailRequired: "Email là bắt buộc",
         emailInvalid: "Định dạng email không hợp lệ",
         phoneRequired: "Số điện thoại là bắt buộc",
@@ -200,7 +200,7 @@ const translations: translations = {
         twoFAEnabled: "Two-factor authentication enabled!",
         twoFADisabled: "Two-factor authentication disabled!",
         nameRequired: "Full name is required",
-        nameInvalid: "Name can only contain letters, numbers, spaces, and special characters like - ' . , & ( ) /",
+        nameInvalid: "Name can only contain letters, numbers, spaces",
         emailRequired: "Email is required",
         emailInvalid: "Invalid email format",
         phoneRequired: "Phone number is required",
@@ -245,10 +245,9 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
 
     const t = translations[language];
 
-    // Validation functions
     const validateName = (name: string): string | null => {
         if (!name.trim()) return t.nameRequired;
-        const nameRegex = /^[a-zA-ZÀ-ỹ0-9\s\-'.,&()/]+$/; // Updated to allow numbers
+        const nameRegex = /^[a-zA-ZÀ-ỹ0-9\s]+$/;
         if (!nameRegex.test(name)) return t.nameInvalid;
         return null;
     };

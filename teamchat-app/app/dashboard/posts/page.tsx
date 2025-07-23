@@ -2,16 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { PostsSection } from "@/components/modals/PostsSection";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function PostsPage() {
-    const [isDarkMode, setIsDarkMode] = useState(false);
-
-    useEffect(() => {
-        const savedDarkMode = localStorage.getItem("darkMode");
-        if (savedDarkMode) {
-            setIsDarkMode(JSON.parse(savedDarkMode));
-        }
-    }, []);
+    const { isDarkMode } = useTheme();
 
     return (
         <div className="h-screen overflow-y-auto direction-rtl">

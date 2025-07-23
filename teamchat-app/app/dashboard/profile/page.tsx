@@ -1,24 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ProfileSection } from "@/components/sections/ProfileSection";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function ProfilePage() {
-    const [isDarkMode, setIsDarkMode] = useState(false);
+    const { isDarkMode } = useTheme();
     const router = useRouter();
 
     useEffect(() => {
-        const savedDarkMode = localStorage.getItem("darkMode");
-        if (savedDarkMode) {
-            setIsDarkMode(JSON.parse(savedDarkMode));
-        }
-
         const token = localStorage.getItem("userToken");
         if (!token) {
             router.replace("/");
         }
-    }, []);
+    }, [router]);
 
     const handleLogout = () => {
         localStorage.removeItem("userToken");

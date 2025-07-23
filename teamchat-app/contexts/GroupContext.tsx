@@ -28,19 +28,7 @@ const GroupContext = createContext<GroupContextType | undefined>(undefined);
 export const GroupProvider = ({ children }: { children: ReactNode }) => {
     // ✅ Cung cấp đủ các trường cho dữ liệu ban đầu
     const [groups, setGroups] = useState<Group[]>([
-        {
-            id: 'landing-design',
-            name: 'Landing Design',
-            description: 'Kênh thảo luận về dự án Landing Page.',
-            members: 23,
-            type: "public",
-            createdBy: "admin",
-            createdAt: new Date().toISOString(),
-            membersList: [
-                { id: "user1", username: "Admin", role: "leader" }
-            ],
-            // avatar: 'url_to_avatar.png' // Tùy chọn
-        }
+
     ]);
 
     // ✅ Cập nhật hàm addGroup để tạo object Group hoàn chỉnh

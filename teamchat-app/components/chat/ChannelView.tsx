@@ -154,8 +154,8 @@ function PollResultsModal({
                                             {option.votes.map((vote) => (
                                                 <div key={`${vote.userId}-${vote.votedAt.getTime()}`}
                                                     className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isDarkMode
-                                                            ? "bg-gray-700/50 hover:bg-gray-700"
-                                                            : "bg-gray-50 hover:bg-gray-100"
+                                                        ? "bg-gray-700/50 hover:bg-gray-700"
+                                                        : "bg-gray-50 hover:bg-gray-100"
                                                         }`}>
                                                     <img
                                                         src={vote.userAvatar}
@@ -179,8 +179,8 @@ function PollResultsModal({
                                                     </div>
                                                     {vote.userId === "user-current" && (
                                                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${isDarkMode
-                                                                ? "bg-blue-500/20 text-blue-300"
-                                                                : "bg-blue-100 text-blue-600"
+                                                            ? "bg-blue-500/20 text-blue-300"
+                                                            : "bg-blue-100 text-blue-600"
                                                             }`}>
                                                             Bạn
                                                         </span>
@@ -257,13 +257,13 @@ function PollMessage({
 
     return (
         <div className={`rounded-xl w-[380px] overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl ${isDarkMode
-                ? "bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50"
-                : "bg-gradient-to-br from-white to-gray-50 border border-gray-200/80"
+            ? "bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50"
+            : "bg-gradient-to-br from-white to-gray-50 border border-gray-200/80"
             }`}>
             {/* Header với gradient */}
             <div className={`p-5 border-b ${isDarkMode
-                    ? "border-gray-700/50 bg-gradient-to-r from-blue-900/20 to-purple-900/20"
-                    : "border-gray-200/80 bg-gradient-to-r from-blue-50 to-indigo-50"
+                ? "border-gray-700/50 bg-gradient-to-r from-blue-900/20 to-purple-900/20"
+                : "border-gray-200/80 bg-gradient-to-r from-blue-50 to-indigo-50"
                 }`}>
                 <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
@@ -315,8 +315,8 @@ function PollMessage({
 
                         {poll.isAnonymous && (
                             <span className={`text-xs px-2 py-1 rounded-md font-medium ${isDarkMode
-                                    ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                                    : "bg-purple-50 text-purple-600 border border-purple-200"
+                                ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                                : "bg-purple-50 text-purple-600 border border-purple-200"
                                 }`}>
                                 Ẩn danh
                             </span>
@@ -338,14 +338,14 @@ function PollMessage({
                             onClick={() => canVote && onVote(poll.id, option.id)}
                             disabled={!canVote}
                             className={`w-full text-left relative overflow-hidden rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${!canVote
-                                    ? "cursor-not-allowed opacity-60"
-                                    : isSelected
-                                        ? isDarkMode
-                                            ? "border-blue-400 bg-gradient-to-r from-blue-900/30 to-blue-800/30 shadow-lg shadow-blue-500/20"
-                                            : "border-blue-400 bg-gradient-to-r from-blue-50 to-blue-100 shadow-lg shadow-blue-500/20"
-                                        : isDarkMode
-                                            ? "border-gray-600 hover:border-gray-500 hover:bg-gradient-to-r hover:from-gray-700/30 hover:to-gray-600/30"
-                                            : "border-gray-200 hover:border-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100"
+                                ? "cursor-not-allowed opacity-60"
+                                : isSelected
+                                    ? isDarkMode
+                                        ? "border-blue-400 bg-gradient-to-r from-blue-900/30 to-blue-800/30 shadow-lg shadow-blue-500/20"
+                                        : "border-blue-400 bg-gradient-to-r from-blue-50 to-blue-100 shadow-lg shadow-blue-500/20"
+                                    : isDarkMode
+                                        ? "border-gray-600 hover:border-gray-500 hover:bg-gradient-to-r hover:from-gray-700/30 hover:to-gray-600/30"
+                                        : "border-gray-200 hover:border-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100"
                                 }`}
                             style={{ animationDelay: `${index * 50}ms` }}
                         >
@@ -399,8 +399,8 @@ function PollMessage({
 
             {/* Footer tinh tế hơn */}
             <div className={`px-5 py-3 border-t ${isDarkMode
-                    ? "border-gray-700/50 bg-gray-800/30"
-                    : "border-gray-200/50 bg-gray-50/50"
+                ? "border-gray-700/50 bg-gray-800/30"
+                : "border-gray-200/50 bg-gray-50/50"
                 }`}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-sm">
@@ -430,8 +430,8 @@ function PollMessage({
                             variant="ghost"
                             size="sm"
                             className={`text-xs font-medium transition-all duration-200 ${isDarkMode
-                                    ? "text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
-                                    : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                ? "text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                                : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                 }`}
                         >
                             <Eye className="h-3.5 w-3.5 mr-1" />
@@ -887,6 +887,7 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
                     <h3 className={`font-semibold text-lg ${isDarkMode ? "text-white" : "text-gray-900"}`}># {channel.name}</h3>
                     <p className="text-sm text-gray-500">{channel.members} thành viên</p>
                 </div>
+
                 <div className="flex items-center space-x-2">
                     <Button onClick={() => setAudioCallMode("outgoing")} variant="ghost" size="sm" title="Thực hiện cuộc gọi thoại">
                         <Phone className="h-5 w-5" />
@@ -900,9 +901,10 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
                 </div>
             </div>
 
+
+
             <div
-                className={`flex-1 p-4 space-y-4 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}
-                style={{ overflowY: "auto" }}
+                className={`flex-1 p-4 space-y-4 overflow-y-auto ${isDarkMode ? "bg-gray-900" : "bg-gray-50"} scrollbar-hide`}
             >
                 {messages.length === 0 ? (
                     <p className="text-center text-gray-500">Đây là khởi đầu của kênh #{channel.name}.</p>

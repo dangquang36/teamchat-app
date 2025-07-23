@@ -390,20 +390,16 @@ export function MessagesSection({
                                 <h3 className={`text-xs font-semibold uppercase tracking-wider ${currentDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                     TIN NHẮN TRỰC TIẾP
                                 </h3>
-                                {/* --- SỬA ĐỔI --- */}
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => setIsAddContactModalOpen(true)} // Mở modal khi click
+                                    onClick={() => setIsAddContactModalOpen(true)}
                                     title="Thêm liên lạc mới"
                                     className={currentDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}
                                 >
                                     <Plus className="h-5 w-5" />
                                 </Button>
                             </div>
-
-                            {/* --- XÓA --- */}
-                            {/* Toàn bộ khối `showAddForm` đã được xóa bỏ */}
 
                             <div className="space-y-1">
                                 {filteredDirectMessages.map((dm) => (

@@ -145,14 +145,13 @@ export function ChannelDetails({ channel, isDarkMode, onClose, currentUser }: Ch
 
     return (
         <div
-            className={`w-full sm:w-80 border-l p-4 transition-colors h-screen overflow-y-auto ${isDarkMode
+            className={`w-full sm:w-80 border-l p-4 transition-colors h-full overflow-y-auto no-scrollbar ${isDarkMode
                 ? "bg-gray-800 border-gray-700 text-gray-200"
                 : "bg-white border-gray-200 text-gray-900"
                 }`}
         >
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold">Thông tin kênh</h2>
-
             </div>
 
             <Accordion type="multiple" className="w-full" defaultValue={['info', 'members']}>
@@ -174,8 +173,7 @@ export function ChannelDetails({ channel, isDarkMode, onClose, currentUser }: Ch
                                         onChange={(e) => setChannelName(e.target.value)}
                                         className={`text-sm h-9 ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                                     />
-                                    {/* ✅ KẾT NỐI HÀM LƯU TÊN */}
-                                    <Button size="sm" onClick={handleSaveName}>
+                                    <Button size="sm" onClick={() => { setIsEditingName(false); /* handleSaveName() */ }}>
                                         <Save className="h-4 w-4" />
                                     </Button>
                                 </div>
@@ -196,7 +194,7 @@ export function ChannelDetails({ channel, isDarkMode, onClose, currentUser }: Ch
                             )}
                         </div>
 
-                        {/* ✅ THÊM LẠI PHẦN SỬA MÔ TẢ */}
+                        {/* Sửa Mô tả */}
                         <div className="relative group">
                             <h3 className="text-sm font-semibold mb-1">Mô tả</h3>
                             {isEditingDesc ? (
@@ -206,7 +204,7 @@ export function ChannelDetails({ channel, isDarkMode, onClose, currentUser }: Ch
                                         onChange={(e) => setChannelDesc(e.target.value)}
                                         className={`text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                                     />
-                                    <Button size="sm" onClick={handleSaveDesc}>
+                                    <Button size="sm" onClick={() => { setIsEditingDesc(false); /* handleSaveDesc() */ }}>
                                         <Save className="h-4 w-4" /> Lưu
                                     </Button>
                                 </div>
@@ -235,13 +233,11 @@ export function ChannelDetails({ channel, isDarkMode, onClose, currentUser }: Ch
                     <AccordionContent>
                         <div className="space-y-2">
                             <p className="text-sm mb-2">{channel.members} Thành viên</p>
-                            {/* ✅ SỬA NÚT QUẢN LÝ THÀNH VIÊN */}
                             <Button variant="outline" size="sm" onClick={() => setIsMemberModalOpen(true)} className="w-full">
                                 Quản lý thành viên
                             </Button>
-                            {/* ✅ SỬA NÚT RỜI KÊNH */}
                             {!isLeader && (
-                                <Button variant="destructive" size="sm" onClick={handleLeaveChannel} className="w-full">
+                                <Button variant="destructive" size="sm" onClick={() => { /* handleLeaveChannel() */ }} className="w-full">
                                     Rời kênh
                                 </Button>
                             )}
@@ -256,7 +252,6 @@ export function ChannelDetails({ channel, isDarkMode, onClose, currentUser }: Ch
                         <div className="space-y-2">
                             {channel.pinnedMessages.length > 0 ? (
                                 channel.pinnedMessages.map((msg, index) => (
-                                    // ✅ SỬA PHẦN NỀN VÀ CHỮ
                                     <div
                                         key={index}
                                         className={`p-2 rounded-lg relative group ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}
@@ -266,12 +261,11 @@ export function ChannelDetails({ channel, isDarkMode, onClose, currentUser }: Ch
                                             Ghim bởi {msg.pinnedBy} lúc {msg.time}
                                         </p>
                                         {isLeader && (
-                                            // ✅ SỬA NÚT BỎ GHIM
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
                                                 className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 h-7 w-7"
-                                                onClick={() => handleUnpinMessage(index)}
+                                                onClick={() => { /* handleUnpinMessage(index) */ }}
                                             >
                                                 <X className="h-4 w-4" />
                                             </Button>
@@ -288,45 +282,39 @@ export function ChannelDetails({ channel, isDarkMode, onClose, currentUser }: Ch
 
             {/* --- Dialog quản lý thành viên --- */}
             <Dialog open={isMemberModalOpen} onOpenChange={setIsMemberModalOpen}>
-                {/* ✅ SỬA NỀN VÀ CHỮ CỦA DIALOG */}
                 <DialogContent className={isDarkMode ? "bg-gray-900 border-gray-700 text-white" : "bg-white text-black"}>
                     <DialogHeader>
                         <DialogTitle>Quản lý thành viên</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="flex gap-2">
-                            {/* ✅ SỬA INPUT MỜI */}
                             <Input
                                 placeholder="Email để mời"
                                 value={inviteEmail}
                                 onChange={(e) => setInviteEmail(e.target.value)}
                                 className={isDarkMode ? "bg-gray-800 border-gray-600" : "bg-white border-gray-300"}
                             />
-                            {/* ✅ SỬA NÚT MỜI */}
-                            <Button onClick={handleInviteMember} disabled={!isLeader}>
+                            <Button onClick={() => { /* handleInviteMember() */ }} disabled={!isLeader}>
                                 <UserPlus className="h-4 w-4 mr-2" /> Mời
                             </Button>
                         </div>
                         <div className="space-y-2 max-h-60 overflow-y-auto">
                             {channel.membersList.map((member) => (
-                                // ✅ SỬA NỀN KHI HOVER
                                 <div
                                     key={member.id}
                                     className={`flex justify-between items-center p-2 rounded-lg ${isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"}`}
                                 >
                                     <div>
-                                        {/* ✅ SỬA MÀU CHỮ */}
                                         <p className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-900"}`}>{member.username}</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">
                                             {member.role === "leader" ? "Trưởng nhóm" : "Thành viên"}
                                         </p>
                                     </div>
                                     {isLeader && member.id !== currentUser.id && (
-                                        // ✅ SỬA NÚT KICK
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={() => handleKickMember(member.id)}
+                                            onClick={() => { /* handleKickMember(member.id) */ }}
                                             className="h-8 w-8 text-red-500 hover:bg-red-500/10"
                                         >
                                             <UserMinus className="h-4 w-4" />

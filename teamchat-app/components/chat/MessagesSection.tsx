@@ -1,4 +1,66 @@
-import React, { useState, useEffect } from 'react';
+const currentUser = {
+    id: 'me', name: 'Current User', avatar: '/placeholder.svg?height=32&width=32&text=CU',
+    email: 'current.user@example.com', online: true
+};
+
+// Custom ChatMessages component that handles extended message types
+const CustomChatMessages = ({ messages, currentUser, isDarkMode, onVote, onToggleReaction }: {
+    messages: ExtendedMessage[];
+    currentUser: any;
+    isDarkMode: boolean;
+    onVote: (messageId: string, optionIndex: number) => void;
+    onToggleReaction: (messageId: string, emoji: string) => void;
+}) => {
+    return (
+        <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            {messages.map((message) => (
+                <div key={message.id} className={`flex ${message.from === 'me' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.from === 'me'
+                            ? 'bg-purple-600 text-white'
+                            : isDarkMode
+                                ? 'bg-gray-700 text-white'
+                                : 'bg-white text-gray-900'
+                        }`}>
+                        {message.type === 'poll' && message.poll ? (
+                            <div>
+                                <h4 className="font-semibold mb-2">{message.poll.question}</h4>
+                                {message.poll.options.map((option, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => onVote(message.id, index)}
+                                        className={`w-full text-left p-2 mb-1 rounded border ${option.voters.includes('me')
+                                                ? 'bg-purple-500 text-white'
+                                                : isDarkMode
+                                                    ? 'bg-gray-600 hover:bg-gray-500'
+                                                    : 'bg-gray-100 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        <div className="flex justify-between">
+                                            <span>{option.text}</span>
+                                            <span>{option.votes}</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <p>{message.text}</p>
+                        )}
+                        <div className="text-xs opacity-70 mt-1">{message.time}</div>
+                        {message.reactions && message.reactions.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                                {message.reactions.map((reaction, index) => (
+                                    <span key={index} className="text-sm">
+                                        {reaction.emoji}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}; import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, X } from 'lucide-react';
 import { ChatItem } from './ChatItem';
@@ -7,6 +69,7 @@ import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
 import { UserProfileModal } from '@/components/modals/UserProfileModalChat';
 import type { UserProfile, DirectMessage, Message, Poll } from '@/app/types';
+import { ConversationDetails } from '@/components/modals/ConversationDetails';
 
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
@@ -60,10 +123,10 @@ const ConfirmDelete: React.FC<ConfirmDeleteProps> = ({ isOpen, onClose, onConfir
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 dark:bg-gray-900 rounded-lg p-6 text-white w-96">
+            <div className="bg-gray-800 rounded-lg p-6 text-white w-96">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-semibold">Xác nhận xóa liên lạc</h3>
-                    <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-white dark:hover:text-gray-300">
+                    <button onClick={onClose} className="text-gray-400 hover:text-white">
                         <X className="h-5 w-5" />
                     </button>
                 </div>
@@ -71,13 +134,13 @@ const ConfirmDelete: React.FC<ConfirmDeleteProps> = ({ isOpen, onClose, onConfir
                 <div className="flex justify-end gap-4">
                     <Button
                         onClick={onClose}
-                        className="bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-500 dark:hover:bg-gray-600 px-4 py-2 rounded"
+                        className="bg-gray-600 text-white hover:bg-gray-500 px-4 py-2 rounded"
                     >
                         Hủy
                     </Button>
                     <Button
                         onClick={onConfirm}
-                        className="bg-red-600 dark:bg-red-700 text-white hover:bg-red-500 dark:hover:bg-red-600 px-4 py-2 rounded"
+                        className="bg-red-600 text-white hover:bg-red-500 px-4 py-2 rounded"
                     >
                         Xác nhận
                     </Button>
@@ -93,21 +156,28 @@ interface MessagesSectionProps {
     isDarkMode?: boolean;
 }
 
-interface ChatMessagesUserProfile {
-    id: string;
-    name: string;
-    avatar: string;
-    email: string;
-    online: boolean;
+// Extended Message type to support all message types
+interface ExtendedMessage extends Omit<Message, 'type'> {
+    type?: 'text' | 'poll' | 'file' | 'image';
+    poll?: Poll;
 }
 
-interface ChatMessagesMessage {
+// Extended UserProfile type to match UserProfileModal requirements
+interface ExtendedUserProfile {
     id: string;
-    from: string;
-    text?: string;
-    time: string;
-    reactions: Array<{ emoji: string; user: string }>;
-    type?: 'text';
+    name: string;
+    email?: string;
+    avatar: string;
+    online: boolean;
+    coverPhotoUrl?: string;
+    phone?: string;
+    socialProfiles?: {
+        facebook?: string;
+        twitter?: string;
+        instagram?: string;
+        linkedin?: string;
+    };
+    mutualGroups?: number;
 }
 
 export function MessagesSection({
@@ -115,8 +185,9 @@ export function MessagesSection({
     onAudioCall,
     isDarkMode = false,
 }: MessagesSectionProps) {
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [selectedChatId, setSelectedChatId] = useState<string>('nicholas');
-    const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
+    const [viewingProfile, setViewingProfile] = useState<ExtendedUserProfile | null>(null);
     const [currentDarkMode, setCurrentDarkMode] = useState(isDarkMode);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -150,7 +221,7 @@ export function MessagesSection({
         setViewingProfile(null);
     };
 
-    const handleCallFromProfile = (user: UserProfile) => {
+    const handleCallFromProfile = (user: any) => {
         setViewingProfile(null);
         onAudioCall();
     };
@@ -194,7 +265,7 @@ export function MessagesSection({
         },
     ]);
 
-    const [allMessages, setAllMessages] = useState<Record<string, Message[]>>({});
+    const [allMessages, setAllMessages] = useState<Record<string, ExtendedMessage[]>>({});
 
     const selectedChatUser = directMessages.find((dm) => dm.id === selectedChatId);
     const filteredDirectMessages = directMessages.filter(
@@ -203,6 +274,18 @@ export function MessagesSection({
             dm.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
     const currentMessages = allMessages[selectedChatId] || [];
+
+    // Convert ExtendedMessage to standard Message for ChatMessages component
+    const convertToStandardMessages = (messages: ExtendedMessage[]): Message[] => {
+        return messages.map(msg => ({
+            id: msg.id,
+            from: msg.from,
+            text: msg.text,
+            time: msg.time,
+            reactions: msg.reactions || [],
+            type: msg.type === 'text' || msg.type === undefined ? 'text' : undefined,
+        }));
+    };
 
     const handleAddDirectMessage = () => {
         if (!newContactName.trim()) {
@@ -247,7 +330,7 @@ export function MessagesSection({
     const handleSendMessage = (text: string) => {
         if (!text.trim() || !selectedChatId) return;
 
-        const newMessage: Message = {
+        const newMessage: ExtendedMessage = {
             id: `msg-${Date.now()}`,
             from: 'me',
             text,
@@ -262,7 +345,7 @@ export function MessagesSection({
         }));
 
         setTimeout(() => {
-            const replyMessage: Message = {
+            const replyMessage: ExtendedMessage = {
                 id: `msg-${Date.now() + 1}`,
                 from: selectedChatId,
                 text: 'Ok, noted!',
@@ -296,7 +379,7 @@ export function MessagesSection({
             voters: []
         };
 
-        const newPollMessage: Message = {
+        const newPollMessage: ExtendedMessage = {
             id: `msg-${Date.now()}`,
             from: 'me',
             time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
@@ -411,210 +494,194 @@ export function MessagesSection({
         }
     };
 
-    const convertedMessages: ChatMessagesMessage[] = currentMessages
-        .filter((msg) => msg.type === 'text')
-        .map((msg) => ({
-            id: msg.id,
-            from: msg.from,
-            text: msg.text,
-            time: msg.time,
-            reactions: msg.reactions,
-            type: 'text' as const,
-        }));
-
-    const convertedCurrentUser: ChatMessagesUserProfile = {
-        id: 'me',
-        name: 'Current User',
-        avatar: '/placeholder.svg?height=32&width=32&text=CU',
-        email: 'current.user@example.com',
-        online: true,
-    };
+    // Convert DirectMessage to ExtendedUserProfile for UserProfileModal
+    const convertToExtendedUserProfile = (dm: DirectMessage): ExtendedUserProfile => ({
+        id: dm.id,
+        name: dm.name,
+        email: dm.email,
+        avatar: dm.avatar,
+        online: dm.online,
+        coverPhotoUrl: dm.coverPhotoUrl,
+        phone: dm.phone,
+        socialProfiles: dm.socialProfiles,
+        mutualGroups: dm.mutualGroups,
+    });
 
     return (
         <>
-            <div
-                className={`w-80 border-r ${currentDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-                    }`}
-            >
-                <div className="p-4 border-b">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2
-                            className={`text-lg font-semibold flex items-center gap-2 ${currentDarkMode ? 'text-white' : 'text-gray-900'
-                                }`}
-                        >
-                            Tin Nhắn
-                        </h2>
-                    </div>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Tìm kiếm người dùng hoặc email..."
-                            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${currentDarkMode
-                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                                }`}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                </div>
-                <div className="overflow-y-auto">
-                    <div className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3
-                                className={`text-xs font-semibold uppercase tracking-wider ${currentDarkMode ? 'text-gray-400' : 'text-gray-500'
+            <div className="flex h-screen w-full bg-white dark:bg-gray-900">
+                <div
+                    className={`w-80 border-r ${currentDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                        }`}
+                >
+                    <div className="p-4 border-b">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2
+                                className={`text-lg font-semibold flex items-center gap-2 ${currentDarkMode ? 'text-white' : 'text-gray-900'
                                     }`}
                             >
-                                TIN NHẮN TRỰC TIẾP
-                            </h3>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setShowAddForm(true)}
-                                title="Thêm liên lạc mới"
-                                className={currentDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}
-                            >
-                                <Plus className="h-5 w-5" />
-                            </Button>
+                                Tin Nhắn
+                            </h2>
                         </div>
-                        {showAddForm && (
-                            <div className="mb-4 p-3 bg-gray-900 dark:bg-gray-800 rounded-lg border border-gray-700 dark:border-gray-600">
-                                <p className="text-sm text-gray-300 dark:text-gray-400 mb-2">Nhập tên để thêm người liên lạc: </p>
-                                <input
-                                    type="text"
-                                    value={newContactName}
-                                    onChange={(e) => setNewContactName(e.target.value)}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' && newContactName.trim()) {
-                                            handleAddDirectMessage();
-                                        }
-                                    }}
-                                    className="w-full p-2 mb-2 border rounded-lg bg-gray-800 dark:bg-gray-700 text-white dark:text-gray-200 border-gray-600 dark:border-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                    placeholder="Tên"
-                                />
-                                <div className="flex justify-end gap-2">
-                                    <Button
-                                        onClick={() => {
-                                            setShowAddForm(false);
-                                            setNewContactName('');
-                                        }}
-                                        className="bg-purple-700 dark:bg-purple-800 text-white hover:bg-purple-600 dark:hover:bg-purple-700 px-4 py-2 rounded-lg"
-                                    >
-                                        Hủy
-                                    </Button>
-                                    <Button
-                                        onClick={handleAddDirectMessage}
-                                        className="bg-purple-400 dark:bg-purple-500 text-white hover:bg-purple-300 dark:hover:bg-purple-400 px-4 py-2 rounded-lg"
-                                    >
-                                        OK
-                                    </Button>
-                                </div>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Tìm kiếm người dùng hoặc email..."
+                                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${currentDarkMode
+                                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                                    }`}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <div className="overflow-y-auto">
+                        <div className="p-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3
+                                    className={`text-xs font-semibold uppercase tracking-wider ${currentDarkMode ? 'text-gray-400' : 'text-gray-500'
+                                        }`}
+                                >
+                                    TIN NHẮN TRỰC TIẾP
+                                </h3>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setShowAddForm(true)}
+                                    title="Thêm liên lạc mới"
+                                    className={currentDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}
+                                >
+                                    <Plus className="h-5 w-5" />
+                                </Button>
                             </div>
-                        )}
-                        <div className="space-y-1">
-                            {filteredDirectMessages.map((dm) => (
-                                <div key={dm.id} className="relative group">
-                                    <ChatItem
-                                        name={dm.name}
-                                        message={dm.message}
-                                        avatar={dm.avatar}
-                                        active={selectedChatId === dm.id}
-                                        isDarkMode={currentDarkMode}
-                                        onClick={() => setSelectedChatId(dm.id)}
+                            {showAddForm && (
+                                <div className="mb-4 p-3 bg-gray-900 rounded-lg border border-gray-700">
+                                    <p className="text-sm text-gray-300 mb-2">Nhập tên để thêm người liên lạc: </p>
+                                    <input
+                                        type="text"
+                                        value={newContactName}
+                                        onChange={(e) => setNewContactName(e.target.value)}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter' && newContactName.trim()) {
+                                                handleAddDirectMessage();
+                                            }
+                                        }}
+                                        className="w-full p-2 mb-2 border rounded-lg bg-gray-800 text-white border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        placeholder="Tên"
                                     />
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDeleteContact(dm.id)}
-                                        className={`absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity ${currentDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
-                                        title="Xóa liên lạc"
-                                    >
-                                        <X className="h-5 w-5" />
-                                    </Button>
+                                    <div className="flex justify-end gap-2">
+                                        <Button
+                                            onClick={() => {
+                                                setShowAddForm(false);
+                                                setNewContactName('');
+                                            }}
+                                            className="bg-purple-700 text-white hover:bg-purple-600 px-4 py-2 rounded-lg"
+                                        >
+                                            Hủy
+                                        </Button>
+                                        <Button
+                                            onClick={handleAddDirectMessage}
+                                            className="bg-purple-400 text-white hover:bg-purple-300 px-4 py-2 rounded-lg"
+                                        >
+                                            OK
+                                        </Button>
+                                    </div>
                                 </div>
-                            ))}
+                            )}
+                            <div className="space-y-1">
+                                {filteredDirectMessages.map((dm) => (
+                                    <div key={dm.id} className="relative group">
+                                        <ChatItem
+                                            name={dm.name}
+                                            message={dm.message}
+                                            avatar={dm.avatar}
+                                            active={selectedChatId === dm.id}
+                                            isDarkMode={currentDarkMode}
+                                            onClick={() => setSelectedChatId(dm.id)}
+                                        />
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleDeleteContact(dm.id)}
+                                            className={`absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity ${currentDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
+                                            title="Xóa liên lạc"
+                                        >
+                                            <X className="h-5 w-5" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div className="flex-1 flex flex-col">
-                {selectedChatUser ? (
-                    <>
-                        <ChatHeader
-                            user={selectedChatUser}
-                            onVideoCall={onVideoCall}
-                            onAudioCall={onAudioCall}
-                            isDarkMode={currentDarkMode}
-                            onViewProfile={() => setViewingProfile(selectedChatUser)}
-                        />
-                        <ChatMessages
-                            messages={convertedMessages}
-                            currentUser={convertedCurrentUser}
-                            isDarkMode={currentDarkMode}
-                        />
-                        <ChatInput
-                            onSendMessage={handleSendMessage}
-                            onCreatePoll={handleCreatePoll}
-                            isDarkMode={currentDarkMode}
-                        />
-
-                        <div className="p-4 border-t">
-                            {currentMessages
-                                .filter((msg) => msg.type === 'poll')
-                                .map((msg) => (
-                                    <div key={msg.id} className="mb-4 p-3 border rounded-lg">
-                                        <h4 className="font-semibold mb-2">{msg.poll?.question}</h4>
-                                        <div className="space-y-2">
-                                            {msg.poll?.options.map((option, idx) => (
-                                                <button
-                                                    key={idx}
-                                                    onClick={() => handleVote(msg.id, idx)}
-                                                    className="w-full text-left p-2 border rounded hover:bg-gray-100 flex justify-between"
-                                                >
-                                                    <span>{option.text}</span>
-                                                    <span className="text-gray-500">({option.votes})</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))
-                            }
+                <div className="flex-1 flex flex-col">
+                    {selectedChatUser ? (
+                        <>
+                            <ChatHeader
+                                user={selectedChatUser}
+                                isDarkMode={currentDarkMode}
+                                onViewProfile={() => setViewingProfile(convertToExtendedUserProfile(selectedChatUser))}
+                                onToggleDetails={() => setIsDetailsOpen(!isDetailsOpen)}
+                                onAudioCall={onAudioCall}
+                                isDetailsOpen={isDetailsOpen}
+                                onCloseDetails={() => setIsDetailsOpen(false)}
+                            />
+                            <CustomChatMessages
+                                messages={currentMessages}
+                                currentUser={currentUser}
+                                isDarkMode={currentDarkMode}
+                                onVote={handleVote}
+                                onToggleReaction={handleToggleReaction}
+                            />
+                            <ChatInput
+                                onSendMessage={handleSendMessage}
+                                onCreatePoll={handleCreatePoll}
+                                isDarkMode={currentDarkMode}
+                            />
+                        </>
+                    ) : (
+                        <div
+                            className={`flex-1 flex items-center justify-center ${currentDarkMode ? 'text-gray-400' : 'text-gray-500'
+                                }`}
+                        >
+                            Chọn một cuộc trò chuyện để bắt đầu
                         </div>
-                    </>
-                ) : (
-                    <div
-                        className={`flex-1 flex items-center justify-center ${currentDarkMode ? 'text-gray-400' : 'text-gray-500'
-                            }`}
-                    >
-                        Chọn một cuộc trò chuyện để bắt đầu
-                    </div>
+                    )}
+                </div>
+                {isDetailsOpen && selectedChatUser && (
+                    <ConversationDetails
+                        user={selectedChatUser}
+                        onClose={() => setIsDetailsOpen(false)}
+                        isDarkMode={currentDarkMode}
+                    />
                 )}
-            </div>
-            {viewingProfile && (
-                <UserProfileModal
-                    user={viewingProfile}
-                    onClose={() => setViewingProfile(null)}
-                    onSendMessage={handleMessageFromProfile}
-                    onStartCall={handleCallFromProfile}
-                    isDarkMode={currentDarkMode}
-                />
-            )}
-            {notification && (
-                <Notification
-                    message={notification.message}
-                    type={notification.type}
-                    onClose={() => setNotification(null)}
-                />
-            )}
-            {showConfirmDelete && contactToDelete && (
-                <ConfirmDelete
-                    isOpen={showConfirmDelete}
-                    onClose={() => setShowConfirmDelete(false)}
-                    onConfirm={confirmDeleteContact}
-                    contactName={directMessages.find((dm) => dm.id === contactToDelete)?.name || ''}
-                />
-            )}
+
+                {viewingProfile && (
+                    <UserProfileModal
+                        user={viewingProfile}
+                        onClose={() => setViewingProfile(null)}
+                        onSendMessage={handleMessageFromProfile}
+                        onStartCall={handleCallFromProfile}
+                    />
+                )}
+                {notification && (
+                    <Notification
+                        message={notification.message}
+                        type={notification.type}
+                        onClose={() => setNotification(null)}
+                    />
+                )}
+                {showConfirmDelete && contactToDelete && (
+                    <ConfirmDelete
+                        isOpen={showConfirmDelete}
+                        onClose={() => setShowConfirmDelete(false)}
+                        onConfirm={confirmDeleteContact}
+                        contactName={directMessages.find((dm) => dm.id === contactToDelete)?.name || ''}
+                    />
+                )}
+            </div >
         </>
     );
 }

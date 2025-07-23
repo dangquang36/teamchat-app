@@ -1,16 +1,15 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Search, UserPlus, Check } from 'lucide-react';
 import type { DirectMessage } from '@/app/types';
 
-// Dữ liệu người dùng giả lập để tìm kiếm
+// --- SỬA ĐỔI: Cập nhật cơ sở dữ liệu người dùng giả lập ---
 const allUsersDatabase: Omit<DirectMessage, 'message'>[] = [
+    { id: 'minh.khoi', name: 'Trần Minh Khôi', email: 'minh.khoi@example.com', avatar: '/placeholder.svg?text=MK', online: true, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 2 },
+    { id: 'an.nguyen', name: 'Nguyễn Văn An', email: 'an.nguyen@example.com', avatar: '/placeholder.svg?text=AN', online: false, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 4 },
+    { id: 'phuong.thao', name: 'Lê Thị Phương Thảo', email: 'phuong.thao@example.com', avatar: '/placeholder.svg?text=PT', online: true, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 1 },
     { id: 'john.doe', name: 'John Doe', email: 'john.doe@example.com', avatar: '/placeholder.svg?text=JD', online: true, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 0 },
     { id: 'jane.smith', name: 'Jane Smith', email: 'jane.smith@example.com', avatar: '/placeholder.svg?text=JS', online: false, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 3 },
-    { id: 'alice', name: 'Alice Wonder', email: 'alice.w@example.com', avatar: '/placeholder.svg?text=AW', online: true, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 1 },
-    { id: 'bob', name: 'Bob Builder', email: 'bob.b@example.com', avatar: '/placeholder.svg?text=BB', online: false, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 5 },
 ];
 
 interface AddContactModalProps {
@@ -26,10 +25,10 @@ export function AddContactModal({ isOpen, onClose, onAddContact, existingContact
     const [searchResults, setSearchResults] = useState<Omit<DirectMessage, 'message'>[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Giả lập việc tìm kiếm người dùng
     useEffect(() => {
         if (!searchQuery.trim()) {
             setSearchResults([]);
+            setIsLoading(false);
             return;
         }
 
@@ -41,10 +40,19 @@ export function AddContactModal({ isOpen, onClose, onAddContact, existingContact
             );
             setSearchResults(results);
             setIsLoading(false);
-        }, 500); // Giả lập độ trễ mạng
+        }, 500);
 
         return () => clearTimeout(timer);
     }, [searchQuery]);
+
+    // Reset state khi modal đóng
+    useEffect(() => {
+        if (!isOpen) {
+            setSearchQuery('');
+            setSearchResults([]);
+            setIsLoading(false);
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 

@@ -1,4 +1,66 @@
-import React, { useState, useEffect } from 'react';
+const currentUser = {
+    id: 'me', name: 'Current User', avatar: '/placeholder.svg?height=32&width=32&text=CU',
+    email: 'current.user@example.com', online: true
+};
+
+// Custom ChatMessages component that handles extended message types
+const CustomChatMessages = ({ messages, currentUser, isDarkMode, onVote, onToggleReaction }: {
+    messages: ExtendedMessage[];
+    currentUser: any;
+    isDarkMode: boolean;
+    onVote: (messageId: string, optionIndex: number) => void;
+    onToggleReaction: (messageId: string, emoji: string) => void;
+}) => {
+    return (
+        <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            {messages.map((message) => (
+                <div key={message.id} className={`flex ${message.from === 'me' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.from === 'me'
+                            ? 'bg-purple-600 text-white'
+                            : isDarkMode
+                                ? 'bg-gray-700 text-white'
+                                : 'bg-white text-gray-900'
+                        }`}>
+                        {message.type === 'poll' && message.poll ? (
+                            <div>
+                                <h4 className="font-semibold mb-2">{message.poll.question}</h4>
+                                {message.poll.options.map((option, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => onVote(message.id, index)}
+                                        className={`w-full text-left p-2 mb-1 rounded border ${option.voters.includes('me')
+                                                ? 'bg-purple-500 text-white'
+                                                : isDarkMode
+                                                    ? 'bg-gray-600 hover:bg-gray-500'
+                                                    : 'bg-gray-100 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        <div className="flex justify-between">
+                                            <span>{option.text}</span>
+                                            <span>{option.votes}</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <p>{message.text}</p>
+                        )}
+                        <div className="text-xs opacity-70 mt-1">{message.time}</div>
+                        {message.reactions && message.reactions.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                                {message.reactions.map((reaction, index) => (
+                                    <span key={index} className="text-sm">
+                                        {reaction.emoji}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}; import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, X } from 'lucide-react';
 import { ChatItem } from './ChatItem';
@@ -94,9 +156,29 @@ interface MessagesSectionProps {
     isDarkMode?: boolean;
 }
 
+// Extended Message type to support all message types
+interface ExtendedMessage extends Omit<Message, 'type'> {
+    type?: 'text' | 'poll' | 'file' | 'image';
+    poll?: Poll;
+}
 
-
-
+// Extended UserProfile type to match UserProfileModal requirements
+interface ExtendedUserProfile {
+    id: string;
+    name: string;
+    email?: string;
+    avatar: string;
+    online: boolean;
+    coverPhotoUrl?: string;
+    phone?: string;
+    socialProfiles?: {
+        facebook?: string;
+        twitter?: string;
+        instagram?: string;
+        linkedin?: string;
+    };
+    mutualGroups?: number;
+}
 
 export function MessagesSection({
     onVideoCall,
@@ -105,7 +187,7 @@ export function MessagesSection({
 }: MessagesSectionProps) {
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [selectedChatId, setSelectedChatId] = useState<string>('nicholas');
-    const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
+    const [viewingProfile, setViewingProfile] = useState<ExtendedUserProfile | null>(null);
     const [currentDarkMode, setCurrentDarkMode] = useState(isDarkMode);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -139,11 +221,10 @@ export function MessagesSection({
         setViewingProfile(null);
     };
 
-    const handleCallFromProfile = (user: UserProfile) => {
+    const handleCallFromProfile = (user: any) => {
         setViewingProfile(null);
         onAudioCall();
     };
-
 
     const [directMessages, setDirectMessages] = useState<DirectMessage[]>([
         {
@@ -184,7 +265,7 @@ export function MessagesSection({
         },
     ]);
 
-    const [allMessages, setAllMessages] = useState<Record<string, Message[]>>({});
+    const [allMessages, setAllMessages] = useState<Record<string, ExtendedMessage[]>>({});
 
     const selectedChatUser = directMessages.find((dm) => dm.id === selectedChatId);
     const filteredDirectMessages = directMessages.filter(
@@ -194,10 +275,18 @@ export function MessagesSection({
     );
     const currentMessages = allMessages[selectedChatId] || [];
 
-    const currentUser = {
-        id: 'me', name: 'Current User', avatar: '/placeholder.svg?height=32&width=32&text=CU',
-        email: 'current.user@example.com', online: true
+    // Convert ExtendedMessage to standard Message for ChatMessages component
+    const convertToStandardMessages = (messages: ExtendedMessage[]): Message[] => {
+        return messages.map(msg => ({
+            id: msg.id,
+            from: msg.from,
+            text: msg.text,
+            time: msg.time,
+            reactions: msg.reactions || [],
+            type: msg.type === 'text' || msg.type === undefined ? 'text' : undefined,
+        }));
     };
+
     const handleAddDirectMessage = () => {
         if (!newContactName.trim()) {
             setNotification({ message: 'Thêm liên lạc thất bại: Vui lòng nhập tên', type: 'error' });
@@ -241,7 +330,7 @@ export function MessagesSection({
     const handleSendMessage = (text: string) => {
         if (!text.trim() || !selectedChatId) return;
 
-        const newMessage: Message = {
+        const newMessage: ExtendedMessage = {
             id: `msg-${Date.now()}`,
             from: 'me',
             text,
@@ -256,7 +345,7 @@ export function MessagesSection({
         }));
 
         setTimeout(() => {
-            const replyMessage: Message = {
+            const replyMessage: ExtendedMessage = {
                 id: `msg-${Date.now() + 1}`,
                 from: selectedChatId,
                 text: 'Ok, noted!',
@@ -290,7 +379,7 @@ export function MessagesSection({
             voters: []
         };
 
-        const newPollMessage: Message = {
+        const newPollMessage: ExtendedMessage = {
             id: `msg-${Date.now()}`,
             from: 'me',
             time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
@@ -405,7 +494,18 @@ export function MessagesSection({
         }
     };
 
-
+    // Convert DirectMessage to ExtendedUserProfile for UserProfileModal
+    const convertToExtendedUserProfile = (dm: DirectMessage): ExtendedUserProfile => ({
+        id: dm.id,
+        name: dm.name,
+        email: dm.email,
+        avatar: dm.avatar,
+        online: dm.online,
+        coverPhotoUrl: dm.coverPhotoUrl,
+        phone: dm.phone,
+        socialProfiles: dm.socialProfiles,
+        mutualGroups: dm.mutualGroups,
+    });
 
     return (
         <>
@@ -521,13 +621,14 @@ export function MessagesSection({
                         <>
                             <ChatHeader
                                 user={selectedChatUser}
-                                onVideoCall={onVideoCall}
-                                onAudioCall={onAudioCall}
                                 isDarkMode={currentDarkMode}
-                                onViewProfile={() => setViewingProfile(selectedChatUser)}
+                                onViewProfile={() => setViewingProfile(convertToExtendedUserProfile(selectedChatUser))}
                                 onToggleDetails={() => setIsDetailsOpen(!isDetailsOpen)}
+                                onAudioCall={onAudioCall}
+                                isDetailsOpen={isDetailsOpen}
+                                onCloseDetails={() => setIsDetailsOpen(false)}
                             />
-                            <ChatMessages
+                            <CustomChatMessages
                                 messages={currentMessages}
                                 currentUser={currentUser}
                                 isDarkMode={currentDarkMode}
@@ -539,8 +640,6 @@ export function MessagesSection({
                                 onCreatePoll={handleCreatePoll}
                                 isDarkMode={currentDarkMode}
                             />
-
-
                         </>
                     ) : (
                         <div
@@ -565,7 +664,6 @@ export function MessagesSection({
                         onClose={() => setViewingProfile(null)}
                         onSendMessage={handleMessageFromProfile}
                         onStartCall={handleCallFromProfile}
-                        isDarkMode={currentDarkMode}
                     />
                 )}
                 {notification && (

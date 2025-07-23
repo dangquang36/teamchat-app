@@ -4,7 +4,7 @@ import { Search, MoreHorizontal } from "lucide-react";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatMessages } from "@/components/chat/ChatMessages";
 import { ChatInput } from "@/components/chat/ChatInput";
-
+import type { DirectMessage } from "@/app/types";
 
 interface BookmarkSectionProps {
     isDarkMode?: boolean;
@@ -53,6 +53,51 @@ function BookmarkItem({
 }
 
 export function BookmarkSection({ isDarkMode = false }: BookmarkSectionProps) {
+    // Tạo một mock DirectMessage object cho ChatHeader
+    const bookmarkChatUser: DirectMessage = {
+        id: "bookmarks",
+        name: "Bookmarks Chat",
+        email: "bookmarks@example.com",
+        message: "Chat about bookmarks",
+        avatar: "/placeholder.svg?height=40&width=40&text=BM",
+        online: true,
+        coverPhotoUrl: "/placeholder-cover.jpg",
+        phone: "",
+        birthday: "",
+        socialProfiles: {
+            facebook: "",
+            twitter: "",
+            instagram: "",
+            linkedin: "",
+        },
+        mutualGroups: 0,
+    };
+
+    // Hàm giả lập cho các callback (có thể thay thế bằng logic thực tế)
+    const handleVideoCall = () => {
+        console.log("Starting video call...");
+    };
+
+    const handleAudioCall = () => {
+        console.log("Starting audio call...");
+    };
+
+    const handleViewProfile = () => {
+        console.log("Viewing profile...");
+    };
+
+    const handleToggleDetails = () => {
+        console.log("Toggle details...");
+    };
+
+    const handleCloseDetails = () => {
+        console.log("Close details...");
+    };
+
+    const handleSendMessage = (message: string) => {
+        console.log("Sending message:", message);
+    };
+
     return (
         <div className="flex-1 flex">
             <div
@@ -153,11 +198,13 @@ export function BookmarkSection({ isDarkMode = false }: BookmarkSectionProps) {
             {/* Chat area for bookmarks */}
             <div className="flex-1 flex flex-col">
                 <ChatHeader
-                    user={{ name: "Bookmarks Chat", online: true, avatar: "/placeholder.svg" }}
-                    onVideoCall={() => { }}
-                    onAudioCall={() => { }}
-                    onViewProfile={() => { }}
+                    user={bookmarkChatUser}
                     isDarkMode={isDarkMode}
+                    onViewProfile={handleViewProfile}
+                    onToggleDetails={handleToggleDetails}
+                    onAudioCall={handleAudioCall}
+                    isDetailsOpen={false}
+                    onCloseDetails={handleCloseDetails}
                 />
                 <ChatMessages
                     messages={[]}
@@ -165,11 +212,14 @@ export function BookmarkSection({ isDarkMode = false }: BookmarkSectionProps) {
                         id: "me",
                         name: "Me",
                         avatar: "/placeholder.svg",
-                        online: true, // <-- Thêm dòng này để đúng kiểu
+                        online: true,
                     }}
                     isDarkMode={isDarkMode}
                 />
-                <ChatInput onSendMessage={() => { }} isDarkMode={isDarkMode} />
+                <ChatInput
+                    onSendMessage={handleSendMessage}
+                    isDarkMode={isDarkMode}
+                />
             </div>
         </div>
     );

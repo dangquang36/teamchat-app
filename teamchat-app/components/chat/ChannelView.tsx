@@ -14,13 +14,6 @@ interface Group {
     members: number;
 }
 
-interface ChannelViewProps {
-    channel: Group;
-    isDarkMode?: boolean;
-    onToggleDetails: () => void;
-}
-
-// THÊM MỚI: Interface chi tiết cho cuộc bình chọn
 interface PollOption {
     id: string;
     text: string;
@@ -79,7 +72,6 @@ const currentUser: UserProfile = {
     mutualGroups: 5,
 };
 
-// Mock thêm một số users để demo
 const mockUsers = [
     { id: "user-1", name: "Nguyễn Văn A", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face" },
     { id: "user-2", name: "Trần Thị B", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face" },
@@ -87,7 +79,6 @@ const mockUsers = [
     { id: "user-4", name: "Phạm Thị D", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=32&h=32&fit=crop&crop=face" },
 ];
 
-// THÊM MỚI: Component chi tiết hiển thị kết quả vote
 function PollResultsModal({
     poll,
     isOpen,
@@ -168,7 +159,6 @@ function PollResultsModal({
     );
 }
 
-// THÊM MỚI: Component PollMessage chi tiết hơn
 function PollMessage({
     poll,
     currentUserId,
@@ -207,7 +197,7 @@ function PollMessage({
     };
 
     return (
-        <div className={`rounded-lg border ${isDarkMode ? "bg-gray-800 border-gray-600" : "bg-white border-gray-200"} max-w-lg overflow-hidden`}>
+        <div className={`rounded-lg border max-w-md min-w-[300px] overflow-hidden ${isDarkMode ? "bg-gray-800 border-gray-600" : "bg-white border-gray-200"}`}>
             {/* Header */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2 mb-2">
@@ -246,7 +236,7 @@ function PollMessage({
             </div>
 
             {/* Options */}
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-3 max-h-[200px] overflow-y-auto">
                 {poll.options.map((option) => {
                     const percentage = totalVotes > 0 ? (option.votes.length / totalVotes) * 100 : 0;
                     const isSelected = option.votes.some((vote) => vote.userId === currentUserId);
@@ -269,7 +259,6 @@ function PollMessage({
                             <div className="relative z-10 p-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        {/* Checkbox/Radio icon */}
                                         <div className="flex-shrink-0">
                                             {isSelected ? (
                                                 <CheckCircle className="h-5 w-5 text-blue-500" />
@@ -279,14 +268,12 @@ function PollMessage({
                                         </div>
                                         <span className={`${isDarkMode ? "text-white" : "text-gray-900"} font-medium`}>{option.text}</span>
                                     </div>
-
                                     <div className="flex items-center gap-2 text-sm text-gray-500">
                                         <span>{option.votes.length}</span>
                                         {shouldShowResults && <span>({percentage.toFixed(0)}%)</span>}
                                     </div>
                                 </div>
 
-                                {/* Progress bar - chỉ hiển thị khi có quyền xem kết quả */}
                                 {shouldShowResults && (
                                     <div className={`mt-2 w-full h-1.5 rounded-full ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}>
                                         <div
@@ -309,7 +296,6 @@ function PollMessage({
                         {poll.allowMultiple && <span>• Chọn nhiều được</span>}
                         {hasVoted && <span>• Bạn đã vote</span>}
                     </div>
-
                     <div className="flex items-center gap-2">
                         {shouldShowResults && (
                             <Button
@@ -324,14 +310,12 @@ function PollMessage({
                         )}
                     </div>
                 </div>
-
                 <div className="text-xs text-gray-400 mt-1">Tạo bởi {poll.createdByName} • {poll.createdAt.toLocaleDateString("vi-VN")}</div>
             </div>
         </div>
     );
 }
 
-// THÊM MỚI: Component CreatePollModal chi tiết hơn
 function CreatePollModal({
     isOpen,
     onClose,
@@ -394,7 +378,6 @@ function CreatePollModal({
                 isActive: true,
             });
 
-            // Reset form
             setQuestion("");
             setDescription("");
             setOptions(["", ""]);
@@ -421,7 +404,6 @@ function CreatePollModal({
 
                 <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-120px)]">
                     <div className="p-4 space-y-4">
-                        {/* Câu hỏi */}
                         <div>
                             <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-white" : "text-gray-700"}`}>Câu hỏi bình chọn *</label>
                             <input
@@ -435,7 +417,6 @@ function CreatePollModal({
                             />
                         </div>
 
-                        {/* Mô tả */}
                         <div>
                             <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-white" : "text-gray-700"}`}>Mô tả (tùy chọn)</label>
                             <textarea
@@ -448,7 +429,6 @@ function CreatePollModal({
                             />
                         </div>
 
-                        {/* Tùy chọn */}
                         <div>
                             <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-white" : "text-gray-700"}`}>Tùy chọn *</label>
                             <div className="space-y-2">
@@ -479,10 +459,8 @@ function CreatePollModal({
                             </div>
                         </div>
 
-                        {/* Cài đặt */}
                         <div className="space-y-3">
                             <h4 className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>Cài đặt</h4>
-
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2">
                                     <input
@@ -494,7 +472,6 @@ function CreatePollModal({
                                     />
                                     <label htmlFor="allowMultiple" className={`text-sm ${isDarkMode ? "text-white" : "text-gray-700"}`}>Cho phép chọn nhiều tùy chọn</label>
                                 </div>
-
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="checkbox"
@@ -505,7 +482,6 @@ function CreatePollModal({
                                     />
                                     <label htmlFor="isAnonymous" className={`text-sm ${isDarkMode ? "text-white" : "text-gray-700"}`}>Bình chọn ẩn danh</label>
                                 </div>
-
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="checkbox"
@@ -516,7 +492,6 @@ function CreatePollModal({
                                     />
                                     <label htmlFor="hasEndTime" className={`text-sm ${isDarkMode ? "text-white" : "text-gray-700"}`}>Đặt thời gian kết thúc</label>
                                 </div>
-
                                 {hasEndTime && (
                                     <input
                                         type="datetime-local"
@@ -529,7 +504,6 @@ function CreatePollModal({
                             </div>
                         </div>
 
-                        {/* Hiển thị kết quả */}
                         <div>
                             <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-white" : "text-gray-700"}`}>Hiển thị kết quả</label>
                             <select
@@ -558,6 +532,16 @@ function CreatePollModal({
     );
 }
 
+interface ChannelViewProps {
+    channel: {
+        id: string;
+        name: string;
+        members: number;
+    };
+    isDarkMode?: boolean;
+    onToggleDetails: () => void;
+}
+
 export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: ChannelViewProps) {
     const [isCallingVideo, setIsCallingVideo] = useState(false);
     const [audioCallMode, setAudioCallMode] = useState<"none" | "outgoing" | "incoming">("none");
@@ -582,7 +566,6 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
             text: "Đây là tin nhắn của bạn.",
             timestamp: new Date(Date.now() - 3000),
         },
-        // Demo poll message
         {
             id: 3,
             sender: otherUser,
@@ -634,7 +617,6 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
         return `Đã nhận được tin nhắn: "${userMessage}". Bạn khỏe không?`;
     };
 
-    // Hàm tạo cuộc bình chọn
     const handleCreatePoll = (pollData: Omit<Poll, "id" | "createdAt" | "totalVoters">) => {
         const poll: Poll = {
             ...pollData,
@@ -653,7 +635,6 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
         setMessages((prevMessages) => [...prevMessages, pollMessage]);
     };
 
-    // Hàm xử lý vote với logic chi tiết
     const handleVote = (pollId: string, optionId: string) => {
         setMessages((prevMessages) =>
             prevMessages.map((message) => {
@@ -662,17 +643,13 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
                     let updatedOptions = [...poll.options];
                     let totalVoters = poll.totalVoters;
 
-                    // Kiểm tra user đã vote option này chưa
                     const targetOption = updatedOptions.find((opt) => opt.id === optionId);
                     const hasVotedThisOption = targetOption?.votes.some((vote) => vote.userId === currentUser.id);
-
-                    // Kiểm tra user đã vote option khác chưa
                     const hasVotedAnyOption = updatedOptions.some((opt) =>
                         opt.votes.some((vote) => vote.userId === currentUser.id)
                     );
 
                     if (hasVotedThisOption) {
-                        // Bỏ vote khỏi option này
                         updatedOptions = updatedOptions.map((option) => {
                             if (option.id === optionId) {
                                 return {
@@ -682,28 +659,19 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
                             }
                             return option;
                         });
-
-                        // Giảm tổng số người vote nếu user không còn vote option nào
-                        const stillHasVotes = updatedOptions.some((opt) =>
-                            opt.votes.some((vote) => vote.userId === currentUser.id)
-                        );
-                        if (!stillHasVotes) {
+                        if (!hasVotedAnyOption) {
                             totalVoters = Math.max(0, totalVoters - 1);
                         }
                     } else {
-                        // Thêm vote vào option này
                         if (!poll.allowMultiple && hasVotedAnyOption) {
-                            // Nếu không cho phép multiple và đã vote option khác, xóa vote cũ
                             updatedOptions = updatedOptions.map((option) => ({
                                 ...option,
                                 votes: option.votes.filter((vote) => vote.userId !== currentUser.id),
                             }));
                         } else if (!hasVotedAnyOption) {
-                            // Nếu chưa vote option nào, tăng tổng số người vote
                             totalVoters += 1;
                         }
 
-                        // Thêm vote mới
                         updatedOptions = updatedOptions.map((option) => {
                             if (option.id === optionId) {
                                 return {
@@ -737,7 +705,6 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
         );
     };
 
-    // Hàm mở modal xem kết quả
     const handleViewResults = (poll: Poll) => {
         setPollResultsModal({ isOpen: true, poll });
     };
@@ -799,7 +766,7 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
 
             <div
                 className={`flex-1 p-4 space-y-4 ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}
-                style={{ overflowY: "auto" }} // Thêm thanh cuộn
+                style={{ overflowY: "auto" }}
             >
                 {messages.length === 0 ? (
                     <p className="text-center text-gray-500">Đây là khởi đầu của kênh #{channel.name}.</p>
@@ -810,13 +777,11 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
                                 <img src={msg.sender.avatarUrl} alt={msg.sender.name} className="w-8 h-8 rounded-full cursor-pointer" />
                             </button>
                             <div className={`flex flex-col gap-2 ${msg.sender.id === currentUser.id ? "items-end" : "items-start"}`}>
-                                {/* Tên người gửi và thời gian */}
                                 <div className={`flex items-center gap-2 text-xs text-gray-500 ${msg.sender.id === currentUser.id ? "flex-row-reverse" : ""}`}>
                                     <span className="font-medium">{msg.sender.name}</span>
                                     <span>{msg.timestamp.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>
                                 </div>
 
-                                {/* Cuộc bình chọn */}
                                 {msg.poll && (
                                     <PollMessage
                                         poll={msg.poll}
@@ -827,7 +792,6 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
                                     />
                                 )}
 
-                                {/* Tin nhắn text */}
                                 {msg.text && (
                                     <div
                                         className={`rounded-lg p-3 max-w-xs md:max-w-md ${msg.sender.id === currentUser.id ? "bg-purple-500 text-white" : isDarkMode ? "bg-gray-700 text-white" : "bg-white text-gray-800 shadow-sm"
@@ -837,7 +801,6 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
                                     </div>
                                 )}
 
-                                {/* Files */}
                                 {msg.files &&
                                     msg.files.map((file, index) => (
                                         <div
@@ -877,7 +840,6 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
                 <UserProfileModal user={viewedUser} onClose={() => setProfileModalOpen(false)} isDarkMode={isDarkMode} />
             )}
 
-            {/* Modal tạo bình chọn */}
             <CreatePollModal
                 isOpen={isCreatePollModalOpen}
                 onClose={() => setIsCreatePollModalOpen(false)}
@@ -885,7 +847,6 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
                 isDarkMode={isDarkMode}
             />
 
-            {/* Modal xem kết quả chi tiết */}
             {pollResultsModal.poll && (
                 <PollResultsModal
                     poll={pollResultsModal.poll}

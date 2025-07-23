@@ -96,15 +96,20 @@ function PollResultsModal({
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className={`w-full max-w-lg mx-4 rounded-lg max-h-[80vh] overflow-hidden ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
-                <div className={`p-4 border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
+            <div className={`w-full max-w-lg mx-4 rounded-xl max-h-[80vh] overflow-hidden shadow-2xl ${isDarkMode ? "bg-gray-800" : "bg-white"
+                }`}>
+                <div className={`p-5 border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
                     <div className="flex justify-between items-center">
-                        <h3 className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>Kết quả bình chọn</h3>
-                        <Button onClick={onClose} variant="ghost" size="sm">
-                            <X className="h-4 w-4" />
+                        <h3 className={`text-xl font-bold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                            Kết quả bình chọn
+                        </h3>
+                        <Button onClick={onClose} variant="ghost" size="sm" className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <X className="h-5 w-5" />
                         </Button>
                     </div>
-                    <p className={`text-sm mt-1 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>{poll.question}</p>
+                    <p className={`text-sm mt-2 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
+                        {poll.question}
+                    </p>
                 </div>
 
                 <div className="overflow-y-auto max-h-96">
@@ -112,35 +117,85 @@ function PollResultsModal({
                         const percentage = totalVotes > 0 ? (option.votes.length / totalVotes) * 100 : 0;
 
                         return (
-                            <div key={option.id} className={`p-4 border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>{option.text}</span>
-                                    <span className="text-sm text-gray-500">{option.votes.length} vote ({percentage.toFixed(1)}%)</span>
+                            <div key={option.id} className={`p-5 border-b last:border-b-0 ${isDarkMode ? "border-gray-700" : "border-gray-200"
+                                }`}>
+                                <div className="flex justify-between items-center mb-3">
+                                    <span className={`font-semibold text-base ${isDarkMode ? "text-white" : "text-gray-900"
+                                        }`}>
+                                        {option.text}
+                                    </span>
+                                    <div className="text-right">
+                                        <div className={`text-sm font-bold ${isDarkMode ? "text-white" : "text-gray-900"
+                                            }`}>
+                                            {option.votes.length} vote
+                                        </div>
+                                        <div className="text-xs text-blue-500 font-medium">
+                                            {percentage.toFixed(1)}%
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className={`w-full h-2 rounded-full mb-3 ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}>
+                                <div className={`w-full h-2 rounded-full mb-4 ${isDarkMode ? "bg-gray-700" : "bg-gray-200"
+                                    }`}>
                                     <div
-                                        className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                                        className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
                                         style={{ width: `${percentage}%` }}
                                     />
                                 </div>
 
-                                {!poll.isAnonymous && option.votes.length > 0 && (
-                                    <div className="space-y-2">
-                                        <h4 className={`text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>Người đã vote:</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {option.votes.slice(0, 6).map((vote) => (
-                                                <div key={vote.userId} className="flex items-center gap-2 p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-                                                    <img src={vote.userAvatar} alt={vote.userName} className="w-6 h-6 rounded-full" />
-                                                    <span className={`text-sm ${isDarkMode ? "text-white" : "text-gray-900"}`}>{vote.userName}</span>
+                                {/* Hiển thị người đã vote */}
+                                {option.votes.length > 0 && (
+                                    <div className="space-y-3">
+                                        <h4 className={`text-sm font-semibold ${isDarkMode ? "text-gray-300" : "text-gray-700"
+                                            }`}>
+                                            Người đã bình chọn:
+                                        </h4>
+                                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                                            {option.votes.map((vote) => (
+                                                <div key={`${vote.userId}-${vote.votedAt.getTime()}`}
+                                                    className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isDarkMode
+                                                            ? "bg-gray-700/50 hover:bg-gray-700"
+                                                            : "bg-gray-50 hover:bg-gray-100"
+                                                        }`}>
+                                                    <img
+                                                        src={vote.userAvatar}
+                                                        alt={vote.userName}
+                                                        className="w-7 h-7 rounded-full border-2 border-white dark:border-gray-600 shadow-sm"
+                                                    />
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className={`text-sm font-medium ${isDarkMode ? "text-white" : "text-gray-900"
+                                                            }`}>
+                                                            {vote.userName}
+                                                        </span>
+                                                        <div className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"
+                                                            }`}>
+                                                            {vote.votedAt.toLocaleString("vi-VN", {
+                                                                day: '2-digit',
+                                                                month: '2-digit',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                    {vote.userId === "user-current" && (
+                                                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${isDarkMode
+                                                                ? "bg-blue-500/20 text-blue-300"
+                                                                : "bg-blue-100 text-blue-600"
+                                                            }`}>
+                                                            Bạn
+                                                        </span>
+                                                    )}
                                                 </div>
                                             ))}
-                                            {option.votes.length > 6 && (
-                                                <div className="flex items-center p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-                                                    <span className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>+{option.votes.length - 6} khác</span>
-                                                </div>
-                                            )}
                                         </div>
+                                    </div>
+                                )}
+
+                                {/* Trường hợp không có vote */}
+                                {option.votes.length === 0 && (
+                                    <div className={`text-center py-3 text-sm ${isDarkMode ? "text-gray-500" : "text-gray-400"
+                                        }`}>
+                                        Chưa có ai bình chọn tùy chọn này
                                     </div>
                                 )}
                             </div>
@@ -148,10 +203,14 @@ function PollResultsModal({
                     })}
                 </div>
 
-                <div className={`p-4 border-t ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
-                    <div className="flex items-center justify-between text-sm text-gray-500">
-                        <span>{poll.totalVoters} người đã tham gia</span>
-                        <span>Tạo bởi {poll.createdByName}</span>
+                <div className={`p-5 border-t ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
+                    <div className="flex items-center justify-between text-sm">
+                        <div className={`${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
+                            <span className="font-semibold">{poll.totalVoters}</span> người đã tham gia
+                        </div>
+                        <div className={`${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                            Tạo bởi <span className="font-medium">{poll.createdByName}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -197,47 +256,78 @@ function PollMessage({
     };
 
     return (
-        <div className={`rounded-lg border max-w-md min-w-[300px] overflow-hidden ${isDarkMode ? "bg-gray-800 border-gray-600" : "bg-white border-gray-200"}`}>
-            {/* Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-2 mb-2">
-                    <BarChart3 className="h-5 w-5 text-blue-500" />
-                    <span className={`font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>Cuộc bình chọn</span>
-                    {isExpired && (
-                        <span className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded-full">Đã kết thúc</span>
-                    )}
-                    {poll.isActive && !isExpired && (
-                        <span className="px-2 py-1 text-xs bg-green-100 text-green-600 rounded-full">Đang diễn ra</span>
-                    )}
+        <div className={`rounded-xl w-[380px] overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl ${isDarkMode
+                ? "bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50"
+                : "bg-gradient-to-br from-white to-gray-50 border border-gray-200/80"
+            }`}>
+            {/* Header với gradient */}
+            <div className={`p-5 border-b ${isDarkMode
+                    ? "border-gray-700/50 bg-gradient-to-r from-blue-900/20 to-purple-900/20"
+                    : "border-gray-200/80 bg-gradient-to-r from-blue-50 to-indigo-50"
+                }`}>
+                <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
+                        <BarChart3 className="h-5 w-5 text-white" />
+                    </div>
+                    <span className={`font-bold text-lg ${isDarkMode ? "text-white" : "text-gray-900"}`}>Cuộc bình chọn</span>
+                    <div className="flex gap-2 ml-auto">
+                        {isExpired && (
+                            <span className="px-3 py-1 text-xs font-semibold bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full shadow-md">
+                                Đã kết thúc
+                            </span>
+                        )}
+                        {poll.isActive && !isExpired && (
+                            <span className="px-3 py-1 text-xs font-semibold bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full shadow-md animate-pulse">
+                                Đang diễn ra
+                            </span>
+                        )}
+                    </div>
                 </div>
 
-                <h3 className={`font-medium text-lg mb-1 ${isDarkMode ? "text-white" : "text-gray-900"}`}>{poll.question}</h3>
+                <h3 className={`font-bold text-xl mb-2 leading-tight ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                    {poll.question}
+                </h3>
 
                 {poll.description && (
-                    <p className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>{poll.description}</p>
+                    <p className={`text-sm leading-relaxed ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
+                        {poll.description}
+                    </p>
                 )}
 
-                {/* Thông tin thời gian */}
-                <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-                    <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>{poll.totalVoters} người tham gia</span>
+                {/* Thông tin với layout cải thiện */}
+                <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-blue-500" />
+                        <span className={`text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
+                            {poll.totalVoters} người tham gia
+                        </span>
                     </div>
-                    {poll.endTime && timeRemaining && timeRemaining > 0 && (
-                        <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            <span>Còn {formatTimeRemaining(timeRemaining)}</span>
-                        </div>
-                    )}
-                    {poll.isAnonymous && (
-                        <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">Ẩn danh</span>
-                    )}
+
+                    <div className="flex items-center gap-3">
+                        {poll.endTime && timeRemaining && timeRemaining > 0 && (
+                            <div className="flex items-center gap-1.5">
+                                <Clock className="h-4 w-4 text-orange-500" />
+                                <span className={`text-xs font-medium ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                    {formatTimeRemaining(timeRemaining)}
+                                </span>
+                            </div>
+                        )}
+
+                        {poll.isAnonymous && (
+                            <span className={`text-xs px-2 py-1 rounded-md font-medium ${isDarkMode
+                                    ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                                    : "bg-purple-50 text-purple-600 border border-purple-200"
+                                }`}>
+                                Ẩn danh
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* Options */}
-            <div className="p-4 space-y-3 max-h-[200px] overflow-y-auto">
-                {poll.options.map((option) => {
+            {/* Options với animation đẹp */}
+            <div className="p-5 space-y-3">
+                {poll.options.map((option, index) => {
                     const percentage = totalVotes > 0 ? (option.votes.length / totalVotes) * 100 : 0;
                     const isSelected = option.votes.some((vote) => vote.userId === currentUserId);
                     const canVote = poll.isActive && !isExpired;
@@ -247,37 +337,56 @@ function PollMessage({
                             key={option.id}
                             onClick={() => canVote && onVote(poll.id, option.id)}
                             disabled={!canVote}
-                            className={`w-full text-left relative overflow-hidden rounded-lg border transition-all duration-200 ${!canVote
-                                ? "cursor-not-allowed opacity-60"
-                                : isSelected
-                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm"
-                                    : isDarkMode
-                                        ? "border-gray-600 hover:border-gray-500 hover:bg-gray-700/50"
-                                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                            className={`w-full text-left relative overflow-hidden rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${!canVote
+                                    ? "cursor-not-allowed opacity-60"
+                                    : isSelected
+                                        ? isDarkMode
+                                            ? "border-blue-400 bg-gradient-to-r from-blue-900/30 to-blue-800/30 shadow-lg shadow-blue-500/20"
+                                            : "border-blue-400 bg-gradient-to-r from-blue-50 to-blue-100 shadow-lg shadow-blue-500/20"
+                                        : isDarkMode
+                                            ? "border-gray-600 hover:border-gray-500 hover:bg-gradient-to-r hover:from-gray-700/30 hover:to-gray-600/30"
+                                            : "border-gray-200 hover:border-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100"
                                 }`}
+                            style={{ animationDelay: `${index * 50}ms` }}
                         >
-                            <div className="relative z-10 p-3">
-                                <div className="flex items-center justify-between">
+                            <div className="relative z-10 p-4">
+                                <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-3">
                                         <div className="flex-shrink-0">
                                             {isSelected ? (
-                                                <CheckCircle className="h-5 w-5 text-blue-500" />
+                                                <div className="relative">
+                                                    <CheckCircle className="h-6 w-6 text-blue-500 drop-shadow-lg" />
+                                                    <div className="absolute inset-0 rounded-full bg-blue-400 animate-ping scale-75 opacity-25"></div>
+                                                </div>
                                             ) : (
-                                                <Circle className="h-5 w-5 text-gray-400" />
+                                                <Circle className={`h-6 w-6 transition-colors duration-200 ${canVote ? "text-gray-400 group-hover:text-blue-400" : "text-gray-300"
+                                                    }`} />
                                             )}
                                         </div>
-                                        <span className={`${isDarkMode ? "text-white" : "text-gray-900"} font-medium`}>{option.text}</span>
+                                        <span className={`font-semibold text-base ${isDarkMode ? "text-white" : "text-gray-900"
+                                            }`}>
+                                            {option.text}
+                                        </span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                                        <span>{option.votes.length}</span>
-                                        {shouldShowResults && <span>({percentage.toFixed(0)}%)</span>}
+                                    <div className={`flex items-center gap-2 px-2 py-1 rounded-lg ${isDarkMode ? "bg-gray-700/50" : "bg-white/70"
+                                        } backdrop-blur-sm`}>
+                                        <span className={`text-sm font-bold ${isDarkMode ? "text-gray-300" : "text-gray-700"
+                                            }`}>
+                                            {option.votes.length}
+                                        </span>
+                                        {shouldShowResults && (
+                                            <span className="text-sm font-medium text-blue-500">
+                                                ({percentage.toFixed(0)}%)
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
 
                                 {shouldShowResults && (
-                                    <div className={`mt-2 w-full h-1.5 rounded-full ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}>
+                                    <div className={`w-full h-2 rounded-full ${isDarkMode ? "bg-gray-700" : "bg-gray-200"
+                                        }`}>
                                         <div
-                                            className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                                            className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-700 ease-out shadow-sm"
                                             style={{ width: `${percentage}%` }}
                                         />
                                     </div>
@@ -288,29 +397,56 @@ function PollMessage({
                 })}
             </div>
 
-            {/* Footer */}
-            <div className={`px-4 py-3 border-t ${isDarkMode ? "border-gray-700 bg-gray-700/30" : "border-gray-200 bg-gray-50"}`}>
+            {/* Footer tinh tế hơn */}
+            <div className={`px-5 py-3 border-t ${isDarkMode
+                    ? "border-gray-700/50 bg-gray-800/30"
+                    : "border-gray-200/50 bg-gray-50/50"
+                }`}>
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span>{totalVotes} lượt bình chọn</span>
-                        {poll.allowMultiple && <span>• Chọn nhiều được</span>}
-                        {hasVoted && <span>• Bạn đã vote</span>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {shouldShowResults && (
-                            <Button
-                                onClick={() => onViewResults(poll)}
-                                variant="ghost"
-                                size="sm"
-                                className="text-blue-500 hover:text-blue-600"
-                            >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Xem chi tiết
-                            </Button>
+                    <div className="flex items-center gap-2 text-sm">
+                        <span className={`font-medium ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
+                            {totalVotes} lượt vote
+                        </span>
+                        {poll.allowMultiple && (
+                            <>
+                                <span className={`${isDarkMode ? "text-gray-500" : "text-gray-400"}`}>•</span>
+                                <span className={`text-xs ${isDarkMode ? "text-blue-400" : "text-blue-600"}`}>
+                                    Chọn nhiều
+                                </span>
+                            </>
+                        )}
+                        {hasVoted && (
+                            <>
+                                <span className={`${isDarkMode ? "text-gray-500" : "text-gray-400"}`}>•</span>
+                                <span className={`text-xs ${isDarkMode ? "text-green-400" : "text-green-600"}`}>
+                                    Đã bình chọn
+                                </span>
+                            </>
                         )}
                     </div>
+                    {shouldShowResults && (
+                        <Button
+                            onClick={() => onViewResults(poll)}
+                            variant="ghost"
+                            size="sm"
+                            className={`text-xs font-medium transition-all duration-200 ${isDarkMode
+                                    ? "text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                                    : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                }`}
+                        >
+                            <Eye className="h-3.5 w-3.5 mr-1" />
+                            Chi tiết
+                        </Button>
+                    )}
                 </div>
-                <div className="text-xs text-gray-400 mt-1">Tạo bởi {poll.createdByName} • {poll.createdAt.toLocaleDateString("vi-VN")}</div>
+                <div className={`text-xs mt-1.5 ${isDarkMode ? "text-gray-500" : "text-gray-400"}`}>
+                    {poll.createdByName} • {poll.createdAt.toLocaleDateString("vi-VN", {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}
+                </div>
             </div>
         </div>
     );

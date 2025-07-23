@@ -90,10 +90,6 @@ export function BookmarkSection({ isDarkMode = false }: BookmarkSectionProps) {
         console.log("Toggle details...");
     };
 
-    const handleCloseDetails = () => {
-        console.log("Close details...");
-    };
-
     const handleSendMessage = (message: string) => {
         console.log("Sending message:", message);
     };
@@ -114,14 +110,14 @@ export function BookmarkSection({ isDarkMode = false }: BookmarkSectionProps) {
                             type="text"
                             placeholder="Tìm kiếm..."
                             className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors ${isDarkMode
-                                ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                                 }`}
                         />
                     </div>
                 </div>
 
-                <div className="overflow-y-auto p-4 space-y-3">
+                <div className="overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
                     <BookmarkItem
                         title="design-phase-1-approved.pdf"
                         size="12.5 MB"
@@ -204,7 +200,6 @@ export function BookmarkSection({ isDarkMode = false }: BookmarkSectionProps) {
                     onToggleDetails={handleToggleDetails}
                     onAudioCall={handleAudioCall}
                     isDetailsOpen={false}
-                    onCloseDetails={handleCloseDetails}
                 />
                 <ChatMessages
                     messages={[]}

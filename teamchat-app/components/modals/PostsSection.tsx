@@ -67,106 +67,9 @@ interface Comment {
   isLiked: boolean
 }
 
-const mockPosts: Post[] = [
-  {
-    id: "1",
-    author: {
-      id: "1",
-      name: "Victoria Lane",
-      avatar: "/placeholder.svg?height=40&width=40&text=VL",
-      title: "Senior Designer",
-      verified: true,
-    },
-    content:
-      "Vừa hoàn thành dự án thiết kế mới cho ứng dụng TeamChat! Rất hào hứng với những tính năng mới mà chúng tôi đã phát triển. Cảm ơn cả team đã làm việc chăm chỉ! 🎨✨",
-    images: [
-      "/placeholder.svg?height=300&width=400&text=Design1",
-      "/placeholder.svg?height=300&width=400&text=Design2",
-    ],
-    timestamp: Date.now() - 3600000,
-    likes: 24,
-    comments: 8,
-    shares: 3,
-    bookmarks: 12,
-    isLiked: true,
-    isBookmarked: false,
-    visibility: "public",
-    tags: ["design", "teamchat", "ui"],
-    location: "Hà Nội, Việt Nam",
-  },
-  {
-    id: "2",
-    author: {
-      id: "2",
-      name: "James Pinard",
-      avatar: "/placeholder.svg?height=40&width=40&text=JP",
-      title: "Frontend Developer",
-    },
-    content:
-      "Chia sẻ một số tips về React hooks mà tôi đã học được tuần này. Việc sử dụng useCallback và useMemo đúng cách thực sự có thể cải thiện performance đáng kể!",
-    timestamp: Date.now() - 7200000,
-    likes: 18,
-    comments: 12,
-    shares: 6,
-    bookmarks: 8,
-    isLiked: false,
-    isBookmarked: true,
-    visibility: "public",
-    tags: ["react", "javascript", "programming"],
-  },
-  {
-    id: "3",
-    author: {
-      id: "3",
-      name: "Etla McDaniel",
-      avatar: "/placeholder.svg?height=40&width=40&text=EM",
-      title: "Product Manager",
-    },
-    content:
-      "Team meeting hôm nay thật tuyệt vời! Chúng ta đã thảo luận về roadmap Q1 và tôi rất phấn khích với những tính năng mới sắp ra mắt. 🚀",
-    video: "/placeholder.svg?height=200&width=400&text=Video",
-    timestamp: Date.now() - 10800000,
-    likes: 31,
-    comments: 15,
-    shares: 4,
-    bookmarks: 6,
-    isLiked: true,
-    isBookmarked: false,
-    visibility: "friends",
-    tags: ["teamwork", "planning"],
-  },
-]
+const mockPosts: Post[] = []
 
-const mockComments: Comment[] = [
-  {
-    id: "1",
-    postId: "1",
-    author: {
-      id: "4",
-      name: "Ronald Downey",
-      avatar: "/placeholder.svg?height=32&width=32&text=RD",
-    },
-    content: "Thiết kế rất đẹp! Tôi thích cách bạn sử dụng màu sắc.",
-    timestamp: Date.now() - 1800000,
-    likes: 3,
-    isLiked: false,
-    replies: [],
-  },
-  {
-    id: "2",
-    postId: "1",
-    author: {
-      id: "5",
-      name: "Kathryn Swarey",
-      avatar: "/placeholder.svg?height=32&width=32&text=KS",
-    },
-    content: "Có thể chia sẻ process thiết kế được không? Tôi rất muốn học hỏi!",
-    timestamp: Date.now() - 3600000,
-    likes: 5,
-    isLiked: true,
-    replies: [],
-  },
-]
+const mockComments: Comment[] = []
 
 export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
   const [posts, setPosts] = useState<Post[]>(mockPosts)
@@ -472,46 +375,52 @@ function PostCard({
       </div>
 
       {/* Post Media */}
-      {post.images && post.images.length > 0 && (
+      {(post.images || post.video) && (
         <div className="mb-5">
-          {post.images.length === 1 ? (
-            <img
-              src={post.images[0] || "/placeholder.svg"}
-              alt="Post image"
-              className="w-full h-72 object-cover rounded-xl shadow-md"
-            />
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {post.images.slice(0, 4).map((image, index) => (
-                <div key={index} className="relative">
-                  <img
-                    src={image || "/placeholder.svg"}
-                    alt={`Post image ${index + 1}`}
-                    className="w-full h-36 object-cover rounded-lg shadow-md"
-                  />
-                  {index === 3 && post.images && post.images.length > 4 && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-semibold text-lg">+{post.images.length - 4}</span>
-                    </div>
-                  )}
+          {post.images && post.images.length > 0 && (
+            <div className="grid gap-3">
+              {post.images.length === 1 ? (
+                <img
+                  src={post.images[0] || "/placeholder.svg"}
+                  alt="Post image"
+                  className="w-full h-72 object-cover rounded-xl shadow-md"
+                />
+              ) : post.images.length === 2 ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {post.images.slice(0, 2).map((image, index) => (
+                    <img
+                      key={index}
+                      src={image || "/placeholder.svg"}
+                      alt={`Post image ${index + 1}`}
+                      className="w-full h-72 object-cover rounded-xl shadow-md"
+                    />
+                  ))}
                 </div>
-              ))}
+              ) : post.images.length >= 3 ? (
+                <div className="grid grid-cols-3 gap-3">
+                  {post.images.slice(0, 3).map((image, index) => (
+                    <img
+                      key={index}
+                      src={image || "/placeholder.svg"}
+                      alt={`Post image ${index + 1}`}
+                      className="w-full h-72 object-cover rounded-xl shadow-md"
+                    />
+                  ))}
+                </div>
+              ) : null}
             </div>
           )}
-        </div>
-      )}
 
-      {post.video && (
-        <div className="mb-5">
-          <div className="relative bg-gray-900 rounded-xl aspect-video flex items-center justify-center overflow-hidden shadow-md">
-            <img src={post.video} alt="Video preview" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
-              <div className="w-16 h-16 bg-white bg-opacity-30 rounded-full flex items-center justify-center cursor-pointer">
-                <div className="w-0 h-0 border-l-8 border-l-white border-t-4 border-t-transparent border-b-4 border-b-transparent ml-1"></div>
-              </div>
+          {post.video && (
+            <div className="relative bg-gray-900 rounded-xl aspect-video flex items-center justify-center overflow-hidden shadow-md">
+              <video
+                src={post.video}
+                controls
+                className="w-full h-full object-cover"
+              />
+              <span className="absolute bottom-2 right-2 text-white text-sm font-medium px-2 py-1 bg-black bg-opacity-60 rounded-md">Video</span>
             </div>
-            <span className="absolute bottom-2 right-2 text-white text-sm font-medium px-2 py-1 bg-black bg-opacity-60 rounded-md">Video</span>
-          </div>
+          )}
         </div>
       )}
 
@@ -1056,6 +965,53 @@ function CommentsModal({
               <p className={`text-base font-normal ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>{post.content}</p>
             </div>
           </div>
+          {(post.images || post.video) && (
+            <div className="mt-4">
+              {post.images && post.images.length > 0 && (
+                <div className="grid gap-3">
+                  {post.images.length === 1 ? (
+                    <img
+                      src={post.images[0] || "/placeholder.svg"}
+                      alt="Post image"
+                      className="w-full h-72 object-cover rounded-xl shadow-md"
+                    />
+                  ) : post.images.length === 2 ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      {post.images.slice(0, 2).map((image, index) => (
+                        <img
+                          key={index}
+                          src={image || "/placeholder.svg"}
+                          alt={`Post image ${index + 1}`}
+                          className="w-full h-72 object-cover rounded-xl shadow-md"
+                        />
+                      ))}
+                    </div>
+                  ) : post.images.length >= 3 ? (
+                    <div className="grid grid-cols-3 gap-3">
+                      {post.images.slice(0, 3).map((image, index) => (
+                        <img
+                          key={index}
+                          src={image || "/placeholder.svg"}
+                          alt={`Post image ${index + 1}`}
+                          className="w-full h-72 object-cover rounded-xl shadow-md"
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+              {post.video && (
+                <div className="relative bg-gray-900 rounded-xl aspect-video flex items-center justify-center overflow-hidden shadow-md mt-3">
+                  <video
+                    src={post.video}
+                    controls
+                    className="w-full h-full object-cover"
+                  />
+                  <span className="absolute bottom-2 right-2 text-white text-sm font-medium px-2 py-1 bg-black bg-opacity-60 rounded-md">Video</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div ref={commentsContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6">

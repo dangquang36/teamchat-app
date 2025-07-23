@@ -690,61 +690,7 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
     });
 
     const [messages, setMessages] = useState<Message[]>([
-        {
-            id: 1,
-            sender: otherUser,
-            text: "Đây là tin nhắn từ người khác.",
-            timestamp: new Date(Date.now() - 5000),
-        },
-        {
-            id: 2,
-            sender: currentUser,
-            text: "Đây là tin nhắn của bạn.",
-            timestamp: new Date(Date.now() - 3000),
-        },
-        {
-            id: 3,
-            sender: otherUser,
-            timestamp: new Date(Date.now() - 1000),
-            poll: {
-                id: "demo-poll-1",
-                question: "Bạn thích màu gì nhất?",
-                description: "Hãy chọn màu yêu thích của bạn để chúng tôi biết sở thích của mọi người",
-                options: [
-                    {
-                        id: "option-1",
-                        text: "Xanh dương",
-                        votes: [
-                            { userId: "user-1", userName: "Nguyễn Văn A", userAvatar: mockUsers[0].avatar, votedAt: new Date() },
-                            { userId: "user-2", userName: "Trần Thị B", userAvatar: mockUsers[1].avatar, votedAt: new Date() },
-                        ],
-                    },
-                    {
-                        id: "option-2",
-                        text: "Đỏ",
-                        votes: [{ userId: "user-3", userName: "Lê Văn C", userAvatar: mockUsers[2].avatar, votedAt: new Date() }],
-                    },
-                    {
-                        id: "option-3",
-                        text: "Xanh lá",
-                        votes: [],
-                    },
-                    {
-                        id: "option-4",
-                        text: "Vàng",
-                        votes: [{ userId: "user-4", userName: "Phạm Thị D", userAvatar: mockUsers[3].avatar, votedAt: new Date() }],
-                    },
-                ],
-                allowMultiple: false,
-                isAnonymous: false,
-                showResults: "after_vote",
-                createdBy: otherUser.id,
-                createdByName: otherUser.name,
-                createdAt: new Date(Date.now() - 3600000),
-                isActive: true,
-                totalVoters: 4,
-            },
-        },
+
     ]);
 
     const userName = "User" + Math.floor(Math.random() * 100);

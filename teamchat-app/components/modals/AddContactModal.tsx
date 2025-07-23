@@ -3,13 +3,8 @@ import { Button } from '@/components/ui/button';
 import { X, Search, UserPlus, Check } from 'lucide-react';
 import type { DirectMessage } from '@/app/types';
 
-// --- SỬA ĐỔI: Cập nhật cơ sở dữ liệu người dùng giả lập ---
 const allUsersDatabase: Omit<DirectMessage, 'message'>[] = [
-    { id: 'minh.khoi', name: 'Trần Minh Khôi', email: 'minh.khoi@example.com', avatar: '/placeholder.svg?text=MK', online: true, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 2 },
-    { id: 'an.nguyen', name: 'Nguyễn Văn An', email: 'an.nguyen@example.com', avatar: '/placeholder.svg?text=AN', online: false, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 4 },
-    { id: 'phuong.thao', name: 'Lê Thị Phương Thảo', email: 'phuong.thao@example.com', avatar: '/placeholder.svg?text=PT', online: true, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 1 },
-    { id: 'john.doe', name: 'John Doe', email: 'john.doe@example.com', avatar: '/placeholder.svg?text=JD', online: true, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 0 },
-    { id: 'jane.smith', name: 'Jane Smith', email: 'jane.smith@example.com', avatar: '/placeholder.svg?text=JS', online: false, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 3 },
+    { id: 'minh.khoi', name: 'Trần Minh Khôi', email: 'minh.khoi@example.com', avatar: 'https://anhchibi.com/wp-content/uploads/2025/01/anh-ngon-phac-meme.jpg', online: true, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 2 },
 ];
 
 interface AddContactModalProps {
@@ -31,7 +26,6 @@ export function AddContactModal({ isOpen, onClose, onAddContact, existingContact
             setIsLoading(false);
             return;
         }
-
         setIsLoading(true);
         const timer = setTimeout(() => {
             const results = allUsersDatabase.filter(user =>
@@ -41,11 +35,9 @@ export function AddContactModal({ isOpen, onClose, onAddContact, existingContact
             setSearchResults(results);
             setIsLoading(false);
         }, 500);
-
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Reset state khi modal đóng
     useEffect(() => {
         if (!isOpen) {
             setSearchQuery('');
@@ -54,6 +46,13 @@ export function AddContactModal({ isOpen, onClose, onAddContact, existingContact
         }
     }, [isOpen]);
 
+    // --- THÊM MỚI: Hàm xử lý click cho nút "Thêm" ---
+    const handleAddButtonClick = (event: React.MouseEvent<HTMLButtonElement>, user: Omit<DirectMessage, 'message'>) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onAddContact(user);
+    };
+
     if (!isOpen) return null;
 
     const existingContactIds = new Set(existingContacts.map(c => c.id));
@@ -61,7 +60,6 @@ export function AddContactModal({ isOpen, onClose, onAddContact, existingContact
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 transition-opacity">
             <div className={`rounded-xl shadow-2xl w-full max-w-md flex flex-col transform transition-all ${isDarkMode ? 'bg-gray-800 text-gray-200' : 'bg-white'}`}>
-                {/* Header */}
                 <div className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <h2 className="text-lg font-semibold">Tìm và thêm bạn bè</h2>
                     <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
@@ -69,7 +67,6 @@ export function AddContactModal({ isOpen, onClose, onAddContact, existingContact
                     </Button>
                 </div>
 
-                {/* Search Bar */}
                 <div className="p-4">
                     <div className="relative">
                         <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
@@ -83,7 +80,6 @@ export function AddContactModal({ isOpen, onClose, onAddContact, existingContact
                     </div>
                 </div>
 
-                {/* Search Results */}
                 <div className="flex-1 px-4 pb-4 min-h-[300px] overflow-y-auto">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full">
@@ -102,10 +98,11 @@ export function AddContactModal({ isOpen, onClose, onAddContact, existingContact
                                                 <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user.email}</p>
                                             </div>
                                         </div>
+                                        {/* --- SỬA ĐỔI: Cập nhật onClick của nút --- */}
                                         <Button
                                             size="sm"
                                             disabled={isAlreadyAdded}
-                                            onClick={() => onAddContact(user)}
+                                            onClick={(e) => handleAddButtonClick(e, user)}
                                             className={isAlreadyAdded ? `bg-green-600 hover:bg-green-600 cursor-not-allowed` : `bg-purple-500 hover:bg-purple-600`}
                                         >
                                             {isAlreadyAdded ? <Check className="h-4 w-4 mr-1" /> : <UserPlus className="h-4 w-4 mr-1" />}

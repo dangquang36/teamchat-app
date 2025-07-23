@@ -6,10 +6,13 @@ import { ChatHeader } from './ChatHeader';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
 import { UserProfileModal } from '@/components/modals/UserProfileModalChat';
-import { ConversationDetails } from '@/components/modals/ConversationDetails';
-// --- THÊM MỚI ---
-import { AddContactModal } from '@/components/modals/AddContactModal'; // <-- Đảm bảo đường dẫn này chính xác
+import { ConversationDetails } from '@/components/modals/TB/ConversationDetails';
+import { AddContactModal } from '@/components/modals/AddContactModal';
 import type { UserProfile, DirectMessage, Message, Poll } from '@/app/types';
+import { AnimatePresence } from 'framer-motion';
+import { CustomToast } from '@/components/modals/TB/CustomToast';
+import { MuteBanner } from '@/components/modals/TB/MuteBanner';
+import { MuteNotificationsModal } from '@/components/modals/TB/MuteNotificationsModal';
 
 
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -17,6 +20,7 @@ const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 interface EmojiPickerProps {
     onSelect: (emoji: string) => void;
 }
+
 
 const EmojiPicker: React.FC<EmojiPickerProps> = ({ onSelect }) => {
     return (
@@ -59,6 +63,7 @@ interface ConfirmDeleteProps {
     contactName: string;
 }
 
+
 const ConfirmDelete: React.FC<ConfirmDeleteProps> = ({ isOpen, onClose, onConfirm, contactName }) => {
     if (!isOpen) return null;
 
@@ -97,6 +102,12 @@ interface MessagesSectionProps {
     isDarkMode?: boolean;
 }
 
+interface MuteInfo {
+    isMuted: boolean;
+    mutedUntil?: Date;
+}
+
+
 export function MessagesSection({
     onVideoCall,
     onAudioCall,
@@ -104,6 +115,9 @@ export function MessagesSection({
 }: MessagesSectionProps) {
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [selectedChatId, setSelectedChatId] = useState<string>('nicholas');
+    const [isMuteModalOpen, setIsMuteModalOpen] = useState(false);
+    const [muteStatus, setMuteStatus] = useState<Record<string, MuteInfo>>({});
+    const [toast, setToast] = useState({ show: false, message: '' });
     const [viewingProfile, setViewingProfile] = useState<UserProfile | null>(null);
     const [currentDarkMode, setCurrentDarkMode] = useState(isDarkMode);
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -133,6 +147,54 @@ export function MessagesSection({
         }
     }, [notification]);
 
+    const showToast = (message: string) => {
+        setToast({ show: true, message });
+        setTimeout(() => {
+            setToast({ show: false, message: '' });
+        }, 3000);
+    };
+
+    const handleToggleMute = () => {
+        const currentMuteInfo = muteStatus[selectedChatId ?? ''] || { isMuted: false };
+        if (currentMuteInfo.isMuted) {
+            setMuteStatus(prev => ({ ...prev, [selectedChatId!]: { isMuted: false, mutedUntil: undefined } }));
+            showToast('Đã bật lại thông báo');
+        } else {
+            setIsMuteModalOpen(true);
+        }
+    };
+
+    const handleConfirmMute = (duration: string) => {
+        const now = new Date();
+        let mutedUntil = new Date();
+        if (duration === '1_hour') {
+            mutedUntil.setHours(now.getHours() + 1);
+        } else if (duration === '4_hours') {
+            mutedUntil.setHours(now.getHours() + 4);
+        } else if (duration === 'until_8_am') {
+            mutedUntil.setHours(8, 0, 0, 0);
+            if (mutedUntil < now) {
+                mutedUntil.setDate(now.getDate() + 1);
+            }
+        } else {
+            mutedUntil = new Date(now.getFullYear() + 100, 0, 1);
+        }
+
+        setMuteStatus(prev => ({ ...prev, [selectedChatId!]: { isMuted: true, mutedUntil } }));
+        setIsMuteModalOpen(false);
+        showToast('Đã tắt thông báo');
+    };
+
+    const currentMuteInfo = selectedChatId ? (muteStatus[selectedChatId] || { isMuted: false }) : { isMuted: false };
+
+    const formatMutedUntil = (date?: Date) => {
+        if (!date) return 'vô thời hạn';
+        if (date.getFullYear() > new Date().getFullYear() + 50) return 'khi được mở lại';
+        return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
+
     const handleMessageFromProfile = (userId: string) => {
         setSelectedChatId(userId);
         setViewingProfile(null);
@@ -143,43 +205,26 @@ export function MessagesSection({
         onAudioCall();
     };
 
-    const [directMessages, setDirectMessages] = useState<DirectMessage[]>([
-        {
-            id: 'nicholas', name: 'Nicholas Staten', email: 'nicholas.staten@example.com',
-            message: 'Pleased to meet you again!', avatar: '/placeholder.svg?height=40&width=40&text=NS',
-            online: true, coverPhotoUrl: '/placeholder-cover.jpg', phone: '123-456-7890', birthday: '1990-01-01',
-            socialProfiles: { facebook: '', twitter: '', instagram: '', linkedin: '' }, mutualGroups: 2,
-        },
-        {
-            id: 'victoria', name: 'Victoria Lane', email: 'victoria.lane@example.com',
-            message: "Hey, I'm going to meet a friend...", avatar: '/placeholder.svg?height=40&width=40&text=VL',
-            online: true, coverPhotoUrl: '/placeholder-cover.jpg', phone: '098-765-4321', birthday: '1992-02-02',
-            socialProfiles: { facebook: '', twitter: '', instagram: '', linkedin: '' }, mutualGroups: 1,
-        },
-    ]);
+
 
     const [allMessages, setAllMessages] = useState<Record<string, Message[]>>({});
 
-    const selectedChatUser = directMessages.find((dm) => dm.id === selectedChatId);
     const filteredDirectMessages = directMessages.filter(
         (dm) =>
             dm.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             dm.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    const currentMessages = allMessages[selectedChatId] || [];
-
+    const selectedChatUser = directMessages.find((dm) => dm.id === selectedChatId);
     const currentUser = {
         id: 'me', name: 'Current User', avatar: '/placeholder.svg?height=32&width=32&text=CU',
         email: 'current.user@example.com', online: true
     };
+    const currentMessages = allMessages[selectedChatId] || [];
 
-    // --- THÊM MỚI ---
-    // Hàm mới để xử lý việc thêm liên lạc từ modal
     const handleAddContact = (user: Omit<DirectMessage, 'message'>) => {
-        // Tạo một đối tượng DirectMessage đầy đủ
         const newContact: DirectMessage = {
             ...user,
-            message: 'Bắt đầu cuộc trò chuyện...', // Tin nhắn mặc định
+            message: 'Bắt đầu cuộc trò chuyện...',
         };
 
         setDirectMessages((prev) => [...prev, newContact]);
@@ -317,7 +362,7 @@ export function MessagesSection({
 
     return (
         <>
-            <div className="flex h-screen w-full bg-white dark:bg-gray-900">
+            <div className="flex h-screen w-full bg-white dark:bg-gray-900 overflow-hidden">
                 <div className={`w-80 border-r ${currentDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                     <div className="p-4 border-b">
                         <div className="flex items-center justify-between mb-4">
@@ -386,20 +431,34 @@ export function MessagesSection({
                         </div>
                     </div>
                 </div>
-                <div className="flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col min-w-0">
                     {selectedChatUser ? (
                         <>
+
+
                             <ChatHeader
                                 user={selectedChatUser}
-                                onVideoCall={onVideoCall}
                                 onAudioCall={onAudioCall}
                                 isDarkMode={currentDarkMode}
                                 onViewProfile={() => setViewingProfile(selectedChatUser)}
                                 onToggleDetails={() => setIsDetailsOpen(!isDetailsOpen)}
+                                isDetailsOpen={isDetailsOpen}
                             />
+
+                            <AnimatePresence>
+                                {currentMuteInfo.isMuted && (
+                                    <MuteBanner
+                                        mutedUntil={formatMutedUntil(currentMuteInfo.mutedUntil)}
+                                        onUnmute={handleToggleMute}
+                                        isDarkMode={currentDarkMode}
+                                    />
+                                )}
+                            </AnimatePresence>
+
                             <ChatMessages
                                 messages={currentMessages}
                                 currentUser={currentUser}
+                                otherUser={selectedChatUser}
                                 isDarkMode={currentDarkMode}
                                 onVote={handleVote}
                                 onToggleReaction={handleToggleReaction}
@@ -416,13 +475,18 @@ export function MessagesSection({
                         </div>
                     )}
                 </div>
-                {isDetailsOpen && selectedChatUser && (
-                    <ConversationDetails
-                        user={selectedChatUser}
-                        onClose={() => setIsDetailsOpen(false)}
-                        isDarkMode={currentDarkMode}
-                    />
-                )}
+                <AnimatePresence>
+                    {isDetailsOpen && selectedChatUser && (
+                        <ConversationDetails
+                            user={selectedChatUser}
+                            onClose={() => setIsDetailsOpen(false)}
+                            isDarkMode={currentDarkMode}
+                            isMuted={currentMuteInfo.isMuted}
+                            onToggleMute={handleToggleMute}
+                        />
+                    )}
+                </AnimatePresence>
+
                 {viewingProfile && (
                     <UserProfileModal
                         user={viewingProfile}
@@ -455,6 +519,13 @@ export function MessagesSection({
                     isDarkMode={currentDarkMode}
                 />
             </div>
+            <CustomToast message={toast.message} show={toast.show} />
+            <MuteNotificationsModal
+                isOpen={isMuteModalOpen}
+                onClose={() => setIsMuteModalOpen(false)}
+                onConfirm={handleConfirmMute}
+                isDarkMode={currentDarkMode}
+            />
         </>
     );
 }

@@ -54,6 +54,7 @@ interface Post {
 interface Comment {
   id: string
   postId: string
+  parentId?: string
   author: {
     id: string
     name: string
@@ -149,6 +150,7 @@ const mockComments: Comment[] = [
     timestamp: Date.now() - 1800000,
     likes: 3,
     isLiked: false,
+    replies: [],
   },
   {
     id: "2",
@@ -162,6 +164,7 @@ const mockComments: Comment[] = [
     timestamp: Date.now() - 3600000,
     likes: 5,
     isLiked: true,
+    replies: [],
   },
 ]
 
@@ -204,6 +207,69 @@ export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
   const handleSharePost = (postId: string) => {
     setPosts(posts.map((post) => (post.id === postId ? { ...post, shares: post.shares + 1 } : post)))
     console.log("Sharing post:", postId)
+  }
+
+  const handleAddComment = (postId: string, content: string, parentId?: string) => {
+    const newComment: Comment = {
+      id: Date.now().toString(),
+      postId,
+      parentId,
+      author: {
+        id: "current-user",
+        name: "Bạn",
+        avatar: "/placeholder.svg?height=32&width=32&text=U",
+      },
+      content,
+      timestamp: Date.now(),
+      likes: 0,
+      isLiked: false,
+      replies: [],
+    }
+
+    setComments((prevComments) => {
+      if (parentId) {
+        return prevComments.map((comment) =>
+          comment.id === parentId
+            ? { ...comment, replies: [...(comment.replies || []), newComment] }
+            : comment,
+        )
+      } else {
+        return [newComment, ...prevComments]
+      }
+    })
+
+    setPosts(
+      posts.map((post) =>
+        post.id === postId ? { ...post, comments: post.comments + 1 } : post,
+      ),
+    )
+  }
+
+  const handleLikeComment = (commentId: string) => {
+    setComments(
+      comments.map((comment) =>
+        comment.id === commentId
+          ? {
+            ...comment,
+            isLiked: !comment.isLiked,
+            likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1,
+          }
+          : {
+            ...comment,
+            replies: comment.replies
+              ? comment.replies.map((reply) =>
+                reply.id === commentId
+                  ? {
+                    ...reply,
+                    isLiked: !reply.isLiked,
+                    likes: reply.isLiked ? reply.likes - 1 : reply.likes + 1,
+                  }
+                  : reply,
+              )
+              : comment.replies,
+          },
+      ),
+    )
   }
 
   const scrollToTop = () => {
@@ -309,6 +375,8 @@ export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
           post={selectedPost}
           comments={comments.filter((c) => c.postId === selectedPost.id)}
           onClose={() => setSelectedPost(null)}
+          onAddComment={handleAddComment}
+          onLikeComment={handleLikeComment}
           isDarkMode={isDarkMode}
         />
       )}
@@ -912,19 +980,33 @@ function CommentsModal({
   post,
   comments,
   onClose,
+  onAddComment,
+  onLikeComment,
   isDarkMode,
 }: {
   post: Post
   comments: Comment[]
   onClose: () => void
+  onAddComment: (postId: string, content: string, parentId?: string) => void
+  onLikeComment: (commentId: string) => void
   isDarkMode: boolean
 }) {
   const [newComment, setNewComment] = useState("")
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const commentsContainerRef = useRef<HTMLDivElement>(null)
 
   const handleSubmitComment = () => {
     if (!newComment.trim()) return
-    console.log("Adding comment:", newComment, "to post:", post.id)
+    onAddComment(post.id, newComment, replyingTo ?? undefined)
     setNewComment("")
+    setReplyingTo(null)
+    if (commentsContainerRef.current) {
+      commentsContainerRef.current.scrollTo({ top: 0, behavior: "smooth" })
+    }
+  }
+
+  const handleReply = (commentId: string) => {
+    setReplyingTo(commentId)
   }
 
   const formatTimeAgo = (timestamp: number) => {
@@ -976,44 +1058,144 @@ function CommentsModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div ref={commentsContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6">
           {comments.length > 0 ? (
             <div className="space-y-6">
-              {comments.map((comment) => (
-                <div key={comment.id} className="flex items-start space-x-4">
-                  <img
-                    src={comment.author.avatar || "/placeholder.svg"}
-                    alt={comment.author.name}
-                    className="w-10 h-10 rounded-full object-cover border border-gray-300 dark:border-gray-600"
-                  />
-                  <div className="flex-1">
-                    <div className={`p-4 rounded-xl shadow-sm ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h5 className={`font-semibold text-sm ${isDarkMode ? "text-white" : "text-gray-900"}`}>{comment.author.name}</h5>
-                        <span className={`text-xs font-medium ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>{formatTimeAgo(comment.timestamp)}</span>
+              {comments
+                .filter((c) => c.postId === post.id && !c.parentId)
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .map((comment) => (
+                  <div key={comment.id} className="space-y-4">
+                    <div className="flex items-start space-x-4">
+                      <img
+                        src={comment.author.avatar || "/placeholder.svg"}
+                        alt={comment.author.name}
+                        className="w-10 h-10 rounded-full object-cover border border-gray-300 dark:border-gray-600"
+                      />
+                      <div className="flex-1">
+                        <div className={`p-4 rounded-xl shadow-sm ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <h5 className={`font-semibold text-sm ${isDarkMode ? "text-white" : "text-gray-900"}`}>{comment.author.name}</h5>
+                            <span className={`text-xs font-medium ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>{formatTimeAgo(comment.timestamp)}</span>
+                          </div>
+                          <p className={`text-sm font-normal ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>{comment.content}</p>
+                        </div>
+                        <div className="flex items-center space-x-4 mt-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onLikeComment(comment.id)}
+                            className={`text-xs rounded-full px-4 py-2 ${comment.isLiked ? "text-red-500" : isDarkMode ? "text-gray-400" : "text-gray-600"} hover:bg-red-500/10 transition-all duration-200`}
+                          >
+                            <Heart className={`h-4 w-4 mr-1.5 ${comment.isLiked ? "fill-current" : ""}`} />
+                            {comment.likes}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleReply(comment.id)}
+                            className={`text-xs rounded-full px-4 py-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"} hover:bg-purple-500/10 transition-all duration-200`}
+                          >
+                            Trả lời
+                          </Button>
+                        </div>
+                        {replyingTo === comment.id && (
+                          <div className="mt-4 ml-6 flex items-center space-x-3">
+                            <img src="/placeholder.svg?height=32&width=32&text=U" alt="Your avatar" className="w-8 h-8 rounded-full object-cover border border-gray-300 dark:border-gray-600" />
+                            <div className="flex-1 flex items-center space-x-3">
+                              <input
+                                type="text"
+                                placeholder="Viết trả lời..."
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                onKeyPress={(e) => e.key === "Enter" && handleSubmitComment()}
+                                className={`flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm font-normal ${isDarkMode
+                                  ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                  : "bg-white border-gray-200 text-gray-900 placeholder-gray-500"
+                                  } shadow-sm hover:shadow-md transition-all duration-200`}
+                              />
+                              <Button
+                                onClick={handleSubmitComment}
+                                disabled={!newComment.trim()}
+                                size="icon"
+                                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-full w-10 h-10 shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                              >
+                                <Send className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <p className={`text-sm font-normal ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>{comment.content}</p>
                     </div>
-                    <div className="flex items-center space-x-4 mt-3">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`text-xs rounded-full px-4 py-2 ${comment.isLiked ? "text-red-500" : isDarkMode ? "text-gray-400" : "text-gray-600"} hover:bg-red-500/10 transition-all duration-200`}
-                      >
-                        <Heart className={`h-4 w-4 mr-1.5 ${comment.isLiked ? "fill-current" : ""}`} />
-                        {comment.likes}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`text-xs rounded-full px-4 py-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"} hover:bg-purple-500/10 transition-all duration-200`}
-                      >
-                        Trả lời
-                      </Button>
-                    </div>
+                    {comment.replies && comment.replies.length > 0 && (
+                      <div className="ml-10 space-y-4">
+                        {comment.replies.map((reply) => (
+                          <div key={reply.id} className="flex items-start space-x-4">
+                            <img
+                              src={reply.author.avatar || "/placeholder.svg"}
+                              alt={reply.author.name}
+                              className="w-8 h-8 rounded-full object-cover border border-gray-300 dark:border-gray-600"
+                            />
+                            <div className="flex-1">
+                              <div className={`p-3 rounded-xl shadow-sm ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <h5 className={`font-semibold text-sm ${isDarkMode ? "text-white" : "text-gray-900"}`}>{reply.author.name}</h5>
+                                  <span className={`text-xs font-medium ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>{formatTimeAgo(reply.timestamp)}</span>
+                                </div>
+                                <p className={`text-sm font-normal ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>{reply.content}</p>
+                              </div>
+                              <div className="flex items-center space-x-4 mt-3">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onLikeComment(reply.id)}
+                                  className={`text-xs rounded-full px-4 py-2 ${reply.isLiked ? "text-red-500" : isDarkMode ? "text-gray-400" : "text-gray-600"} hover:bg-red-500/10 transition-all duration-200`}
+                                >
+                                  <Heart className={`h-4 w-4 mr-1.5 ${reply.isLiked ? "fill-current" : ""}`} />
+                                  {reply.likes}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleReply(reply.id)}
+                                  className={`text-xs rounded-full px-4 py-2 ${isDarkMode ? "text-gray-400" : "text-gray-600"} hover:bg-purple-500/10 transition-all duration-200`}
+                                >
+                                  Trả lời
+                                </Button>
+                              </div>
+                              {replyingTo === reply.id && (
+                                <div className="mt-4 ml-6 flex items-center space-x-3">
+                                  <img src="/placeholder.svg?height=32&width=32&text=U" alt="Your avatar" className="w-8 h-8 rounded-full object-cover border border-gray-300 dark:border-gray-600" />
+                                  <div className="flex-1 flex items-center space-x-3">
+                                    <input
+                                      type="text"
+                                      placeholder="Viết trả lời..."
+                                      value={newComment}
+                                      onChange={(e) => setNewComment(e.target.value)}
+                                      onKeyPress={(e) => e.key === "Enter" && handleSubmitComment()}
+                                      className={`flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm font-normal ${isDarkMode
+                                        ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                        : "bg-white border-gray-200 text-gray-900 placeholder-gray-500"
+                                        } shadow-sm hover:shadow-md transition-all duration-200`}
+                                    />
+                                    <Button
+                                      onClick={handleSubmitComment}
+                                      disabled={!newComment.trim()}
+                                      size="icon"
+                                      className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-full w-10 h-10 shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                                    >
+                                      <Send className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           ) : (
             <div className="text-center py-12">
@@ -1029,7 +1211,7 @@ function CommentsModal({
             <div className="flex-1 flex items-center space-x-3">
               <input
                 type="text"
-                placeholder="Viết bình luận..."
+                placeholder={replyingTo ? "Viết trả lời..." : "Viết bình luận..."}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleSubmitComment()}

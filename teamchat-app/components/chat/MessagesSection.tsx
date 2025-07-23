@@ -60,10 +60,10 @@ const ConfirmDelete: React.FC<ConfirmDeleteProps> = ({ isOpen, onClose, onConfir
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-lg p-6 text-white w-96">
+            <div className="bg-gray-800 dark:bg-gray-900 rounded-lg p-6 text-white w-96">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-semibold">Xác nhận xóa liên lạc</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white">
+                    <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-white dark:hover:text-gray-300">
                         <X className="h-5 w-5" />
                     </button>
                 </div>
@@ -71,13 +71,13 @@ const ConfirmDelete: React.FC<ConfirmDeleteProps> = ({ isOpen, onClose, onConfir
                 <div className="flex justify-end gap-4">
                     <Button
                         onClick={onClose}
-                        className="bg-gray-600 text-white hover:bg-gray-500 px-4 py-2 rounded"
+                        className="bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-500 dark:hover:bg-gray-600 px-4 py-2 rounded"
                     >
                         Hủy
                     </Button>
                     <Button
                         onClick={onConfirm}
-                        className="bg-red-600 text-white hover:bg-red-500 px-4 py-2 rounded"
+                        className="bg-red-600 dark:bg-red-700 text-white hover:bg-red-500 dark:hover:bg-red-600 px-4 py-2 rounded"
                     >
                         Xác nhận
                     </Button>
@@ -479,8 +479,8 @@ export function MessagesSection({
                             </Button>
                         </div>
                         {showAddForm && (
-                            <div className="mb-4 p-3 bg-gray-900 rounded-lg border border-gray-700">
-                                <p className="text-sm text-gray-300 mb-2">Nhập tên để thêm người liên lạc: </p>
+                            <div className="mb-4 p-3 bg-gray-900 dark:bg-gray-800 rounded-lg border border-gray-700 dark:border-gray-600">
+                                <p className="text-sm text-gray-300 dark:text-gray-400 mb-2">Nhập tên để thêm người liên lạc: </p>
                                 <input
                                     type="text"
                                     value={newContactName}
@@ -490,7 +490,7 @@ export function MessagesSection({
                                             handleAddDirectMessage();
                                         }
                                     }}
-                                    className="w-full p-2 mb-2 border rounded-lg bg-gray-800 text-white border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    className="w-full p-2 mb-2 border rounded-lg bg-gray-800 dark:bg-gray-700 text-white dark:text-gray-200 border-gray-600 dark:border-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                     placeholder="Tên"
                                 />
                                 <div className="flex justify-end gap-2">
@@ -499,13 +499,13 @@ export function MessagesSection({
                                             setShowAddForm(false);
                                             setNewContactName('');
                                         }}
-                                        className="bg-purple-700 text-white hover:bg-purple-600 px-4 py-2 rounded-lg"
+                                        className="bg-purple-700 dark:bg-purple-800 text-white hover:bg-purple-600 dark:hover:bg-purple-700 px-4 py-2 rounded-lg"
                                     >
                                         Hủy
                                     </Button>
                                     <Button
                                         onClick={handleAddDirectMessage}
-                                        className="bg-purple-400 text-white hover:bg-purple-300 px-4 py-2 rounded-lg"
+                                        className="bg-purple-400 dark:bg-purple-500 text-white hover:bg-purple-300 dark:hover:bg-purple-400 px-4 py-2 rounded-lg"
                                     >
                                         OK
                                     </Button>

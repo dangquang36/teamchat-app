@@ -640,6 +640,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                         </div>
                     </div>
                 )}
+
                 {view === 'settings' && (
                     <div className="max-w-3xl mx-auto">
                         <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 mb-8">{t.accountSettings}</h1>

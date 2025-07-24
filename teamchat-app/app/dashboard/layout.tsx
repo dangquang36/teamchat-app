@@ -2,21 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-    MessageCircle,
-    User,
-    Settings,
-    Shield,
-    HelpCircle,
-    Sun,
-    Moon,
-    Plus,
-    Users,
-    Newspaper,
-    Hash // 1. Import biểu tượng Hash
-} from "lucide-react";
+import { MessageCircle, User, Sun, Moon, Users, Newspaper } from "lucide-react";
 import { SidebarIcon } from "@/components/common/SidebarIcon";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// --- IMPORT CÁC THÀNH PHẦN MỚI ---
+import { useNotificationListener } from "@/hooks/useNotificationListener";
+import { ChatProvider, useChatContext } from "@/contexts/ChatContext";
+
+const queryClient = new QueryClient();
+
+// Component này sẽ kết nối các hook với nhau
+function AppController({ children }: { children: React.ReactNode }) {
+    // Lấy các hàm cập nhật state từ ChatContext
+    const { receiveNewMessage, addContact } = useChatContext();
+
+    // Truyền các hàm đó vào useNotificationListener
+    useNotificationListener({ receiveNewMessage, addContact });
+
+    // Component này không render gì cả, chỉ để chạy hook
+    return <>{children}</>;
+}
 
 function LayoutUI({ children }: { children: React.ReactNode }) {
     const [currentPath, setCurrentPath] = useState("");
@@ -24,16 +31,13 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
     const { isDarkMode, toggleDarkMode } = useTheme();
 
     useEffect(() => {
-        // Check authentication
         const userToken = localStorage.getItem("userToken");
         if (!userToken) {
             router.push("/login");
-            return;
+        } else if (typeof window !== 'undefined') {
+            setCurrentPath(window.location.pathname);
         }
-        // Set current path
-        setCurrentPath(window.location.pathname);
     }, [router]);
-
 
     const handleNavigation = (route: string) => {
         setCurrentPath(route);
@@ -73,7 +77,6 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
                         onClick={() => handleNavigation("/dashboard/chat")}
                         tooltip="Tin Nhắn"
                     />
-                    {/* 2. Thêm biểu tượng cho Kênh */}
                     <SidebarIcon
                         icon={<Users className="h-6 w-6" />}
                         active={isActive("/dashboard/channels")}
@@ -87,7 +90,6 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
                         tooltip="Bài Đăng"
                         badge=""
                     />
-
                 </nav>
 
                 {/* Dark Mode Toggle */}
@@ -122,9 +124,14 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <ThemeProvider>
-            <LayoutUI>{children}</LayoutUI>
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+            <ThemeProvider>
+                <ChatProvider>
+                    <AppController>
+                        <LayoutUI>{children}</LayoutUI>
+                    </AppController>
+                </ChatProvider>
+            </ThemeProvider>
+        </QueryClientProvider>
     );
 }
-

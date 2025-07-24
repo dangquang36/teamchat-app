@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, X } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { Search, Plus, X, Bell } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChatItem } from './ChatItem';
 import { ChatHeader } from './ChatHeader';
 import { ChatMessages } from './ChatMessages';
@@ -16,9 +16,13 @@ import { MuteBanner } from '@/components/modals/Awuamen/MuteBanner';
 import { MuteNotificationsModal } from '@/components/modals/Awuamen/MuteNotificationsModal';
 import { Notification } from '@/components/ui/Notification';
 import { ConfirmDelete } from '@/components/ui/ConfirmDeleteDialog';
-import { useChat } from '@/hooks/useChat';
 import { ArchiveView } from '@/components/modals/Awuamen/ArchiveView';
 import type { UserProfile } from '@/app/types';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { FriendRequestList } from '@/components/modals/FriendRequestList';
+import { FriendRequestSheet } from '@/components/modals/FriendRequestSheet';
+import { useChatContext } from '@/contexts/ChatContext';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface MessagesSectionProps {
     onVideoCall: () => void;
@@ -33,40 +37,34 @@ const formatMutedUntil = (date?: Date) => {
 };
 
 export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }: MessagesSectionProps) {
+    // --- BƯỚC 1: GỌI TẤT CẢ CÁC HOOK Ở ĐẦU COMPONENT ---
     const {
-        filteredDirectMessages,
-        selectedChatId,
-        setSelectedChatId,
-        searchQuery,
-        setSearchQuery,
-        isAddContactModalOpen,
-        setIsAddContactModalOpen,
-        handleAddContact,
-        handleDeleteContact,
-        showConfirmDelete,
-        setShowConfirmDelete,
-        confirmDeleteContact,
-        contactToDelete,
-        directMessages,
-        notification,
-        setNotification,
-        selectedChatUser,
-        currentMessages,
-        isDetailsOpen,
-        setIsDetailsOpen,
-        viewingProfile,
-        setViewingProfile,
-        currentMuteInfo,
-        handleToggleMute,
-        isMuteModalOpen,
-        setIsMuteModalOpen,
-        handleConfirmMute,
-        handleSendMessage,
-        toast,
-    } = useChat(isDarkMode);
+        filteredDirectMessages, selectedChatId, setSelectedChatId, searchQuery,
+        setSearchQuery, isAddContactModalOpen, setIsAddContactModalOpen,
+        handleDeleteContact, showConfirmDelete, setShowConfirmDelete, confirmDeleteContact,
+        contactToDelete, directMessages, notification, setNotification, selectedChatUser,
+        currentMessages, isDetailsOpen, setIsDetailsOpen, viewingProfile, setViewingProfile,
+        currentMuteInfo, handleToggleMute, isMuteModalOpen, setIsMuteModalOpen,
+        handleConfirmMute, handleSendMessage, refreshContacts, toast, showToast,
+    } = useChatContext();
 
+    const currentUser = useCurrentUser();
+
+    // Các hook useState cũng phải được gọi ở đây, trước câu lệnh if
     const [rightPanelView, setRightPanelView] = useState<'details' | 'archive' | 'closed'>('closed');
     const [archiveInitialTab, setArchiveInitialTab] = useState<'media' | 'files'>('media');
+    const [isFriendRequestSheetOpen, setIsFriendRequestSheetOpen] = useState(false);
+
+    // --- BƯỚC 2: KIỂM TRA ĐIỀU KIỆN SAU KHI ĐÃ GỌI HẾT HOOK ---
+    if (!currentUser) {
+        return <div className="flex-1 flex items-center justify-center">Đang tải dữ liệu người dùng...</div>;
+    }
+
+    // --- CÁC HÀM XỬ LÝ SỰ KIỆN ---
+    const handleFriendRequestAccepted = () => {
+        console.log("Friend request accepted! Refreshing contacts...");
+        refreshContacts();
+    };
 
     const handleToggleDetails = () => {
         setRightPanelView(prev => (prev === 'closed' ? 'details' : 'closed'));
@@ -94,25 +92,6 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
     );
     const mediaFiles = allAttachments.filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'));
     const otherFiles = allAttachments.filter(file => !file.type.startsWith('image/') && !file.type.startsWith('video/'));
-
-    const currentUser: UserProfile = {
-        id: 'me',
-        name: 'Current User',
-        avatar: '/placeholder.svg?height=32&width=32&text=CU',
-        online: true,
-        email: 'current.user@example.com',
-        coverPhotoUrl: '',
-        phone: '',
-        birthday: '',
-        socialProfiles: {
-            facebook: '',
-            twitter: '',
-            instagram: '',
-            linkedin: '',
-        },
-        mutualGroups: 0,
-    };
-
 
     const handleMessageFromProfile = (userId: string) => {
         setSelectedChatId(userId);
@@ -155,44 +134,74 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                 <h3 className={`text-xs font-semibold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                     TIN NHẮN TRỰC TIẾP
                                 </h3>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setIsAddContactModalOpen(true)}
-                                    title="Thêm liên lạc mới"
-                                    className={isDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}
-                                >
-                                    <Plus className="h-5 w-5" />
-                                </Button>
+                                <div className="flex items-center space-x-1">
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className={`h-8 w-8 rounded-full ${isDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
+                                                title="Lời mời kết bạn"
+                                                onClick={() => setIsFriendRequestSheetOpen(true)}
+                                            >
+                                                <Bell className="h-5 w-5" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-80 bg-gray-800 border-gray-700 text-white p-0" align="end">
+                                            <FriendRequestList onFriendRequestAccepted={handleFriendRequestAccepted}
+                                                onShowToast={showToast}
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setIsAddContactModalOpen(true)}
+                                        title="Thêm liên lạc mới"
+                                        className={`h-8 w-8 rounded-full ${isDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
+                                    >
+                                        <Plus className="h-5 w-5" />
+                                    </Button>
+                                </div>
                             </div>
-
                             <div className="space-y-1">
-                                {filteredDirectMessages.map((dm) => (
-                                    <div key={dm.id} className="relative group">
-                                        <ChatItem
-                                            name={dm.name}
-                                            message={dm.message}
-                                            avatar={dm.avatar}
-                                            active={selectedChatId === dm.id}
-                                            isDarkMode={isDarkMode}
-                                            onClick={() => setSelectedChatId(dm.id)}
-                                        />
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleDeleteContact(dm.id)}
-                                            className={`absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
-                                            title="Xóa liên lạc"
+                                <AnimatePresence>
+                                    {filteredDirectMessages.map((dm) => (
+                                        <motion.div
+                                            key={dm.id}
+                                            layout
+                                            initial={{ opacity: 0, y: -20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, x: -30 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="relative group"
                                         >
-                                            <X className="h-5 w-5" />
-                                        </Button>
-                                    </div>
-                                ))}
+                                            <div key={dm.id} className="relative group">
+                                                <ChatItem
+                                                    name={dm.name}
+                                                    message={dm.message}
+                                                    avatar={dm.avatar}
+                                                    active={selectedChatId === dm.id}
+                                                    isDarkMode={isDarkMode}
+                                                    onClick={() => setSelectedChatId(dm.id)}
+                                                />
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleDeleteContact(dm.id)}
+                                                    className={`absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
+                                                    title="Xóa liên lạc"
+                                                >
+                                                    <X className="h-5 w-5" />
+                                                </Button>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
                             </div>
                         </div>
                     </div>
                 </div>
-
                 {/* Phần khung chat chính */}
                 <div className="flex-1 flex flex-col min-w-0">
                     {selectedChatUser ? (
@@ -214,16 +223,8 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                     />
                                 )}
                             </AnimatePresence>
-                            <ChatMessages
-                                messages={currentMessages}
-                                currentUser={currentUser}
-                                otherUser={selectedChatUser}
-                                isDarkMode={isDarkMode}
-                            />
-                            <ChatInput
-                                onSendMessage={handleSendMessage}
-                                isDarkMode={isDarkMode}
-                            />
+                            <ChatMessages messages={currentMessages} currentUser={currentUser} otherUser={selectedChatUser} isDarkMode={isDarkMode} />
+                            <ChatInput onSendMessage={handleSendMessage} isDarkMode={isDarkMode} />
                         </>
                     ) : (
                         <div className={`flex-1 flex items-center justify-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -259,26 +260,47 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
             </div>
 
             {/* Các modal được quản lý ở đây */}
-            {viewingProfile && (
-                <UserProfileModal
-                    user={viewingProfile}
-                    onClose={() => setViewingProfile(null)}
-                    onSendMessage={handleMessageFromProfile}
-                    onStartCall={() => handleCallFromProfile(viewingProfile)}
-                />
-            )}
-            {notification && (
-                <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />
-            )}
-            {showConfirmDelete && contactToDelete && (
-                <ConfirmDelete
-                    isOpen={showConfirmDelete}
-                    onClose={() => setShowConfirmDelete(false)}
-                    onConfirm={confirmDeleteContact}
-                    contactName={directMessages.find((dm) => dm.id === contactToDelete)?.name || ''}
-                />
-            )}
-            <AddContactModal isOpen={isAddContactModalOpen} onClose={() => setIsAddContactModalOpen(false)} onAddContact={handleAddContact} existingContacts={directMessages} isDarkMode={isDarkMode} />
+            {
+                viewingProfile && (
+                    <UserProfileModal
+                        user={viewingProfile}
+                        onClose={() => setViewingProfile(null)}
+                        onSendMessage={handleMessageFromProfile}
+                        onStartCall={() => handleCallFromProfile(viewingProfile)}
+                    />
+                )
+            }
+            {
+                notification && (
+                    <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />
+                )
+            }
+            {
+                showConfirmDelete && contactToDelete && (
+                    <ConfirmDelete
+                        isOpen={showConfirmDelete}
+                        onClose={() => setShowConfirmDelete(false)}
+                        onConfirm={confirmDeleteContact}
+                        contactName={directMessages.find((dm) => dm.id === contactToDelete)?.name || ''}
+                    />
+                )
+            }
+
+            <FriendRequestSheet
+                isOpen={isFriendRequestSheetOpen}
+                onClose={() => setIsFriendRequestSheetOpen(false)}
+                onFriendRequestAccepted={handleFriendRequestAccepted}
+                onShowToast={showToast}
+            />
+
+            <AddContactModal
+                isOpen={isAddContactModalOpen}
+                onClose={() => setIsAddContactModalOpen(false)}
+                existingContacts={directMessages}
+                isDarkMode={isDarkMode}
+                onShowToast={showToast}
+            />
+
             <MuteNotificationsModal
                 isOpen={isMuteModalOpen}
                 onClose={() => setIsMuteModalOpen(false)}

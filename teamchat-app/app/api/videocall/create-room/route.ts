@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateToken } from '../../../../src/services/livekit';
+import { generateToken } from '@/lib/src/services/livekit';
 
 export async function POST(req: NextRequest) {
     try {
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
             success: true,
             roomName,
             token,
-            livekitUrl: process.env.LIVEKIT_URL || 'wss://duan-kryqhcty.livekit.cloud'
+            livekitUrl: process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://duan-kryqhcty.livekit.cloud'
         });
     } catch (error) {
         console.error('Error creating room:', error);

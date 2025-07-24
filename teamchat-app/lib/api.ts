@@ -9,6 +9,24 @@ interface ApiResponse<T = any> {
 }
 
 class ApiClient {
+  async getUserById(userId: string) {
+    try {
+      const res = await fetch(`https://685e0afa7b57aebd2af7d5fd.mockapi.io/testapifake/login/${userId}`);
+      if (!res.ok) {
+        // Nếu không tìm thấy user, trả về null thay vì báo lỗi
+        if (res.status === 404) return { success: true, data: null };
+        throw new Error("Không thể lấy thông tin người dùng.");
+      }
+      const user = await res.json();
+      return { success: true, data: user };
+    } catch (err) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : "Lỗi không xác định",
+      };
+    }
+  }
+
   private getAuthHeaders() {
     const token = localStorage.getItem("userToken")
     return {
@@ -179,8 +197,46 @@ class ApiClient {
   }
 
   // Contacts APIs
-  async getContacts() {
-    return this.request<any[]>("/contacts")
+  async getContacts(currentUserId: string) {
+    try {
+      // Lấy tất cả các lời mời đã được chấp nhận liên quan đến người dùng hiện tại
+      const resRequests = await fetch(`https://685e0afa7b57aebd2af7d5fd.mockapi.io/testapifake/friend_requests?status=accepted`);
+      if (!resRequests.ok) throw new Error('Không thể lấy danh sách bạn bè.');
+
+      const allAcceptedRequests: any[] = await resRequests.json();
+
+      // Lọc ra những request mà mình là người gửi hoặc người nhận
+      const myFriendships = allAcceptedRequests.filter(
+        req => req.requesterId === currentUserId || req.recipientId === currentUserId
+      );
+
+      // Lấy ID của tất cả bạn bè
+      const friendIds = myFriendships.map(req =>
+        req.requesterId === currentUserId ? req.recipientId : req.requesterId
+      );
+
+      if (friendIds.length === 0) {
+        return { success: true, data: [] };
+      }
+
+      // Lấy thông tin chi tiết của tất cả bạn bè trong một lần gọi API
+      const resUsers = await fetch(`https://685e0afa7b57aebd2af7d5fd.mockapi.io/testapifake/login`);
+      if (!resUsers.ok) throw new Error('Không thể lấy thông tin chi tiết bạn bè.');
+      const allUsers: any[] = await resUsers.json();
+
+      const friendsDetails = allUsers.filter(user => friendIds.includes(user.id));
+
+      // Thêm trường message mặc định để khớp với kiểu DirectMessage
+      const contacts = friendsDetails.map(friend => ({
+        ...friend,
+        message: "Các bạn đã là bạn bè", // hoặc tin nhắn cuối cùng nếu có
+      }));
+
+      return { success: true, data: contacts };
+
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : "Lỗi không xác định" };
+    }
   }
 
   async addContact(email: string) {
@@ -196,8 +252,80 @@ class ApiClient {
     })
   }
 
-  async searchUsers(query: string) {
-    return this.request<any[]>(`/users/search?q=${encodeURIComponent(query)}`)
+  async searchUsers(query: string, currentUserId: string) {
+    try {
+      // API của MockAPI cho phép tìm kiếm qua query param `search`
+      const res = await fetch(`https://685e0afa7b57aebd2af7d5fd.mockapi.io/testapifake/login?search=${encodeURIComponent(query)}`);
+      if (!res.ok) throw new Error("Không thể tìm kiếm người dùng.");
+
+      let users = await res.json();
+      // Lọc ra người dùng hiện tại, không cho tự tìm mình
+      users = users.filter((user: { id: string }) => user.id !== currentUserId);
+
+      return { success: true, data: users };
+    } catch (err) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : "Lỗi không xác định",
+      };
+    }
+  }
+
+
+  async sendFriendRequest(requesterId: string, recipientId: string, requesterInfo: { requesterName: string; requesterAvatar: string }) {
+    try {
+      const res = await fetch(`https://685e0afa7b57aebd2af7d5fd.mockapi.io/testapifake/friend_requests`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requesterId,
+          recipientId,
+          status: "pending",
+          requesterName: requesterInfo.requesterName,
+          requesterAvatar: requesterInfo.requesterAvatar,
+        }),
+      });
+      if (!res.ok) throw new Error('Gửi lời mời thất bại');
+      return { success: true, data: await res.json() };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : "Lỗi không xác định" };
+    }
+  }
+
+  // 3. Hàm lấy danh sách lời mời đã nhận
+  async getFriendRequests(userId: string) {
+    try {
+      const res = await fetch(`https://685e0afa7b57aebd2af7d5fd.mockapi.io/testapifake/friend_requests?recipientId=${userId}&status=pending`);
+      if (!res.ok) throw new Error('Không thể lấy danh sách lời mời');
+      return { success: true, data: await res.json() };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : "Lỗi không xác định" };
+    }
+  }
+
+  async getSentFriendRequests(userId: string) {
+    try {
+      const res = await fetch(`https://685e0afa7b57aebd2af7d5fd.mockapi.io/testapifake/friend_requests?requesterId=${userId}`);
+      if (!res.ok) throw new Error('Không thể lấy danh sách lời mời đã gửi');
+      return { success: true, data: await res.json() };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : "Lỗi không xác định" };
+    }
+  }
+
+  // 4. Hàm chấp nhận hoặc từ chối lời mời
+  async updateFriendRequestStatus(requestId: string, status: 'accepted' | 'declined') {
+    try {
+      const res = await fetch(`https://685e0afa7b57aebd2af7d5fd.mockapi.io/testapifake/friend_requests/${requestId}`, {
+        method: "PUT",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error('Cập nhật trạng thái thất bại');
+      return { success: true, data: await res.json() };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : "Lỗi không xác định" };
+    }
   }
 
   // Chats APIs
@@ -254,6 +382,8 @@ class ApiClient {
     })
   }
 
+
+
   // Video call APIs
   async initiateCall(chatId: string, type: "audio" | "video") {
     return this.request<{
@@ -281,5 +411,7 @@ class ApiClient {
     })
   }
 }
+
+
 
 export const apiClient = new ApiClient()

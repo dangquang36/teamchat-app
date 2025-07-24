@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon, Folder } from "lucide-react";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
@@ -10,6 +10,7 @@ declare global {
         webkitSpeechRecognition?: any;
     }
 }
+
 
 export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps) {
     const [message, setMessage] = useState("");
@@ -76,6 +77,7 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
             setSelectedFiles((prevFiles) => [...prevFiles, ...newFiles]);
         }
         setShowAttachmentMenu(false);
+        event.target.value = '';
     };
 
     const removeFile = (fileToRemove: File) => {
@@ -89,7 +91,7 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
 
     const handleSendMessage = () => {
         if (!message.trim() && selectedFiles.length === 0) return;
-        onSendMessage(message);
+        onSendMessage(message, selectedFiles);
         setMessage("");
         setSelectedFiles([]);
     };
@@ -121,29 +123,23 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
     );
 
     return (
-        <div
-            className={`p-4 border-t transition-colors relative ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-                }`}
-        >
+        <div className={`p-4 border-t transition-colors relative ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
             {selectedFiles.length > 0 && (
-                <div
-                    className={`mb-2 p-2 border rounded-lg max-h-32 overflow-y-auto space-y-2 ${isDarkMode ? "border-gray-600" : "border-gray-300"
-                        }`}
-                >
+                <div className="mb-2 p-2 border rounded-lg max-h-40 overflow-y-auto space-x-2 flex">
                     {selectedFiles.map((file, index) => (
-                        <div
-                            key={index}
-                            className={`flex items-center justify-between p-2 rounded ${isDarkMode ? "bg-gray-700" : "bg-gray-100"
-                                }`}
-                        >
-                            <span className={`text-sm truncate max-w-xs ${isDarkMode ? "text-gray-300" : "text-gray-700"}`} >
-                                {file.name}
-                            </span>
+                        <div key={index} className="relative w-20 h-20 flex-shrink-0">
+                            {file.type.startsWith("image/") ? (
+                                <img src={URL.createObjectURL(file)} alt={file.name} className="w-full h-full object-cover rounded-md" />
+                            ) : (
+                                <div className="w-full h-full bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center">
+                                    <FileIcon className="h-8 w-8 text-gray-500" />
+                                </div>
+                            )}
                             <button
                                 onClick={() => removeFile(file)}
-                                className={`hover:text-red-500 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}
+                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
                             >
-                                <X className="h-4 w-4" />
+                                <X className="h-3 w-3" />
                             </button>
                         </div>
                     ))}
@@ -151,14 +147,7 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
             )}
 
             <div className="flex items-center space-x-3">
-                <input
-                    type="file"
-                    ref={imageInputRef}
-                    onChange={handleFileSelect}
-                    accept="image/*"
-                    multiple
-                    style={{ display: "none" }}
-                />
+                <input type="file" ref={imageInputRef} onChange={handleFileSelect} accept="image/*" multiple style={{ display: "none" }} />
                 <input
                     type="file"
                     ref={videoInputRef}
@@ -236,11 +225,7 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                                         label="Tệp"
                                         onClick={() => fileInputRef.current?.click()}
                                     />
-                                    <AttachmentMenuItem
-                                        icon={<Folder className="h-5 w-5 text-blue-500" />}
-                                        label="Video"
-                                        onClick={() => videoInputRef.current?.click()}
-                                    />
+
                                 </div>
                             )}
                         </div>

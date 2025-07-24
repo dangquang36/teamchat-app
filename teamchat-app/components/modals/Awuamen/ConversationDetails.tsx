@@ -1,16 +1,27 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Bell, BellOff, Pin, UserPlus, Clock, Users, X, ChevronRight } from 'lucide-react';
+import { Bell, BellOff, Pin, UserPlus, Clock, Users, ChevronRight, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { DirectMessage } from '@/app/types';
+import type { DirectMessage, Message } from '@/app/types';
 
 interface ConversationDetailsProps {
     user: DirectMessage;
+    messages: Message[];
     onClose: () => void;
     isDarkMode?: boolean;
     isMuted: boolean;
     onToggleMute: () => void;
+    onViewAllMedia: () => void;
+    onViewAllFiles: () => void;
+}
+
+const formatFileSize = (bytes: number, decimals = 2) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
 
@@ -27,9 +38,22 @@ const InfoSection = ({ icon, title, subtitle }: { icon: React.ReactNode, title: 
     </div>
 );
 
+// Nhận các props mới đã được khai báo ở trên
+export function ConversationDetails({
+    user,
+    messages,
+    onClose,
+    isDarkMode = false,
+    isMuted,
+    onToggleMute,
+    onViewAllMedia,
+    onViewAllFiles
+}: ConversationDetailsProps) {
 
-export function ConversationDetails({ user, onClose, isDarkMode = false, isMuted, onToggleMute }: ConversationDetailsProps) {
-    const images = Array(6).fill('/placeholder.svg');
+    // Lọc ra tất cả các file đính kèm từ danh sách tin nhắn
+    const allAttachments = messages.flatMap(msg => msg.attachments || []);
+    const mediaFiles = allAttachments.filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'));
+    const otherFiles = allAttachments.filter(file => !file.type.startsWith('image/') && !file.type.startsWith('video/'));
 
     return (
         <motion.div
@@ -83,27 +107,66 @@ export function ConversationDetails({ user, onClose, isDarkMode = false, isMuted
 
                     <div className="space-y-1">
                         <InfoSection icon={<Clock size={20} />} title="Danh sách nhắc hẹn" />
-                        <InfoSection icon={<Users size={20} />} title={`${user.mutualGroups} nhóm chung`} />
+                        <InfoSection icon={<Users size={20} />} title={`${user.mutualGroups || 0} nhóm chung`} />
                     </div>
 
                     <div className="mt-6">
                         <div className="flex justify-between items-center mb-2">
-                            <h4 className="font-semibold text-sm">Ảnh/Video</h4>
-                            <Button variant="ghost" size="sm" className="text-xs">Xem tất cả</Button>
+                            <h4 className="font-semibold text-sm">Ảnh</h4>
+                            <button
+                                onClick={onViewAllMedia}
+                                className="text-sm text-blue-500 hover:underline"
+                            >
+                                Xem tất cả
+                            </button>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
-                            {images.map((src, index) => (
-                                <img key={index} src={`${src}?text=Img${index + 1}`} className="rounded-lg w-full h-20 object-cover" alt={`media-${index}`} />
-                            ))}
-                        </div>
+                        {mediaFiles.length > 0 ? (
+                            <div className="grid grid-cols-3 gap-2">
+                                {mediaFiles.slice(0, 6).map((file, index) => (
+                                    <a href={file.url} target="_blank" rel="noopener noreferrer" key={index}>
+                                        <img src={file.url} className="rounded-lg w-full h-20 object-cover" alt={file.name} />
+                                    </a>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-gray-400 text-center py-4">Chưa có ảnh nào.</p>
+                        )}
                     </div>
 
                     <div className="mt-6">
                         <div className="flex justify-between items-center mb-2">
                             <h4 className="font-semibold text-sm">File</h4>
-                            <Button variant="ghost" size="sm" className="text-xs">Xem tất cả</Button>
+                            <button
+                                onClick={onViewAllFiles}
+                                className="text-sm text-blue-500 hover:underline"
+                            >
+                                Xem tất cả
+                            </button>
                         </div>
-                        <p className="text-xs text-gray-400 text-center py-4">Chưa có file nào.</p>
+                        {otherFiles.length > 0 ? (
+                            <div className="space-y-2">
+                                {otherFiles.slice(0, 5).map((file, index) => (
+                                    <a
+                                        key={index}
+                                        href={file.url}
+                                        download={file.name}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                                    >
+                                        <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+                                            <FileText className="h-5 w-5 text-gray-500" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className={`font-medium text-sm truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>{file.name}</p>
+                                            <p className="text-xs text-gray-500">{formatFileSize(file.size || 0)}</p>
+                                        </div>
+                                    </a>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-gray-400 text-center py-4">Chưa có file nào.</p>
+                        )}
                     </div>
                 </div>
             </div>

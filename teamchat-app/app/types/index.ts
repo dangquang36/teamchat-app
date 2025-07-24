@@ -58,6 +58,50 @@ export interface Message {
     poll?: Poll;
     fileUrl?: string;
     fileName?: string;
+    attachments?: { name: string; url: string; type: string; size: number }[];
+}
+
+
+
+export interface Post {
+    id: string
+    author: {
+        id: string
+        name: string
+        avatar: string
+        title?: string
+        verified?: boolean
+    }
+    content: string
+    images?: string[]
+    video?: string
+    timestamp: number
+    likes: number
+    comments: number
+    shares: number
+    bookmarks: number
+    isLiked: boolean
+    isBookmarked: boolean
+    visibility: "public" | "friends" | "private"
+    tags?: string[]
+    location?: string
+    attachments?: { type: "file"; name: string; url: string }[]
+}
+
+export interface Comment {
+    id: string
+    postId: string
+    parentId?: string
+    author: {
+        id: string
+        name: string
+        avatar: string
+    }
+    content: string
+    timestamp: number
+    likes: number
+    replies?: Comment[]
+    isLiked: boolean
 }
 
 // -- CÁC KIỂU PROPS CHO COMPONENT --
@@ -75,10 +119,11 @@ export interface ChatHeaderProps {
 }
 
 export interface ChatInputProps {
-    onSendMessage: (text: string) => void;
-    isDarkMode?: boolean;
     onCreatePoll?: (pollData: { question: string; options: string[] }) => void;
+    onSendMessage: (message: string, files: File[]) => void;
+    isDarkMode?: boolean;
 }
+
 
 export interface ChatMessagesProps {
     messages: Message[];

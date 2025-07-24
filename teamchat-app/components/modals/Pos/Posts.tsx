@@ -1,6 +1,5 @@
 import React from 'react';
-import { PostsSection } from '@/components/modals/PostsSection';
-import { Button } from "@/components/ui/button";
+import { PostsSection } from '@/components/modals/Pos/PostsSection';
 import { ArrowLeft } from "lucide-react";
 
 export default function PostsPage() {

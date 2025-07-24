@@ -87,12 +87,7 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
                         tooltip="Bài Đăng"
                         badge=""
                     />
-                    <SidebarIcon
-                        icon={<HelpCircle className="h-6 w-6" />}
-                        active={isActive("/dashboard/support")}
-                        onClick={() => handleNavigation("/dashboard/support")}
-                        tooltip="Hỗ Trợ"
-                    />
+
                 </nav>
 
                 {/* Dark Mode Toggle */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PostsSection } from "@/components/modals/PostsSection";
+import { PostsSection } from "@/components/modals/Pos/PostsSection";
 import { useTheme } from "@/contexts/ThemeContext";
 
 export default function PostsPage() {

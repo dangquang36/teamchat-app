@@ -1,16 +1,16 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon, Folder } from "lucide-react";
+import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon } from "lucide-react";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
-import { ChatInputProps } from "@/app/types";
+import type { ChatInputProps } from "@/app/types";
 
+// Giao diện global cho SpeechRecognition
 declare global {
     interface Window {
         SpeechRecognition?: any;
         webkitSpeechRecognition?: any;
     }
 }
-
 
 export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps) {
     const [message, setMessage] = useState("");
@@ -21,45 +21,36 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
-    const videoInputRef = useRef<HTMLInputElement>(null);
-    const folderInputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<any>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            console.warn("Trình duyệt của bạn không hỗ trợ nhận dạng giọng nói.");
-            return;
-        }
+        if (!SpeechRecognition) return;
+
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.lang = "vi-VN";
         recognition.interimResults = false;
         recognition.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            setMessage((prevMessage) => prevMessage + transcript);
+            setMessage((prev) => prev + event.results[0][0].transcript);
         };
         recognition.onerror = (event: any) => {
             console.error("Lỗi nhận dạng giọng nói:", event.error);
             setIsListening(false);
         };
-        recognition.onend = () => {
-            setIsListening(false);
-        };
+        recognition.onend = () => setIsListening(false);
         recognitionRef.current = recognition;
     }, []);
 
     useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
+        const handleClickOutside = (event: MouseEvent) => {
             if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
                 setShowEmojiPicker(false);
             }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
         };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [emojiPickerRef]);
 
     const toggleListening = () => {
@@ -72,26 +63,29 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
     };
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files) {
-            const newFiles = Array.from(event.target.files);
-            setSelectedFiles((prevFiles) => [...prevFiles, ...newFiles]);
+        if (event.target.files?.length) {
+            setSelectedFiles((prev) => [...prev, ...Array.from(event.target.files!)]);
         }
         setShowAttachmentMenu(false);
-        event.target.value = '';
+        event.target.value = ''; // Reset input để có thể chọn lại file cũ
     };
 
     const removeFile = (fileToRemove: File) => {
-        setSelectedFiles((prevFiles) => prevFiles.filter((file) => file !== fileToRemove));
+        setSelectedFiles((prev) => prev.filter((file) => file !== fileToRemove));
     };
 
     const onEmojiClick = (emojiData: EmojiClickData) => {
-        setMessage((prevMessage) => prevMessage + emojiData.emoji);
-        setShowEmojiPicker(false);
+        setMessage((prev) => prev + emojiData.emoji);
     };
 
+    // SỬA LẠI HOÀN TOÀN: Hàm này giờ chỉ gọi prop onSendMessage và reset state
     const handleSendMessage = () => {
         if (!message.trim() && selectedFiles.length === 0) return;
+
+        // Bắn sự kiện lên cho component cha (useChat) xử lý
         onSendMessage(message, selectedFiles);
+
+        // Reset state của input
         setMessage("");
         setSelectedFiles([]);
     };
@@ -103,22 +97,12 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
         }
     };
 
-    const AttachmentMenuItem = ({
-        icon,
-        label,
-        onClick,
-    }: {
-        icon: React.ReactNode;
-        label: string;
-        onClick: () => void;
-    }) => (
+    const AttachmentMenuItem = ({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void; }) => (
         <button
             onClick={onClick}
-            className={`w-full flex items-center gap-3 p-2 rounded-md text-sm transition-colors ${isDarkMode ? "text-gray-300 hover:bg-gray-600" : "text-gray-700 hover:bg-gray-100"
-                }`}
+            className={`w-full flex items-center gap-3 p-2 rounded-md text-sm transition-colors ${isDarkMode ? "text-gray-300 hover:bg-gray-600" : "text-gray-700 hover:bg-gray-100"}`}
         >
-            {icon}
-            {label}
+            {icon} {label}
         </button>
     );
 
@@ -135,10 +119,7 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                                     <FileIcon className="h-8 w-8 text-gray-500" />
                                 </div>
                             )}
-                            <button
-                                onClick={() => removeFile(file)}
-                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
-                            >
+                            <button onClick={() => removeFile(file)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5">
                                 <X className="h-3 w-3" />
                             </button>
                         </div>
@@ -148,21 +129,8 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
 
             <div className="flex items-center space-x-3">
                 <input type="file" ref={imageInputRef} onChange={handleFileSelect} accept="image/*" multiple style={{ display: "none" }} />
-                <input
-                    type="file"
-                    ref={videoInputRef}
-                    onChange={handleFileSelect}
-                    accept="video/*"
-                    multiple
-                    style={{ display: "none" }}
-                />
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    multiple
-                    style={{ display: "none" }}
-                />
+                <input type="file" ref={fileInputRef} onChange={handleFileSelect} multiple style={{ display: "none" }} />
+
                 <div ref={emojiPickerRef} className="absolute bottom-full mb-2 z-10">
                     {showEmojiPicker && (
                         <EmojiPicker
@@ -170,75 +138,38 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                             autoFocusSearch={false}
                             height={400}
                             width={350}
-                            theme={isDarkMode ? ("dark" as Theme) : ("light" as Theme)}
+                            theme={isDarkMode ? Theme.DARK : Theme.LIGHT}
                             lazyLoadEmojis={true}
                         />
                     )}
                 </div>
 
-                <div className="relative">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500"}`}
-                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    >
-                        <Smile className="h-5 w-5" />
-                    </Button>
-                </div>
+                <Button variant="ghost" size="sm" className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500"}`} onClick={() => setShowEmojiPicker(p => !p)}>
+                    <Smile className="h-5 w-5" />
+                </Button>
 
                 <div className="flex-1 relative">
                     <input
-                        type="text"
-                        placeholder="Nhập tin nhắn của bạn..."
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 pr-10 transition-colors ${isDarkMode
-                            ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                            : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                            }`}
+                        type="text" placeholder="Nhập tin nhắn của bạn..." value={message}
+                        onChange={(e) => setMessage(e.target.value)} onKeyDown={handleKeyDown}
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 pr-10 transition-colors ${isDarkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"}`}
                     />
                     <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
                         <div className="relative">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500"}`}
-                                onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-                            >
+                            <Button variant="ghost" size="sm" className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500"}`} onClick={() => setShowAttachmentMenu(p => !p)}>
                                 <Paperclip className="h-4 w-4" />
                             </Button>
                             {showAttachmentMenu && (
-                                <div
-                                    onMouseLeave={() => setShowAttachmentMenu(false)}
-                                    className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-lg w-48 ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border"
-                                        }`}
-                                >
-                                    <AttachmentMenuItem
-                                        icon={<ImageIcon className="h-5 w-5 text-green-500" />}
-                                        label="Ảnh"
-                                        onClick={() => imageInputRef.current?.click()}
-                                    />
-                                    <AttachmentMenuItem
-                                        icon={<FileIcon className="h-5 w-5 text-purple-500" />}
-                                        label="Tệp"
-                                        onClick={() => fileInputRef.current?.click()}
-                                    />
-
+                                <div onMouseLeave={() => setShowAttachmentMenu(false)} className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-lg w-48 ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border"}`}>
+                                    <AttachmentMenuItem icon={<ImageIcon className="h-5 w-5 text-green-500" />} label="Ảnh" onClick={() => imageInputRef.current?.click()} />
+                                    <AttachmentMenuItem icon={<FileIcon className="h-5 w-5 text-purple-500" />} label="Tệp" onClick={() => fileInputRef.current?.click()} />
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
 
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleListening}
-                    className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500"} ${isListening ? "text-red-500" : ""
-                        }`}
-                >
+                <Button variant="ghost" size="sm" onClick={toggleListening} className={`${isDarkMode ? "text-gray-400" : "text-gray-500"} ${isListening ? "text-red-500" : ""}`}>
                     <Mic className="h-5 w-5" />
                 </Button>
 

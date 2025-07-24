@@ -1,29 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateToken } from '../../../../src/services/livekit';
+import { AccessToken } from 'livekit-server-sdk';
 
-export async function POST(req: NextRequest) {
+// Sửa lại hàm từ POST thành GET
+export async function GET(req: NextRequest) {
     try {
-        const body = await req.json();
-        const { roomName, participantName } = body;
+        // Lấy các tham số từ URL
+        const { searchParams } = new URL(req.url);
+        const roomName = searchParams.get('roomName');
+        const participantName = searchParams.get('participantName');
+        let participantIdentity = searchParams.get('participantIdentity');
 
-        if (!roomName || !participantName) {
+        // Nếu không có participantIdentity riêng, dùng participantName
+        if (!participantIdentity) {
+            participantIdentity = participantName;
+        }
+
+        if (!roomName || !participantName || !participantIdentity) {
             return NextResponse.json(
-                { error: 'Room name and participant name are required' },
+                { error: 'Thiếu thông tin roomName, participantName, hoặc participantIdentity' },
                 { status: 400 }
             );
         }
 
-        const token = await generateToken(roomName, participantName);
+        const apiKey = process.env.LIVEKIT_API_KEY;
+        const apiSecret = process.env.LIVEKIT_API_SECRET;
+
+        if (!apiKey || !apiSecret) {
+            throw new Error('LiveKit API Key hoặc Secret chưa được cấu hình');
+        }
+
+        const at = new AccessToken(apiKey, apiSecret, {
+            identity: participantIdentity,
+            name: participantName,
+            ttl: '10m', // Token có hiệu lực 10 phút
+        });
+
+        at.addGrant({
+            room: roomName,
+            roomJoin: true,
+            canPublish: true,
+            canSubscribe: true,
+        });
 
         return NextResponse.json({
             success: true,
-            token,
-            livekitUrl: process.env.LIVEKIT_URL || 'wss://duan-kryqhcty.livekit.cloud'
+            token: at.toJwt(),
         });
     } catch (error) {
-        console.error('Error joining room:', error);
+        console.error('Lỗi khi tạo token:', error);
         return NextResponse.json(
-            { error: 'Failed to join room' },
+            { error: 'Không thể tạo token' },
             { status: 500 }
         );
     }

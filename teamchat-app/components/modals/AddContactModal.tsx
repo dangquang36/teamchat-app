@@ -1,56 +1,87 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Search, UserPlus, Check } from 'lucide-react';
+import { X, Search, UserPlus, Check, Clock } from 'lucide-react';
 import type { DirectMessage } from '@/app/types';
-
-const allUsersDatabase: Omit<DirectMessage, 'message'>[] = [
-    { id: 'minh.khoi', name: 'Trần Minh Khôi', email: 'minh.khoi@example.com', avatar: 'https://anhchibi.com/wp-content/uploads/2025/01/anh-ngon-phac-meme.jpg', online: true, coverPhotoUrl: '', phone: '', birthday: '', socialProfiles: {} as any, mutualGroups: 2 },
-];
+import { apiClient } from '@/lib/api';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface AddContactModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddContact: (user: Omit<DirectMessage, 'message'>) => void;
     existingContacts: DirectMessage[];
     isDarkMode?: boolean;
+    onShowToast: (message: string) => void;
 }
 
-export function AddContactModal({ isOpen, onClose, onAddContact, existingContacts, isDarkMode }: AddContactModalProps) {
+export function AddContactModal({ isOpen, onClose, existingContacts, isDarkMode, onShowToast }: AddContactModalProps) {
+    const currentUser = useCurrentUser();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<Omit<DirectMessage, 'message'>[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    // THAY ĐỔI 1: Dùng Map để lưu trạng thái chi tiết của các lời mời đã gửi
+    // Key: ID của người nhận, Value: 'pending', 'accepted', 'declined'
+    const [sentRequestStatus, setSentRequestStatus] = useState<Map<string, string>>(new Map());
+
+    // THAY ĐỔI 2: Lấy trạng thái mới nhất từ server khi modal được mở
+    useEffect(() => {
+        if (isOpen && currentUser) {
+            const fetchSentRequests = async () => {
+                const response = await apiClient.getSentFriendRequests(currentUser.id);
+                if (response.success && Array.isArray(response.data)) {
+                    const statusMap = new Map<string, string>();
+                    response.data.forEach(req => {
+                        statusMap.set(req.recipientId, req.status);
+                    });
+                    setSentRequestStatus(statusMap);
+                }
+            };
+            fetchSentRequests();
+        }
+    }, [isOpen, currentUser]);
+
+
+    // useEffect cho việc tìm kiếm (giữ nguyên)
     useEffect(() => {
         if (!searchQuery.trim()) {
             setSearchResults([]);
-            setIsLoading(false);
             return;
         }
-        setIsLoading(true);
-        const timer = setTimeout(() => {
-            const results = allUsersDatabase.filter(user =>
-                user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-            setSearchResults(results);
+        const fetchUsers = async () => {
+            if (!currentUser) return;
+            setIsLoading(true);
+            const response = await apiClient.searchUsers(searchQuery, currentUser.id);
+            if (response.success && Array.isArray(response.data)) {
+                setSearchResults(response.data);
+            } else {
+                setSearchResults([]);
+            }
             setIsLoading(false);
-        }, 500);
+        };
+        const timer = setTimeout(fetchUsers, 500);
         return () => clearTimeout(timer);
-    }, [searchQuery]);
+    }, [searchQuery, currentUser]);
 
-    useEffect(() => {
-        if (!isOpen) {
-            setSearchQuery('');
-            setSearchResults([]);
-            setIsLoading(false);
+    // Hàm gửi lời mời
+    const handleSendRequest = async (targetUser: Omit<DirectMessage, 'message'>) => {
+        if (!currentUser) {
+            onShowToast("Vui lòng đăng nhập lại.");
+            return;
         }
-    }, [isOpen]);
-
-    // --- THÊM MỚI: Hàm xử lý click cho nút "Thêm" ---
-    const handleAddButtonClick = (event: React.MouseEvent<HTMLButtonElement>, user: Omit<DirectMessage, 'message'>) => {
-        event.preventDefault();
-        event.stopPropagation();
-        onAddContact(user);
+        const response = await apiClient.sendFriendRequest(
+            currentUser.id,
+            targetUser.id,
+            { requesterName: currentUser.name, requesterAvatar: currentUser.avatar }
+        );
+        if (response.success) {
+            onShowToast('Đã gửi lời mời kết bạn!');
+            // Cập nhật trạng thái ngay trên UI mà không cần chờ server
+            setSentRequestStatus(prev => new Map(prev).set(targetUser.id, 'pending'));
+        } else {
+            onShowToast(`Lỗi: ${response.error || 'Thao tác thất bại'}`);
+        }
     };
 
     if (!isOpen) return null;
@@ -58,15 +89,13 @@ export function AddContactModal({ isOpen, onClose, onAddContact, existingContact
     const existingContactIds = new Set(existingContacts.map(c => c.id));
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 transition-opacity">
-            <div className={`rounded-xl shadow-2xl w-full max-w-md flex flex-col transform transition-all ${isDarkMode ? 'bg-gray-800 text-gray-200' : 'bg-white'}`}>
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className={`rounded-xl shadow-2xl w-full max-w-md flex flex-col ${isDarkMode ? 'bg-gray-800 text-gray-200' : 'bg-white'}`}>
+                {/* Header và Search Input giữ nguyên */}
                 <div className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <h2 className="text-lg font-semibold">Tìm và thêm bạn bè</h2>
-                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
-                        <X className="h-5 w-5" />
-                    </Button>
+                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full"><X className="h-5 w-5" /></Button>
                 </div>
-
                 <div className="p-4">
                     <div className="relative">
                         <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
@@ -75,22 +104,45 @@ export function AddContactModal({ isOpen, onClose, onAddContact, existingContact
                             placeholder="Nhập tên hoặc email..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300'}`}
+                            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white'}`}
                         />
                     </div>
                 </div>
 
+                {/* Search Results */}
                 <div className="flex-1 px-4 pb-4 min-h-[300px] overflow-y-auto">
                     {isLoading ? (
-                        <div className="flex items-center justify-center h-full">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-                        </div>
+                        <div className="text-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div></div>
                     ) : searchResults.length > 0 ? (
                         <div className="space-y-2">
                             {searchResults.map(user => {
-                                const isAlreadyAdded = existingContactIds.has(user.id);
+                                // THAY ĐỔI 3: Logic hiển thị nút bấm phức tạp hơn
+                                const isAlreadyFriend = existingContactIds.has(user.id);
+                                const requestStatus = sentRequestStatus.get(user.id);
+
+                                let buttonContent;
+                                if (isAlreadyFriend || requestStatus === 'accepted') {
+                                    buttonContent = (
+                                        <Button size="sm" disabled className='bg-green-600 cursor-not-allowed'>
+                                            <Check className="h-4 w-4 mr-1" /> Đã là bạn
+                                        </Button>
+                                    );
+                                } else if (requestStatus === 'pending') {
+                                    buttonContent = (
+                                        <Button size="sm" disabled className='bg-yellow-600 cursor-not-allowed'>
+                                            <Clock className="h-4 w-4 mr-1" /> Đã gửi
+                                        </Button>
+                                    );
+                                } else {
+                                    buttonContent = (
+                                        <Button size="sm" onClick={() => handleSendRequest(user)} className='bg-purple-500 hover:bg-purple-600'>
+                                            <UserPlus className="h-4 w-4 mr-1" /> Thêm
+                                        </Button>
+                                    );
+                                }
+
                                 return (
-                                    <div key={user.id} className={`flex items-center justify-between p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
+                                    <div key={user.id} className={`flex items-center justify-between p-2 rounded-lg`}>
                                         <div className="flex items-center">
                                             <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full mr-3" />
                                             <div>
@@ -98,16 +150,7 @@ export function AddContactModal({ isOpen, onClose, onAddContact, existingContact
                                                 <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user.email}</p>
                                             </div>
                                         </div>
-                                        {/* --- SỬA ĐỔI: Cập nhật onClick của nút --- */}
-                                        <Button
-                                            size="sm"
-                                            disabled={isAlreadyAdded}
-                                            onClick={(e) => handleAddButtonClick(e, user)}
-                                            className={isAlreadyAdded ? `bg-green-600 hover:bg-green-600 cursor-not-allowed` : `bg-purple-500 hover:bg-purple-600`}
-                                        >
-                                            {isAlreadyAdded ? <Check className="h-4 w-4 mr-1" /> : <UserPlus className="h-4 w-4 mr-1" />}
-                                            {isAlreadyAdded ? 'Đã là bạn' : 'Thêm'}
-                                        </Button>
+                                        {buttonContent}
                                     </div>
                                 );
                             })}

@@ -73,8 +73,6 @@ interface translations {
         lastLogin: string;
         ipAddress: string;
         logoutDevice: string;
-        language: string;
-        selectLanguage: string;
         twoFactorAuth: string;
         enable2FA: string;
         disable2FA: string;
@@ -133,8 +131,6 @@ const translations: translations = {
         lastLogin: "Lần Đăng Nhập Cuối",
         ipAddress: "Địa Chỉ IP",
         logoutDevice: "Đăng Xuất Thiết Bị",
-        language: "Ngôn Ngữ",
-        selectLanguage: "Chọn Ngôn Ngữ",
         twoFactorAuth: "Xác Thực Hai Yếu Tố",
         enable2FA: "Bật Xác Thực Hai Yếu Tố",
         disable2FA: "Tắt Xác Thực Hai Yếu Tố",
@@ -190,8 +186,6 @@ const translations: translations = {
         lastLogin: "Last Login",
         ipAddress: "IP Address",
         logoutDevice: "Log Out Device",
-        language: "Language",
-        selectLanguage: "Select Language",
         twoFactorAuth: "Two-Factor Authentication",
         enable2FA: "Enable Two-Factor Authentication",
         disable2FA: "Disable Two-Factor Authentication",
@@ -434,10 +428,6 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
         setShowToast({ show: true, message: t.logoutDevice, type: 'success' });
     };
 
-    const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setLanguage(e.target.value as 'vi' | 'en');
-    };
-
     const handle2FAChange = () => {
         setIs2faEnabled(!is2faEnabled);
         setShowToast({ show: true, message: is2faEnabled ? t.twoFADisabled : t.twoFAEnabled, type: 'success' });
@@ -519,7 +509,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
             <div className={`flex items-center justify-center min-h-screen ${isDarkMode ? "bg-gray-900 text-gray-300" : "bg-gray-100 text-gray-700"}`}>
                 <div className={`p-8 rounded-2xl shadow-xl ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-purple-500 mx-auto mb-4"></div>
-                    <p>{t.selectLanguage === 'vi' ? 'Đang tải dữ liệu người dùng...' : 'Loading user data...'}</p>
+                    <p>Đang tải dữ liệu người dùng...</p>
                 </div>
             </div>
         );
@@ -556,7 +546,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                             className={`w-full justify-start py-3 px-4 rounded-full text-lg font-medium ${isDarkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-600 hover:bg-gray-100"}`}
                         >
                             {isDarkMode ? <Sun className="w-5 h-5 mr-3" /> : <Moon className="w-5 h-5 mr-3" />}
-                            {t.language === 'vi' ? `Chế độ ${isDarkMode ? 'sáng' : 'tối'}` : `${isDarkMode ? 'Light' : 'Dark'} Mode`}
+                            {`Chế độ ${isDarkMode ? 'sáng' : 'tối'}`}
                         </Button>
                     )}
                     <Button
@@ -589,34 +579,17 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                                     <div className="text-white text-4xl font-bold">{currentUser.name.charAt(0).toUpperCase()}</div>
                                                 )}
                                             </div>
-                                            <button
-                                                onClick={() => avatarInputRef.current?.click()}
-                                                className="absolute -bottom-1 right-0 w-8 h-8 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center shadow-md border border-gray-200 dark:border-gray-600 transition-transform duration-200 hover:scale-110"
-                                                title={t.language === 'vi' ? "Thay đổi ảnh đại diện" : "Change avatar"}
-                                            >
-                                                <Camera className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                                            </button>
-                                            <input
-                                                type="file"
-                                                ref={avatarInputRef}
-                                                onChange={handleAvatarChange}
-                                                accept="image/*"
-                                                className="hidden"
-                                                aria-label="Upload avatar"
-                                            />
                                         </div>
                                         <div>
                                             <h2 className="text-3xl font-bold">{currentUser.name}</h2>
                                             <p className="text-lg bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600">
-                                                {t.language === 'vi' ? 'Lập Trình Viên Frontend' : 'Frontend Developer'}
+                                                Lập Trình Viên Frontend
                                             </p>
                                         </div>
                                     </div>
                                     <div className="mb-6">
                                         <p className={`text-base leading-relaxed ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                            {t.language === 'vi'
-                                                ? 'Hồ sơ chuyên nghiệp là phần giới thiệu trong CV của bạn, làm nổi bật những kỹ năng và trình độ phù hợp, thể hiện kinh nghiệm và mục tiêu nghề nghiệp.'
-                                                : 'A professional profile is the introduction in your CV, highlighting relevant skills and qualifications, showcasing experience and career goals.'}
+                                            Hồ sơ chuyên nghiệp là phần giới thiệu trong CV của bạn, làm nổi bật những kỹ năng và trình độ phù hợp, thể hiện kinh nghiệm và mục tiêu nghề nghiệp.
                                         </p>
                                     </div>
                                     <div className="space-y-4">
@@ -667,7 +640,6 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                         </div>
                     </div>
                 )}
-
                 {view === 'settings' && (
                     <div className="max-w-3xl mx-auto">
                         <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 mb-8">{t.accountSettings}</h1>
@@ -685,7 +657,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                         <button
                                             onClick={() => avatarInputRef.current?.click()}
                                             className="absolute -bottom-1 -right-1 w-7 h-7 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center shadow-md border border-gray-200 dark:border-gray-600 transition-transform duration-200 hover:scale-110"
-                                            title={t.language === 'vi' ? "Thay đổi ảnh đại diện" : "Change avatar"}
+                                            title="Thay đổi ảnh đại diện"
                                         >
                                             <Camera className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                                         </button>
@@ -876,7 +848,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                             type="button"
                                             onClick={toggleNewPasswordVisibility}
                                             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                            title={showNewPassword ? t.language === 'vi' ? "Ẩn mật khẩu" : "Hide password" : t.language === 'vi' ? "Hiện mật khẩu" : "Show password"}
+                                            title={showNewPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                                         >
                                             {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                         </button>
@@ -902,7 +874,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                             type="button"
                                             onClick={toggleConfirmPasswordVisibility}
                                             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                            title={showConfirmPassword ? t.language === 'vi' ? "Ẩn mật khẩu" : "Hide password" : t.language === 'vi' ? "Hiện mật khẩu" : "Show password"}
+                                            title={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                                         >
                                             {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                         </button>

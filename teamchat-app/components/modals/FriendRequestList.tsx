@@ -158,8 +158,8 @@ export function FriendRequestList({ onFriendRequestAccepted, onShowToast, isDark
                     <div
                         key={req.id}
                         className={`flex items-center justify-between p-4 transition-colors border-b last:border-b-0 ${isDarkMode
-                                ? 'hover:bg-gray-700 border-gray-700'
-                                : 'hover:bg-gray-50 border-gray-200'
+                            ? 'hover:bg-gray-700 border-gray-700'
+                            : 'hover:bg-gray-50 border-gray-200'
                             }`}
                     >
                         <div className="flex items-center space-x-3">
@@ -195,8 +195,8 @@ export function FriendRequestList({ onFriendRequestAccepted, onShowToast, isDark
                                 size="sm"
                                 variant="outline"
                                 className={`h-9 px-4 rounded-lg font-medium shadow-sm ${isDarkMode
-                                        ? 'border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white hover:border-gray-500'
-                                        : 'border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400'
+                                    ? 'border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white hover:border-gray-500'
+                                    : 'border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400'
                                     }`}
                                 onClick={() => handleResponse(req.id, 'declined', req)}
                                 title="Từ chối"

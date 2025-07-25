@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import type { ChatInputProps } from "@/app/types";
 
@@ -12,17 +13,28 @@ declare global {
     }
 }
 
+const formatFileSize = (bytes: number, decimals = 2) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
+
 export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps) {
     const [message, setMessage] = useState("");
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [isListening, setIsListening] = useState(false);
     const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [isSending, setIsSending] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<any>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -67,7 +79,7 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
             setSelectedFiles((prev) => [...prev, ...Array.from(event.target.files!)]);
         }
         setShowAttachmentMenu(false);
-        event.target.value = ''; // Reset input để có thể chọn lại file cũ
+        event.target.value = '';
     };
 
     const removeFile = (fileToRemove: File) => {
@@ -76,18 +88,25 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
 
     const onEmojiClick = (emojiData: EmojiClickData) => {
         setMessage((prev) => prev + emojiData.emoji);
+        inputRef.current?.focus();
     };
 
-    // SỬA LẠI HOÀN TOÀN: Hàm này giờ chỉ gọi prop onSendMessage và reset state
-    const handleSendMessage = () => {
+    const handleSendMessage = async () => {
         if (!message.trim() && selectedFiles.length === 0) return;
 
+        setIsSending(true);
+
         // Bắn sự kiện lên cho component cha (useChat) xử lý
-        onSendMessage(message, selectedFiles);
+        await onSendMessage(message, selectedFiles);
 
         // Reset state của input
         setMessage("");
         setSelectedFiles([]);
+
+        setTimeout(() => {
+            setIsSending(false);
+            inputRef.current?.focus();
+        }, 300);
     };
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -97,89 +116,257 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
         }
     };
 
-    const AttachmentMenuItem = ({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void; }) => (
+    const AttachmentMenuItem = ({
+        icon,
+        label,
+        onClick,
+        color = "text-cyan-500"
+    }: {
+        icon: React.ReactNode;
+        label: string;
+        onClick: () => void;
+        color?: string;
+    }) => (
         <button
             onClick={onClick}
-            className={`w-full flex items-center gap-3 p-2 rounded-md text-sm transition-colors ${isDarkMode ? "text-gray-300 hover:bg-gray-600" : "text-gray-700 hover:bg-gray-100"}`}
+            className={`w-full flex items-center gap-3 p-3 rounded-md text-sm transition-all duration-200 ${isDarkMode
+                    ? "text-gray-300 hover:bg-gray-600 hover:text-white"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                }`}
         >
-            {icon} {label}
+            <span className={color}>{icon}</span>
+            {label}
         </button>
     );
 
     return (
-        <div className={`p-4 border-t transition-colors relative ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
-            {selectedFiles.length > 0 && (
-                <div className="mb-2 p-2 border rounded-lg max-h-40 overflow-y-auto space-x-2 flex">
-                    {selectedFiles.map((file, index) => (
-                        <div key={index} className="relative w-20 h-20 flex-shrink-0">
-                            {file.type.startsWith("image/") ? (
-                                <img src={URL.createObjectURL(file)} alt={file.name} className="w-full h-full object-cover rounded-md" />
-                            ) : (
-                                <div className="w-full h-full bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center">
-                                    <FileIcon className="h-8 w-8 text-gray-500" />
-                                </div>
-                            )}
-                            <button onClick={() => removeFile(file)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5">
-                                <X className="h-3 w-3" />
-                            </button>
+        <div className={`p-4 border-t transition-all duration-300 relative ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            }`}>
+            {/* File Preview Section */}
+            <AnimatePresence>
+                {selectedFiles.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className={`mb-3 p-3 border rounded-lg max-h-40 overflow-y-auto ${isDarkMode ? 'border-gray-600 bg-gray-750' : 'border-gray-200 bg-gray-50'
+                            }`}
+                    >
+                        <div className="flex flex-wrap gap-3">
+                            <AnimatePresence>
+                                {selectedFiles.map((file, index) => (
+                                    <motion.div
+                                        key={index}
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        className="relative group"
+                                    >
+                                        {file.type.startsWith("image/") ? (
+                                            <div className="relative w-20 h-20">
+                                                <img
+                                                    src={URL.createObjectURL(file)}
+                                                    alt={file.name}
+                                                    className="w-full h-full object-cover rounded-md shadow-md border border-gray-300 dark:border-gray-600"
+                                                />
+                                                <button
+                                                    onClick={() => removeFile(file)}
+                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1 rounded-b-md truncate">
+                                                    {file.name}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className={`relative w-48 p-3 rounded-md border shadow-md ${isDarkMode
+                                                    ? 'bg-gray-700 border-gray-600'
+                                                    : 'bg-white border-gray-200'
+                                                }`}>
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${isDarkMode ? 'bg-gray-600' : 'bg-gray-100'
+                                                        }`}>
+                                                        <FileIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`font-medium text-sm truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'
+                                                            }`}>
+                                                            {file.name}
+                                                        </p>
+                                                        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                                                            }`}>
+                                                            {formatFileSize(file.size)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => removeFile(file)}
+                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
                         </div>
-                    ))}
-                </div>
-            )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <div className="flex items-center space-x-3">
-                <input type="file" ref={imageInputRef} onChange={handleFileSelect} accept="image/*" multiple style={{ display: "none" }} />
-                <input type="file" ref={fileInputRef} onChange={handleFileSelect} multiple style={{ display: "none" }} />
+                <input
+                    type="file"
+                    ref={imageInputRef}
+                    onChange={handleFileSelect}
+                    accept="image/*"
+                    multiple
+                    style={{ display: "none" }}
+                />
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    multiple
+                    style={{ display: "none" }}
+                />
 
+                {/* Emoji Picker */}
                 <div ref={emojiPickerRef} className="absolute bottom-full mb-2 z-10">
-                    {showEmojiPicker && (
-                        <EmojiPicker
-                            onEmojiClick={onEmojiClick}
-                            autoFocusSearch={false}
-                            height={400}
-                            width={350}
-                            theme={isDarkMode ? Theme.DARK : Theme.LIGHT}
-                            lazyLoadEmojis={true}
-                        />
-                    )}
+                    <AnimatePresence>
+                        {showEmojiPicker && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, y: 20 }}
+                                transition={{ duration: 0.2 }}
+                                className="shadow-2xl rounded-lg overflow-hidden"
+                            >
+                                <EmojiPicker
+                                    onEmojiClick={onEmojiClick}
+                                    autoFocusSearch={false}
+                                    height={400}
+                                    width={350}
+                                    theme={isDarkMode ? Theme.DARK : Theme.LIGHT}
+                                    lazyLoadEmojis={true}
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
-                <Button variant="ghost" size="sm" className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500"}`} onClick={() => setShowEmojiPicker(p => !p)}>
+                {/* Emoji Button */}
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`transition-colors duration-200 ${isDarkMode ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                        }`}
+                    onClick={() => setShowEmojiPicker(p => !p)}
+                >
                     <Smile className="h-5 w-5" />
                 </Button>
 
+                {/* Input Field */}
                 <div className="flex-1 relative">
                     <input
-                        type="text" placeholder="Nhập tin nhắn của bạn..." value={message}
-                        onChange={(e) => setMessage(e.target.value)} onKeyDown={handleKeyDown}
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 pr-10 transition-colors ${isDarkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"}`}
+                        ref={inputRef}
+                        type="text"
+                        placeholder="Nhập tin nhắn của bạn..."
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 pr-12 transition-all duration-300 ${isDarkMode
+                                ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                            }`}
                     />
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+
+                    {/* Attachment Menu */}
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                         <div className="relative">
-                            <Button variant="ghost" size="sm" className={`${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500"}`} onClick={() => setShowAttachmentMenu(p => !p)}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className={`transition-colors duration-200 ${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"
+                                    }`}
+                                onClick={() => setShowAttachmentMenu(p => !p)}
+                            >
                                 <Paperclip className="h-4 w-4" />
                             </Button>
-                            {showAttachmentMenu && (
-                                <div onMouseLeave={() => setShowAttachmentMenu(false)} className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-lg w-48 ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border"}`}>
-                                    <AttachmentMenuItem icon={<ImageIcon className="h-5 w-5 text-green-500" />} label="Ảnh" onClick={() => imageInputRef.current?.click()} />
-                                    <AttachmentMenuItem icon={<FileIcon className="h-5 w-5 text-purple-500" />} label="Tệp" onClick={() => fileInputRef.current?.click()} />
-                                </div>
-                            )}
+
+                            <AnimatePresence>
+                                {showAttachmentMenu && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                                        transition={{ duration: 0.2 }}
+                                        onMouseLeave={() => setShowAttachmentMenu(false)}
+                                        className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-xl w-48 z-20 ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border shadow-lg"
+                                            }`}
+                                    >
+                                        <AttachmentMenuItem
+                                            icon={<ImageIcon className="h-5 w-5" />}
+                                            label="Ảnh"
+                                            onClick={() => imageInputRef.current?.click()}
+                                            color="text-green-500"
+                                        />
+                                        <AttachmentMenuItem
+                                            icon={<FileIcon className="h-5 w-5" />}
+                                            label="Tệp"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            color="text-blue-500"
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </div>
 
-                <Button variant="ghost" size="sm" onClick={toggleListening} className={`${isDarkMode ? "text-gray-400" : "text-gray-500"} ${isListening ? "text-red-500" : ""}`}>
+                {/* Voice Recording Button */}
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleListening}
+                    className={`transition-all duration-200 ${isListening
+                            ? "text-red-500 bg-red-50 dark:bg-red-900/20"
+                            : (isDarkMode ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100")
+                        }`}
+                >
                     <Mic className="h-5 w-5" />
                 </Button>
 
-                <Button
-                    onClick={handleSendMessage}
-                    disabled={!message.trim() && selectedFiles.length === 0}
-                    className="bg-purple-500 hover:bg-purple-600 rounded-full w-10 h-10 p-0 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                {/* Send Button - Enhanced Animation */}
+                <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                 >
-                    <Send className="h-4 w-4" />
-                </Button>
+                    <Button
+                        onClick={handleSendMessage}
+                        disabled={(!message.trim() && selectedFiles.length === 0) || isSending}
+                        className={`rounded-full w-12 h-12 p-0 transition-all duration-300 ${(!message.trim() && selectedFiles.length === 0) || isSending
+                                ? "bg-gray-400 cursor-not-allowed opacity-50"
+                                : "bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 shadow-lg hover:shadow-xl"
+                            }`}
+                    >
+                        <motion.div
+                            animate={{
+                                rotate: isSending ? 360 : 0,
+                                scale: isSending ? [1, 1.2, 1] : 1
+                            }}
+                            transition={{
+                                duration: isSending ? 0.6 : 0.2,
+                                ease: "easeInOut"
+                            }}
+                        >
+                            <Send className="h-5 w-5 text-white" />
+                        </motion.div>
+                    </Button>
+                </motion.div>
             </div>
         </div>
     );

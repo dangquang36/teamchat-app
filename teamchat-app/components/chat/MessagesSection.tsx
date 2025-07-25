@@ -37,7 +37,6 @@ const formatMutedUntil = (date?: Date) => {
 };
 
 export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }: MessagesSectionProps) {
-    // --- BƯỚC 1: GỌI TẤT CẢ CÁC HOOK Ở ĐẦU COMPONENT ---
     const {
         filteredDirectMessages, selectedChatId, setSelectedChatId, searchQuery,
         setSearchQuery, isAddContactModalOpen, setIsAddContactModalOpen,
@@ -45,22 +44,19 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
         contactToDelete, directMessages, notification, setNotification, selectedChatUser,
         currentMessages, isDetailsOpen, setIsDetailsOpen, viewingProfile, setViewingProfile,
         currentMuteInfo, handleToggleMute, isMuteModalOpen, setIsMuteModalOpen,
-        handleConfirmMute, handleSendMessage, refreshContacts, toast, showToast,
+        handleConfirmMute, handleSendMessage, refreshContacts, toast, showToast, unreadChats,
     } = useChatContext();
 
     const currentUser = useCurrentUser();
 
-    // Các hook useState cũng phải được gọi ở đây, trước câu lệnh if
     const [rightPanelView, setRightPanelView] = useState<'details' | 'archive' | 'closed'>('closed');
     const [archiveInitialTab, setArchiveInitialTab] = useState<'media' | 'files'>('media');
     const [isFriendRequestSheetOpen, setIsFriendRequestSheetOpen] = useState(false);
 
-    // --- BƯỚC 2: KIỂM TRA ĐIỀU KIỆN SAU KHI ĐÃ GỌI HẾT HOOK ---
     if (!currentUser) {
         return <div className="flex-1 flex items-center justify-center">Đang tải dữ liệu người dùng...</div>;
     }
 
-    // --- CÁC HÀM XỬ LÝ SỰ KIỆN ---
     const handleFriendRequestAccepted = () => {
         console.log("Friend request accepted! Refreshing contacts...");
         refreshContacts();
@@ -107,10 +103,10 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
         <>
             <div className="flex h-screen w-full bg-white dark:bg-gray-900 overflow-hidden">
                 {/* Phần danh sách chat bên trái */}
-                <div className={`w-80 border-r ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <div className={`w-80 border-r transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                     <div className="p-4 border-b">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className={`text-lg font-semibold flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                            <h2 className={`text-lg font-semibold flex items-center gap-2 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                 Tin Nhắn
                             </h2>
                         </div>
@@ -119,7 +115,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                             <input
                                 type="text"
                                 placeholder="Tìm kiếm người dùng hoặc email..."
-                                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${isDarkMode
+                                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-300 ${isDarkMode
                                     ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                                     : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                                     }`}
@@ -131,7 +127,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                     <div className="overflow-y-auto">
                         <div className="p-4">
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className={`text-xs font-semibold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                <h3 className={`text-xs font-semibold uppercase tracking-wider transition-colors duration-300 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                     TIN NHẮN TRỰC TIẾP
                                 </h3>
                                 <div className="flex items-center space-x-1">
@@ -140,16 +136,18 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className={`h-8 w-8 rounded-full ${isDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
+                                                className={`h-8 w-8 rounded-full transition-all duration-300 ${isDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
                                                 title="Lời mời kết bạn"
                                                 onClick={() => setIsFriendRequestSheetOpen(true)}
                                             >
                                                 <Bell className="h-5 w-5" />
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-80 bg-gray-800 border-gray-700 text-white p-0" align="end">
-                                            <FriendRequestList onFriendRequestAccepted={handleFriendRequestAccepted}
+                                        <PopoverContent className={`w-80 p-0 ${isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`} align="end">
+                                            <FriendRequestList
+                                                onFriendRequestAccepted={handleFriendRequestAccepted}
                                                 onShowToast={showToast}
+                                                isDarkMode={isDarkMode}
                                             />
                                         </PopoverContent>
                                     </Popover>
@@ -158,7 +156,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                         size="icon"
                                         onClick={() => setIsAddContactModalOpen(true)}
                                         title="Thêm liên lạc mới"
-                                        className={`h-8 w-8 rounded-full ${isDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
+                                        className={`h-8 w-8 rounded-full transition-all duration-300 ${isDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
                                     >
                                         <Plus className="h-5 w-5" />
                                     </Button>
@@ -173,23 +171,24 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                             initial={{ opacity: 0, y: -20 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, x: -30 }}
-                                            transition={{ duration: 0.3 }}
+                                            transition={{ duration: 0.3, ease: "easeInOut" }}
                                             className="relative group"
                                         >
-                                            <div key={dm.id} className="relative group">
+                                            <div className="relative group">
                                                 <ChatItem
                                                     name={dm.name}
                                                     message={dm.message}
                                                     avatar={dm.avatar}
-                                                    active={selectedChatId === dm.id}
+                                                    active={selectedChatUser?.id === dm.id}
                                                     isDarkMode={isDarkMode}
                                                     onClick={() => setSelectedChatId(dm.id)}
+                                                    unreadCount={unreadChats[dm.id] || 0}
                                                 />
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleDeleteContact(dm.id)}
-                                                    className={`absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
+                                                    className={`absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ${isDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
                                                     title="Xóa liên lạc"
                                                 >
                                                     <X className="h-5 w-5" />
@@ -202,6 +201,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                         </div>
                     </div>
                 </div>
+
                 {/* Phần khung chat chính */}
                 <div className="flex-1 flex flex-col min-w-0">
                     {selectedChatUser ? (
@@ -216,81 +216,126 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                             />
                             <AnimatePresence>
                                 {currentMuteInfo.isMuted && (
-                                    <MuteBanner
-                                        mutedUntil={formatMutedUntil(currentMuteInfo.mutedUntil)}
-                                        onUnmute={handleToggleMute}
-                                        isDarkMode={isDarkMode}
-                                    />
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <MuteBanner
+                                            mutedUntil={formatMutedUntil(currentMuteInfo.mutedUntil)}
+                                            onUnmute={handleToggleMute}
+                                            isDarkMode={isDarkMode}
+                                        />
+                                    </motion.div>
                                 )}
                             </AnimatePresence>
-                            <ChatMessages messages={currentMessages} currentUser={currentUser} otherUser={selectedChatUser} isDarkMode={isDarkMode} />
-                            <ChatInput onSendMessage={handleSendMessage} isDarkMode={isDarkMode} />
+                            <ChatMessages
+                                messages={currentMessages}
+                                currentUser={currentUser}
+                                otherUser={selectedChatUser}
+                                isDarkMode={isDarkMode}
+                                setViewingProfile={setViewingProfile}
+                            />
+                            <ChatInput
+                                onSendMessage={handleSendMessage}
+                                isDarkMode={isDarkMode}
+                            />
                         </>
                     ) : (
-                        <div className={`flex-1 flex items-center justify-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            Chọn một cuộc trò chuyện để bắt đầu
-                        </div>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className={`flex-1 flex items-center justify-center transition-colors duration-300 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                        >
+                            <div className="text-center">
+                                <div className="text-6xl mb-4">💬</div>
+                                <p className="text-lg">Chọn một cuộc trò chuyện để bắt đầu</p>
+                            </div>
+                        </motion.div>
                     )}
                 </div>
 
                 {/* Phần chi tiết cuộc trò chuyện */}
                 <AnimatePresence>
                     {selectedChatUser && rightPanelView === 'details' && (
-                        <ConversationDetails
-                            user={selectedChatUser}
-                            messages={currentMessages}
-                            onClose={() => setRightPanelView('closed')}
-                            isDarkMode={isDarkMode}
-                            isMuted={currentMuteInfo.isMuted}
-                            onToggleMute={handleToggleMute}
-                            onViewAllMedia={handleViewAllMedia}
-                            onViewAllFiles={handleViewAllFiles}
-                        />
+                        <motion.div
+                            initial={{ opacity: 0, x: 300 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 300 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                        >
+                            <ConversationDetails
+                                user={selectedChatUser}
+                                messages={currentMessages}
+                                onClose={() => setRightPanelView('closed')}
+                                isDarkMode={isDarkMode}
+                                isMuted={currentMuteInfo.isMuted}
+                                onToggleMute={handleToggleMute}
+                                onViewAllMedia={handleViewAllMedia}
+                                onViewAllFiles={handleViewAllFiles}
+                            />
+                        </motion.div>
                     )}
                     {selectedChatUser && rightPanelView === 'archive' && (
-                        <ArchiveView
-                            initialTab={archiveInitialTab}
-                            mediaFiles={mediaFiles}
-                            otherFiles={otherFiles}
-                            onClose={handleCloseArchive}
-                            isDarkMode={isDarkMode}
-                        />
+                        <motion.div
+                            initial={{ opacity: 0, x: 300 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 300 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                        >
+                            <ArchiveView
+                                initialTab={archiveInitialTab}
+                                mediaFiles={mediaFiles}
+                                otherFiles={otherFiles}
+                                onClose={handleCloseArchive}
+                                isDarkMode={isDarkMode}
+                            />
+                        </motion.div>
                     )}
                 </AnimatePresence>
             </div>
 
             {/* Các modal được quản lý ở đây */}
-            {
-                viewingProfile && (
+            <AnimatePresence>
+                {viewingProfile && (
                     <UserProfileModal
                         user={viewingProfile}
                         onClose={() => setViewingProfile(null)}
                         onSendMessage={handleMessageFromProfile}
                         onStartCall={() => handleCallFromProfile(viewingProfile)}
+                        isDarkMode={isDarkMode}
                     />
-                )
-            }
-            {
-                notification && (
-                    <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />
-                )
-            }
-            {
-                showConfirmDelete && contactToDelete && (
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {notification && (
+                    <Notification
+                        message={notification.message}
+                        type={notification.type}
+                        onClose={() => setNotification(null)}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showConfirmDelete && contactToDelete && (
                     <ConfirmDelete
                         isOpen={showConfirmDelete}
                         onClose={() => setShowConfirmDelete(false)}
                         onConfirm={confirmDeleteContact}
                         contactName={directMessages.find((dm) => dm.id === contactToDelete)?.name || ''}
                     />
-                )
-            }
+                )}
+            </AnimatePresence>
 
             <FriendRequestSheet
                 isOpen={isFriendRequestSheetOpen}
                 onClose={() => setIsFriendRequestSheetOpen(false)}
                 onFriendRequestAccepted={handleFriendRequestAccepted}
                 onShowToast={showToast}
+                isDarkMode={isDarkMode}
             />
 
             <AddContactModal
@@ -307,7 +352,12 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                 onConfirm={handleConfirmMute}
                 isDarkMode={isDarkMode}
             />
-            <CustomToast message={toast.message} show={toast.show} />
+
+            <AnimatePresence>
+                {toast.show && (
+                    <CustomToast message={toast.message} show={toast.show} />
+                )}
+            </AnimatePresence>
         </>
     );
 }

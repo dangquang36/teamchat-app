@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "next dev",
+    "dev": "node server.js",
     "lint": "next lint",
-    "start": "next start"
+    "start": "NODE_ENV=production node server.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
@@ -47,6 +47,7 @@
     "date-fns": "4.1.0",
     "embla-carousel-react": "latest",
     "emoji-picker-react": "^4.13.2",
+    "express": "^4.21.2",
     "framer-motion": "^12.23.6",
     "input-otp": "latest",
     "jsonwebtoken": "latest",
@@ -63,6 +64,8 @@
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "latest",
     "recharts": "latest",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "sonner": "latest",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",

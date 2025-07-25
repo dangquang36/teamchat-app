@@ -1,19 +1,16 @@
-
 'use client';
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useChat } from '@/hooks/useChat';
+import { useTheme } from './ThemeContext';
 
-// Định nghĩa kiểu dữ liệu cho giá trị trả về của hook useChat
 type ChatContextType = ReturnType<typeof useChat>;
 
-// Tạo Context
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-// Tạo Provider
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
-    // isDarkMode có thể được lấy từ một context khác nếu cần, ở đây tạm set là true
-    const chatState = useChat(true);
+    const { isDarkMode } = useTheme();
+    const chatState = useChat(isDarkMode);
 
     return (
         <ChatContext.Provider value={chatState}>
@@ -22,7 +19,6 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
-// Tạo custom hook để dễ dàng sử dụng context
 export const useChatContext = () => {
     const context = useContext(ChatContext);
     if (context === undefined) {

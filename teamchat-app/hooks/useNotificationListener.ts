@@ -1,8 +1,9 @@
-// hooks/useNotificationListener.ts
+
 import { useEffect } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
 import { useCurrentUser } from './useCurrentUser';
 import type { Message, DirectMessage } from "@/app/types";
+
 
 interface NotificationListenerParams {
     receiveNewMessage: (chatId: string, newMessage: Message) => void;

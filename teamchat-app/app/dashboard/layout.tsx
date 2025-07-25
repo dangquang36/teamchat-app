@@ -1,30 +1,14 @@
+
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MessageCircle, User, Sun, Moon, Users, Newspaper } from "lucide-react";
 import { SidebarIcon } from "@/components/common/SidebarIcon";
-import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useTheme } from "@/contexts/ThemeContext";
 
-// --- IMPORT CÁC THÀNH PHẦN MỚI ---
-import { useNotificationListener } from "@/hooks/useNotificationListener";
-import { ChatProvider, useChatContext } from "@/contexts/ChatContext";
-
-const queryClient = new QueryClient();
-
-// Component này sẽ kết nối các hook với nhau
-function AppController({ children }: { children: React.ReactNode }) {
-    // Lấy các hàm cập nhật state từ ChatContext
-    const { receiveNewMessage, addContact } = useChatContext();
-
-    // Truyền các hàm đó vào useNotificationListener
-    useNotificationListener({ receiveNewMessage, addContact });
-
-    // Component này không render gì cả, chỉ để chạy hook
-    return <>{children}</>;
-}
-
+// Giao diện người dùng của Dashboard
 function LayoutUI({ children }: { children: React.ReactNode }) {
     const [currentPath, setCurrentPath] = useState("");
     const router = useRouter();
@@ -118,20 +102,7 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
     );
 }
 
-export default function DashboardLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    return (
-        <QueryClientProvider client={queryClient}>
-            <ThemeProvider>
-                <ChatProvider>
-                    <AppController>
-                        <LayoutUI>{children}</LayoutUI>
-                    </AppController>
-                </ChatProvider>
-            </ThemeProvider>
-        </QueryClientProvider>
-    );
+// Layout này giờ chỉ trả về phần UI
+export default function DashboardLayout({ children }: { children: React.ReactNode; }) {
+    return <LayoutUI>{children}</LayoutUI>;
 }

@@ -1,5 +1,6 @@
 // API utility functions
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api"
+import { Socket } from 'socket.io-client';
 
 interface ApiResponse<T = any> {
   success: boolean
@@ -272,8 +273,16 @@ class ApiClient {
   }
 
 
-  async sendFriendRequest(requesterId: string, recipientId: string, requesterInfo: { requesterName: string; requesterAvatar: string }) {
+  async sendFriendRequest(
+    socket: Socket | null,
+    requesterId: string,
+    recipientId: string,
+    requesterInfo: { requesterName: string; requesterAvatar: string }
+  ) {
+    if (!socket) return { success: false, error: "Socket chưa kết nối." };
+
     try {
+      // Bước 1: Gửi request lên MockAPI để lưu trữ lời mời (giữ nguyên)
       const res = await fetch(`https://685e0afa7b57aebd2af7d5fd.mockapi.io/testapifake/friend_requests`, {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
@@ -285,8 +294,26 @@ class ApiClient {
           requesterAvatar: requesterInfo.requesterAvatar,
         }),
       });
+
       if (!res.ok) throw new Error('Gửi lời mời thất bại');
-      return { success: true, data: await res.json() };
+
+      const newRequestData = await res.json();
+
+      // BƯỚC 2: THÊM DÒNG EMIT CÒN THIẾU
+      // Gửi thông báo real-time cho người nhận (User B)
+      socket.emit('sendFriendRequest', {
+        recipientId: recipientId, // Gửi đến người nhận
+        payload: { // Gửi thông tin của người gửi
+          id: newRequestData.id,
+          requesterId: requesterId,
+          requesterName: requesterInfo.requesterName,
+          requesterAvatar: requesterInfo.requesterAvatar,
+          status: 'pending',
+        }
+      });
+
+      return { success: true, data: newRequestData };
+
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : "Lỗi không xác định" };
     }

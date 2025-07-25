@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { Phone, Video, Download, Paperclip as FileMessageIcon, BarChart3, Plus, X, Users, Clock, CheckCircle, Circle, Eye, MoreHorizontal, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { VideoCall } from "../VideoCall";
-import { AudioCallModal } from "../AudioCallModal";
 import { ChannelInput } from "./ChannelInput";
 import { UserProfileModal, UserProfile } from "../UserProfileModal";
 
@@ -822,9 +820,6 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
         setProfileModalOpen(true);
     };
 
-    if (isCallingVideo) {
-        return <VideoCall roomName={channel.id} userName={userName} onClose={() => setIsCallingVideo(false)} />;
-    }
 
     return (
         <div className="flex-1 flex flex-col h-full">
@@ -916,9 +911,6 @@ export function ChannelView({ channel, isDarkMode = false, onToggleDetails }: Ch
                 onCreatePoll={() => setIsCreatePollModalOpen(true)}
             />
 
-            {audioCallMode !== "none" && (
-                <AudioCallModal channelName={channel.name} onClose={() => setAudioCallMode("none")} mode={audioCallMode} />
-            )}
 
             {isProfileModalOpen && viewedUser && (
                 <UserProfileModal user={viewedUser} onClose={() => setProfileModalOpen(false)} isDarkMode={isDarkMode} />

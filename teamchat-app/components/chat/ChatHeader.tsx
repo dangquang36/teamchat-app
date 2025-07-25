@@ -2,7 +2,6 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Phone, Video, Info } from "lucide-react";
 import { DirectMessage } from "@/app/types";
-import { VideoCallButton } from "../videocall/VideoCallButton";
 
 export interface ChatHeaderProps {
     user: DirectMessage;
@@ -46,7 +45,6 @@ export function ChatHeader({
                 <Button variant="ghost" size="icon" onClick={onAudioCall} className="rounded-full">
                     <Phone className="h-5 w-5" />
                 </Button>
-                <VideoCallButton contactName={user.name} currentUserName="Admin User" />
                 <Button
                     variant="ghost"
                     size="icon"

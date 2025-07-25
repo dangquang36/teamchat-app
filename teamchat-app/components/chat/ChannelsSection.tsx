@@ -8,7 +8,6 @@ import { toast } from "@/components/ui/use-toast";
 import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 import { ChannelList } from "./ChannelList";
 
-// Giả định các type cần thiết
 type Message = {
     text: string;
     time: string;

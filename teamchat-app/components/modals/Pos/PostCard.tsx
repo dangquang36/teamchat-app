@@ -1,7 +1,8 @@
-
 import { Post } from "@/app/types";
 import { Button } from "@/components/ui/button";
+import { HTMLContentRenderer } from "@/components/ui/HTMLContentRenderer";
 import { Heart, MessageCircle, Globe, Users, Lock, Paperclip } from "lucide-react";
+
 export const formatTimeAgo = (timestamp: number) => {
     const now = Date.now()
     const diff = now - timestamp
@@ -38,6 +39,11 @@ export function PostCard({
             default: return <Globe className="h-4 w-4" />;
         }
     };
+
+    // Hàm kiểm tra xem content có phải là HTML hay không
+    const isHtmlContent = (content: string) => {
+        return content.includes('<') && content.includes('>')
+    }
 
     return (
         <div
@@ -84,7 +90,15 @@ export function PostCard({
 
             {/* Post Content */}
             <div className="mb-5">
-                <p className={`text-base leading-relaxed font-normal ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>{post.content}</p>
+                {isHtmlContent(post.content) ? (
+                    <HTMLContentRenderer
+                        content={post.content}
+                        isDarkMode={isDarkMode}
+                        className="leading-relaxed"
+                    />
+                ) : (
+                    <p className={`text-base leading-relaxed font-normal ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>{post.content}</p>
+                )}
 
                 {/* Tags */}
                 {post.tags && post.tags.length > 0 && (
@@ -199,7 +213,6 @@ export function PostCard({
                         <MessageCircle className="h-5 w-5 mr-2" />
                         Bình luận
                     </Button>
-
                 </div>
             </div>
         </div>

@@ -14,7 +14,7 @@ const inter = Inter({ subsets: ["latin"] });
 const queryClient = new QueryClient();
 
 function AppController({ children }: { children: React.ReactNode }) {
-  const { socket } = useSocketContext();
+  const { socket, isConnected } = useSocketContext();
   const { receiveNewMessage, addContact, showToast } = useChatContext();
   const currentUser = useCurrentUser();
 
@@ -55,11 +55,48 @@ function AppController({ children }: { children: React.ReactNode }) {
       showToast(`${friendData.name} đã chấp nhận lời mời kết bạn của bạn!`);
     };
 
-    // Đăng ký các event listeners
+
+    // Handle incoming call notifications (for toast only)
+    const handleIncomingCallNotification = (callData: any) => {
+      console.log('Incoming call notification in layout:', callData);
+      // The actual modal is handled in SocketProvider
+      // This is just for additional notifications if needed
+      if (document.hidden) {
+        showToast(`Cuộc gọi từ ${callData.callerName}`);
+      }
+    };
+
+    // Handle call status changes
+    const handleCallStatusChange = (status: { type: string; message?: string }) => {
+      console.log('Call status change:', status);
+
+      switch (status.type) {
+        case 'connected':
+          showToast('Cuộc gọi đã kết nối');
+          break;
+        case 'ended':
+          showToast('Cuộc gọi đã kết thúc');
+          break;
+        case 'rejected':
+          if (status.message) {
+            showToast(status.message);
+          }
+          break;
+        case 'error':
+          showToast(status.message || 'Lỗi cuộc gọi');
+          break;
+      }
+    };
+
+    // Đăng ký các event listeners hiện tại
     socket.on('newMessage', handleNewMessage);
     socket.on('friendRequestAccepted', handleFriendRequestAccepted);
     socket.on('friendRequestReceived', handleFriendRequestReceived);
     socket.on('friendRequestAcceptedByOther', handleFriendRequestAcceptedByOther);
+
+    // Đăng ký call event listeners
+    socket.on('incomingCallNotification', handleIncomingCallNotification);
+    socket.on('callStatusChange', handleCallStatusChange);
 
     // Cleanup khi component unmount
     return () => {
@@ -67,12 +104,18 @@ function AppController({ children }: { children: React.ReactNode }) {
       socket.off('friendRequestAccepted', handleFriendRequestAccepted);
       socket.off('friendRequestReceived', handleFriendRequestReceived);
       socket.off('friendRequestAcceptedByOther', handleFriendRequestAcceptedByOther);
+
+      // Cleanup call events
+      socket.off('incomingCallNotification', handleIncomingCallNotification);
+      socket.off('callStatusChange', handleCallStatusChange);
     };
   }, [socket, currentUser, receiveNewMessage, addContact, showToast]);
 
   // Đăng ký user với socket khi kết nối
   useEffect(() => {
-    if (socket && currentUser) {
+    if (socket && currentUser && isConnected) {
+      console.log('Registering user with socket:', currentUser.id);
+
       socket.emit('userOnline', {
         userId: currentUser.id,
         userInfo: {
@@ -81,8 +124,11 @@ function AppController({ children }: { children: React.ReactNode }) {
           email: currentUser.email
         }
       });
+
+      // Emit join event for call functionality
+      socket.emit('join', currentUser.id);
     }
-  }, [socket, currentUser]);
+  }, [socket, currentUser, isConnected]);
 
   return <>{children}</>;
 }

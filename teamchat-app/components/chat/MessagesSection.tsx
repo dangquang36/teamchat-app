@@ -23,6 +23,9 @@ import { FriendRequestList } from '@/components/modals/FriendRequestList';
 import { FriendRequestSheet } from '@/components/modals/FriendRequestSheet';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useSocket } from '@/contexts/SocketContext';
+import { PinNotification } from '@/components/modals/Awuamen/PinNotification';
+import { usePinnedChats } from '@/hooks/usePinnedChats';
 
 interface MessagesSectionProps {
     onVideoCall: () => void;
@@ -30,7 +33,7 @@ interface MessagesSectionProps {
     isDarkMode?: boolean;
 }
 
-const formatMutedUntil = (date?: Date) => {
+const formatMutedUntil = (date?: Date): string => {
     if (!date) return 'vô thời hạn';
     if (date.getFullYear() > new Date().getFullYear() + 50) return 'khi được mở lại';
     return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
@@ -38,16 +41,76 @@ const formatMutedUntil = (date?: Date) => {
 
 export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }: MessagesSectionProps) {
     const {
-        filteredDirectMessages, selectedChatId, setSelectedChatId, searchQuery,
-        setSearchQuery, isAddContactModalOpen, setIsAddContactModalOpen,
-        handleDeleteContact, showConfirmDelete, setShowConfirmDelete, confirmDeleteContact,
-        contactToDelete, directMessages, notification, setNotification, selectedChatUser,
-        currentMessages, isDetailsOpen, setIsDetailsOpen, viewingProfile, setViewingProfile,
-        currentMuteInfo, handleToggleMute, isMuteModalOpen, setIsMuteModalOpen,
-        handleConfirmMute, handleSendMessage, refreshContacts, toast, showToast, unreadChats,
+        filteredDirectMessages,
+        selectedChatId,
+        setSelectedChatId,
+        searchQuery,
+        setSearchQuery,
+        isAddContactModalOpen,
+        setIsAddContactModalOpen,
+        handleDeleteContact,
+        showConfirmDelete,
+        setShowConfirmDelete,
+        confirmDeleteContact,
+        contactToDelete,
+        directMessages,
+        notification,
+        setNotification,
+        selectedChatUser,
+        currentMessages,
+        isDetailsOpen,
+        setIsDetailsOpen,
+        viewingProfile,
+        setViewingProfile,
+        currentMuteInfo,
+        handleToggleMute,
+        isMuteModalOpen,
+        setIsMuteModalOpen,
+        handleConfirmMute,
+        handleSendMessage,
+        refreshContacts,
+        toast,
+        showToast,
+        unreadChats,
     } = useChatContext();
 
+    const { isPinned, togglePin, sortChatsWithPinned } = usePinnedChats();
+
+    const [pinNotification, setPinNotification] = useState<{
+        show: boolean;
+        isPinned: boolean;
+        userName: string;
+    }>({
+        show: false,
+        isPinned: false,
+        userName: ''
+    });
+
+    const handleTogglePin = () => {
+        if (!selectedChatUser) return;
+
+        const wasPinned = isPinned(selectedChatUser.id);
+        togglePin(selectedChatUser.id);
+
+        // Hiển thị thông báo
+        setPinNotification({
+            show: true,
+            isPinned: !wasPinned,
+            userName: selectedChatUser.name
+        });
+
+        // Ẩn thông báo sau 3 giây
+        setTimeout(() => {
+            setPinNotification(prev => ({ ...prev, show: false }));
+        }, 3000);
+    };
+
+    const sortedDirectMessages = sortChatsWithPinned(filteredDirectMessages);
+
     const currentUser = useCurrentUser();
+
+    // Access call functions từ SocketContext
+    const { initiateCall, callStatus, isInCall } = useSocket();
 
     const [rightPanelView, setRightPanelView] = useState<'details' | 'archive' | 'closed'>('closed');
     const [archiveInitialTab, setArchiveInitialTab] = useState<'media' | 'files'>('media');
@@ -96,18 +159,60 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
 
     const handleCallFromProfile = (user: UserProfile) => {
         setViewingProfile(null);
-        onAudioCall();
+        if (selectedChatUser) {
+            handleVideoCall();
+        }
+    };
+
+    // Handle video call - tích hợp với LiveKit system
+    const handleVideoCall = () => {
+        if (!selectedChatUser || callStatus !== 'idle') {
+            console.log('Cannot initiate call:', { selectedChatUser, callStatus });
+            return;
+        }
+
+        console.log('Initiating video call to:', selectedChatUser.name, selectedChatUser.id);
+
+        // Call function từ useSocket hook
+        initiateCall(selectedChatUser.id, selectedChatUser.name);
+    };
+
+    // Handle audio call - có thể dùng chung logic hoặc tách riêng
+    const handleAudioCall = () => {
+        if (!selectedChatUser || callStatus !== 'idle') {
+            console.log('Cannot initiate audio call:', { selectedChatUser, callStatus });
+            return;
+        }
+
+        console.log('Initiating audio call to:', selectedChatUser.name, selectedChatUser.id);
+
+        // Tạm thời dùng chung logic với video call
+        // Sau này có thể tách riêng cho audio-only call
+        initiateCall(selectedChatUser.id, selectedChatUser.name);
     };
 
     return (
         <>
             <div className="flex h-screen w-full bg-white dark:bg-gray-900 overflow-hidden">
                 {/* Phần danh sách chat bên trái */}
-                <div className={`w-80 border-r transition-colors duration-300 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <div className={`w-80 border-r transition-colors duration-300 flex-shrink-0 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                     <div className="p-4 border-b">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className={`text-lg font-semibold flex items-center gap-2 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                 Tin Nhắn
+                                {/* Call status indicator */}
+                                {isInCall && (
+                                    <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full animate-pulse">
+                                        Đang gọi
+                                    </span>
+                                )}
+                                {callStatus !== 'idle' && !isInCall && (
+                                    <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded-full">
+                                        {callStatus === 'calling' ? 'Đang gọi...' :
+                                            callStatus === 'ringing' ? 'Có cuộc gọi đến' :
+                                                callStatus}
+                                    </span>
+                                )}
                             </h2>
                         </div>
                         <div className="relative">
@@ -164,7 +269,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                             </div>
                             <div className="space-y-1">
                                 <AnimatePresence>
-                                    {filteredDirectMessages.map((dm) => (
+                                    {sortedDirectMessages.map((dm) => (
                                         <motion.div
                                             key={dm.id}
                                             layout
@@ -183,15 +288,21 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                                     isDarkMode={isDarkMode}
                                                     onClick={() => setSelectedChatId(dm.id)}
                                                     unreadCount={unreadChats[dm.id] || 0}
+                                                    isPinned={isPinned(dm.id)}
                                                 />
+
+                                                {/* Nút xóa - chỉ hiển thị khi hover */}
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => handleDeleteContact(dm.id)}
-                                                    className={`absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ${isDarkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteContact(dm.id);
+                                                    }}
+                                                    className="absolute top-1 right-1 h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gray-700/80 hover:bg-red-500/80 text-white"
                                                     title="Xóa liên lạc"
                                                 >
-                                                    <X className="h-5 w-5" />
+                                                    <X className="h-3 w-3" />
                                                 </Button>
                                             </div>
                                         </motion.div>
@@ -202,13 +313,22 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                     </div>
                 </div>
 
-                {/* Phần khung chat chính */}
-                <div className="flex-1 flex flex-col min-w-0">
+                {/* Phần khung chat chính - điều chỉnh width dựa trên rightPanelView */}
+                <motion.div
+                    className="flex flex-col min-w-0 transition-all duration-300"
+                    animate={{
+                        width: rightPanelView !== 'closed'
+                            ? 'calc(100% - 320px - 320px)'
+                            : 'calc(100% - 320px)'
+                    }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
                     {selectedChatUser ? (
                         <>
                             <ChatHeader
                                 user={selectedChatUser}
-                                onAudioCall={onAudioCall}
+                                onAudioCall={handleAudioCall}
+                                onVideoCall={handleVideoCall}
                                 isDarkMode={isDarkMode}
                                 onViewProfile={() => setViewingProfile(selectedChatUser)}
                                 onToggleDetails={handleToggleDetails}
@@ -230,6 +350,46 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                     </motion.div>
                                 )}
                             </AnimatePresence>
+
+                            {/* Call status banner */}
+                            {(isInCall || callStatus !== 'idle') && (
+                                <div className={`p-3 text-center border-b ${isDarkMode ? 'bg-blue-900 border-gray-700 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800'
+                                    }`}>
+                                    {isInCall ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                            Đang trong cuộc gọi video với {selectedChatUser.name}
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center justify-center gap-2">
+                                            {callStatus === 'calling' && (
+                                                <>
+                                                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                                                    Đang gọi {selectedChatUser.name}...
+                                                </>
+                                            )}
+                                            {callStatus === 'ringing' && (
+                                                <>
+                                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                    {selectedChatUser.name} đang gọi video...
+                                                </>
+                                            )}
+                                            {callStatus === 'connecting' && (
+                                                <>
+                                                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                                                    Đang kết nối cuộc gọi...
+                                                </>
+                                            )}
+                                            {callStatus === 'rejected' && (
+                                                <>
+                                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                                    Cuộc gọi bị từ chối
+                                                </>
+                                            )}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
                             <ChatMessages
                                 messages={currentMessages}
                                 currentUser={currentUser}
@@ -251,19 +411,33 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                             <div className="text-center">
                                 <div className="text-6xl mb-4">💬</div>
                                 <p className="text-lg">Chọn một cuộc trò chuyện để bắt đầu</p>
+                                {(isInCall || callStatus !== 'idle') && (
+                                    <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                                        <p className="text-sm">
+                                            {isInCall ? 'Bạn đang trong cuộc gọi video' : (
+                                                callStatus === 'calling' ? 'Đang thực hiện cuộc gọi...' :
+                                                    callStatus === 'ringing' ? 'Có cuộc gọi đến' :
+                                                        callStatus === 'connecting' ? 'Đang kết nối...' :
+                                                            `Trạng thái cuộc gọi: ${callStatus}`
+                                            )}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     )}
-                </div>
+                </motion.div>
 
-                {/* Phần chi tiết cuộc trò chuyện */}
+                {/* Phần chi tiết cuộc trò chuyện - sidebar bên phải */}
                 <AnimatePresence>
                     {selectedChatUser && rightPanelView === 'details' && (
                         <motion.div
-                            initial={{ opacity: 0, x: 300 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 300 }}
+                            key="details-panel"
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: 320, opacity: 1 }}
+                            exit={{ width: 0, opacity: 0 }}
                             transition={{ duration: 0.3, ease: "easeInOut" }}
+                            className="flex-shrink-0 overflow-hidden"
                         >
                             <ConversationDetails
                                 user={selectedChatUser}
@@ -274,15 +448,19 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                 onToggleMute={handleToggleMute}
                                 onViewAllMedia={handleViewAllMedia}
                                 onViewAllFiles={handleViewAllFiles}
+                                isPinned={isPinned(selectedChatUser.id)}
+                                onTogglePin={handleTogglePin}
                             />
                         </motion.div>
                     )}
                     {selectedChatUser && rightPanelView === 'archive' && (
                         <motion.div
-                            initial={{ opacity: 0, x: 300 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 300 }}
+                            key="archive-panel"
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: 320, opacity: 1 }}
+                            exit={{ width: 0, opacity: 0 }}
                             transition={{ duration: 0.3, ease: "easeInOut" }}
+                            className="flex-shrink-0 overflow-hidden"
                         >
                             <ArchiveView
                                 initialTab={archiveInitialTab}
@@ -326,6 +504,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                         onClose={() => setShowConfirmDelete(false)}
                         onConfirm={confirmDeleteContact}
                         contactName={directMessages.find((dm) => dm.id === contactToDelete)?.name || ''}
+                        isDarkMode={isDarkMode}
                     />
                 )}
             </AnimatePresence>
@@ -358,6 +537,13 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                     <CustomToast message={toast.message} show={toast.show} />
                 )}
             </AnimatePresence>
+
+            <PinNotification
+                show={pinNotification.show}
+                isPinned={pinNotification.isPinned}
+                userName={pinNotification.userName}
+                isDarkMode={isDarkMode}
+            />
         </>
     );
 }

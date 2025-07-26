@@ -1,4 +1,4 @@
-// API utility functions
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api"
 import { Socket } from 'socket.io-client';
 
@@ -412,30 +412,40 @@ class ApiClient {
 
 
   // Video call APIs
-  async initiateCall(chatId: string, type: "audio" | "video") {
+  async initiateCall(callerId: string, receiverId: string, callerName: string) {
     return this.request<{
-      callId: string
-      roomId: string
-      token: string
-    }>("/calls/initiate", {
+      roomName: string;
+      token: string;
+      wsUrl: string;
+    }>("/call/initiate", {
       method: "POST",
-      body: JSON.stringify({ chatId, type }),
-    })
+      body: JSON.stringify({ callerId, receiverId, callerName }),
+    });
   }
 
-  async joinCall(callId: string) {
+  async acceptCall(receiverId: string, roomName: string, callerId: string) {
     return this.request<{
-      roomId: string
-      token: string
-    }>(`/calls/${callId}/join`, {
+      token: string;
+      roomName: string;
+      wsUrl: string;
+    }>("/call/accept", {
       method: "POST",
-    })
+      body: JSON.stringify({ receiverId, roomName, callerId }),
+    });
   }
 
-  async endCall(callId: string) {
-    return this.request(`/calls/${callId}/end`, {
+  async rejectCall(callerId: string, receiverId: string, reason?: string) {
+    return this.request("/call/reject", {
       method: "POST",
-    })
+      body: JSON.stringify({ callerId, receiverId, reason }),
+    });
+  }
+
+  async endCall(roomName: string, userId: string, targetUserId?: string) {
+    return this.request("/call/end", {
+      method: "POST",
+      body: JSON.stringify({ roomName, userId, targetUserId }),
+    });
   }
 }
 

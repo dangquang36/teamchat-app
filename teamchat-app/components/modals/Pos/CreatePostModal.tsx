@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ImageIcon, Video, Paperclip, Smile, X, Type, AlertCircle, CheckCircle, Link as LinkIcon } from "lucide-react";
+import { Plus, ImageIcon, Video, Paperclip, Smile, X, Type, AlertCircle, CheckCircle, Link as LinkIcon, Play, FileText, Download, Eye } from "lucide-react";
 import { Post } from "@/app/types";
 import { emojis } from "@/data/mockData";
 import { TiptapEditor } from "@/components/editor/TiptapEditor";
@@ -54,7 +54,7 @@ function Toast({
     };
 
     return (
-        <div className="fixed top-4 right-4 z-[60] animate-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-[70] animate-in slide-in-from-top-2">
             <div className={`flex items-center space-x-3 px-4 py-3 rounded-lg border-l-4 shadow-lg max-w-md ${getToastStyle()}`}>
                 {getIcon()}
                 <span className="text-sm font-medium">{message}</span>
@@ -94,7 +94,7 @@ function InputModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[55] p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[65] p-4">
             <div className={`rounded-2xl p-6 max-w-md w-full shadow-2xl ${isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}>
                 <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? "text-white" : "text-gray-900"}`}>
                     {title}
@@ -127,6 +127,239 @@ function InputModal({
                         Xác nhận
                     </Button>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+// Image Gallery Component
+function ImageGallery({ images, onRemove, isDarkMode }: {
+    images: File[];
+    onRemove: (index: number) => void;
+    isDarkMode: boolean;
+}) {
+    if (images.length === 0) return null;
+
+    const getGridClass = () => {
+        switch (images.length) {
+            case 1:
+                return "grid-cols-1";
+            case 2:
+                return "grid-cols-2";
+            case 3:
+                return "grid-cols-3";
+            case 4:
+                return "grid-cols-2";
+            default:
+                return "grid-cols-3";
+        }
+    };
+
+    return (
+        <div className={`mt-4 p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+            <div className="flex items-center justify-between mb-3">
+                <h4 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    📸 Hình ảnh đã chọn ({images.length})
+                </h4>
+                <span className={`text-xs px-2 py-1 rounded-full ${isDarkMode ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-700'}`}>
+                    {images.length}/10
+                </span>
+            </div>
+
+            <div className={`grid gap-3 ${getGridClass()}`}>
+                {images.map((file, index) => (
+                    <div key={index} className="relative group">
+                        <div className="aspect-square relative overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-600">
+                            <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Selected image ${index + 1}`}
+                                className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                                <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 flex space-x-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            // Preview image in modal
+                                            const modal = document.createElement('div');
+                                            modal.innerHTML = `
+                                                <div class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[80] p-4" onclick="this.remove()">
+                                                    <img src="${URL.createObjectURL(file)}" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                                                    <button class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70">
+                                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            `;
+                                            document.body.appendChild(modal);
+                                        }}
+                                        className="bg-white bg-opacity-90 text-gray-800 hover:bg-opacity-100 rounded-full p-2"
+                                        title="Xem trước"
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => onRemove(index)}
+                                        className="bg-red-500 bg-opacity-90 text-white hover:bg-red-600 rounded-full p-2"
+                                        title="Xóa ảnh"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-2">
+                            <p className={`text-xs font-medium truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                {file.name}
+                            </p>
+                            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                {(file.size / 1024 / 1024).toFixed(1)} MB
+                            </p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// Video Preview Component
+function VideoPreview({ video, onRemove, isDarkMode }: {
+    video: File;
+    onRemove: () => void;
+    isDarkMode: boolean;
+}) {
+    return (
+        <div className={`mt-4 p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+            <div className="flex items-center justify-between mb-3">
+                <h4 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    🎥 Video đã chọn
+                </h4>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onRemove}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded-full p-2"
+                    title="Xóa video"
+                >
+                    <X className="h-4 w-4" />
+                </Button>
+            </div>
+
+            <div className="relative rounded-lg overflow-hidden bg-black">
+                <video
+                    src={URL.createObjectURL(video)}
+                    controls
+                    className="w-full max-h-80 object-contain"
+                    preload="metadata"
+                />
+                <div className="absolute top-3 left-3 bg-black bg-opacity-60 text-white px-2 py-1 rounded-full text-xs font-medium">
+                    <Play className="inline h-3 w-3 mr-1" />
+                    Video
+                </div>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between">
+                <div>
+                    <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                        {video.name}
+                    </p>
+                    <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {(video.size / 1024 / 1024).toFixed(1)} MB • {video.type}
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// File Attachments Component
+function FileAttachments({ files, onRemove, isDarkMode }: {
+    files: File[];
+    onRemove: (index: number) => void;
+    isDarkMode: boolean;
+}) {
+    if (files.length === 0) return null;
+
+    const getFileIcon = (file: File) => {
+        if (file.type.startsWith('image/')) return '🖼️';
+        if (file.type.startsWith('video/')) return '🎥';
+        if (file.type.startsWith('audio/')) return '🎵';
+        if (file.type.includes('pdf')) return '📄';
+        if (file.type.includes('doc')) return '📝';
+        if (file.type.includes('sheet') || file.type.includes('excel')) return '📊';
+        if (file.type.includes('presentation')) return '📈';
+        if (file.type.includes('zip') || file.type.includes('rar')) return '🗜️';
+        return '📎';
+    };
+
+    return (
+        <div className={`mt-4 p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+            <div className="flex items-center justify-between mb-3">
+                <h4 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    📎 Tệp đính kèm ({files.length})
+                </h4>
+                <span className={`text-xs px-2 py-1 rounded-full ${isDarkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-700'}`}>
+                    {(files.reduce((acc, file) => acc + file.size, 0) / 1024 / 1024).toFixed(1)} MB
+                </span>
+            </div>
+
+            <div className="space-y-2">
+                {files.map((file, index) => (
+                    <div key={index} className={`flex items-center p-3 rounded-lg border group hover:shadow-sm transition-all duration-200 ${isDarkMode ? 'bg-gray-600 border-gray-500 hover:bg-gray-550' : 'bg-white border-gray-200 hover:bg-gray-50'}`}>
+                        <div className="flex-shrink-0 mr-3">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${isDarkMode ? 'bg-gray-500' : 'bg-gray-100'}`}>
+                                {getFileIcon(file)}
+                            </div>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-medium truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                {file.name}
+                            </p>
+                            <div className="flex items-center space-x-2 mt-1">
+                                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    {(file.size / 1024 / 1024).toFixed(1)} MB
+                                </span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'}`}>
+                                    {file.type.split('/')[1]?.toUpperCase() || 'FILE'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    const url = URL.createObjectURL(file);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = file.name;
+                                    a.click();
+                                    URL.revokeObjectURL(url);
+                                }}
+                                className="text-blue-500 hover:text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-full p-2"
+                                title="Tải xuống"
+                            >
+                                <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onRemove(index)}
+                                className="text-red-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded-full p-2"
+                                title="Xóa tệp"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
@@ -262,6 +495,10 @@ export function CreatePostModal({
             });
 
             if (newFiles.length > 0) {
+                if (selectedImages.length + newFiles.length > 10) {
+                    showToast("Tối đa 10 ảnh cho mỗi bài viết", "warning");
+                    return;
+                }
                 setSelectedImages(prev => [...prev, ...newFiles])
                 showToast(`Đã thêm ${newFiles.length} ảnh`, "success");
             }
@@ -445,7 +682,7 @@ export function CreatePostModal({
     return (
         <>
             <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-                <div className={`rounded-2xl p-8 max-w-4xl w-full mx-auto max-h-[90vh] overflow-y-auto shadow-2xl transition-all duration-300 ${isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}>
+                <div className={`rounded-2xl p-6 max-w-4xl w-full mx-auto max-h-[90vh] overflow-y-auto shadow-2xl transition-all duration-300 ${isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}>
                     <div className="flex items-center justify-between mb-6 border-b pb-4">
                         <div className="flex items-center space-x-4">
                             <h3 className={`text-2xl font-bold tracking-tight ${isDarkMode ? "text-white" : "text-gray-900"}`}>Tạo bài viết mới</h3>
@@ -517,7 +754,7 @@ export function CreatePostModal({
                             </label>
                             <input
                                 type="text"
-                                placeholder="Thêm thẻ "
+                                placeholder="Nhập thẻ và nhấn Enter..."
                                 value={currentTagInput}
                                 onChange={(e) => setCurrentTagInput(e.target.value)}
                                 onKeyPress={handleAddTag}
@@ -540,7 +777,7 @@ export function CreatePostModal({
                                                 className={`ml-2 rounded-full p-1 ${isDarkMode ? "hover:bg-purple-600" : "hover:bg-purple-200"}`}
                                                 aria-label={`Remove tag ${tag}`}
                                             >
-                                                <X className={`h-4 w-4 ${isDarkMode ? "text-white" : "text-purple-700"}`} />
+                                                <X className={`h-3 w-3 ${isDarkMode ? "text-white" : "text-purple-700"}`} />
                                             </button>
                                         </span>
                                     ))}
@@ -551,11 +788,11 @@ export function CreatePostModal({
                         {/* Location */}
                         <div>
                             <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                Vị trí
+                                📍 Vị trí
                             </label>
                             <input
                                 type="text"
-                                placeholder="Thêm vị trí"
+                                placeholder="Thêm vị trí hoặc địa điểm..."
                                 value={location}
                                 onChange={(e) => setLocation(e.target.value)}
                                 className={`w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm ${isDarkMode
@@ -565,105 +802,96 @@ export function CreatePostModal({
                             />
                         </div>
 
-                        {/* Media Options */}
-                        <div className="flex flex-wrap items-center gap-3">
-                            <label htmlFor="image-upload" className="cursor-pointer">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    asChild
-                                    title="Thêm hình ảnh từ máy tính"
-                                    className={`rounded-full px-5 py-2.5 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"} shadow-sm hover:shadow-md transition-all duration-200`}
-                                >
-                                    <div>
-                                        <ImageIcon className="h-5 w-5" />
-                                        <span>Ảnh</span>
+                        {/* Media Options - Enhanced Design */}
+                        <div className={`p-4 rounded-xl border-2 border-dashed transition-all duration-200 ${isDarkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-300 bg-gray-50/50'}`}>
+                            <h4 className={`text-sm font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                📎 Thêm nội dung media
+                            </h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <label htmlFor="image-upload" className="cursor-pointer group">
+                                    <div className={`p-4 rounded-lg border text-center transition-all duration-200 group-hover:scale-105 group-hover:shadow-md ${isDarkMode ? "border-gray-600 bg-gray-600 hover:bg-gray-550 text-gray-300" : "border-gray-300 bg-white hover:bg-gray-50 text-gray-700"}`}>
+                                        <ImageIcon className="h-8 w-8 mx-auto mb-2 text-purple-600" />
+                                        <p className="text-xs font-medium">Ảnh từ máy</p>
+                                        <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                            Tối đa 5MB
+                                        </p>
                                     </div>
-                                </Button>
-                            </label>
-                            <input
-                                id="image-upload"
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={handleImageChange}
-                                className="hidden"
-                            />
+                                </label>
+                                <input
+                                    id="image-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleImageChange}
+                                    className="hidden"
+                                />
 
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleAddImageFromUrl}
-                                title="Thêm ảnh từ URL"
-                                className={`rounded-full px-5 py-2.5 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"} shadow-sm hover:shadow-md transition-all duration-200`}
-                            >
-                                <LinkIcon className="h-4 w-4" />
-                                <span>URL Ảnh</span>
-                            </Button>
-
-                            <label htmlFor="video-upload" className="cursor-pointer">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    asChild
-                                    title="Thêm video"
-                                    className={`rounded-full px-5 py-2.5 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"} shadow-sm hover:shadow-md transition-all duration-200`}
+                                <button
+                                    type="button"
+                                    onClick={handleAddImageFromUrl}
+                                    className={`p-4 rounded-lg border text-center transition-all duration-200 hover:scale-105 hover:shadow-md group ${isDarkMode ? "border-gray-600 bg-gray-600 hover:bg-gray-550 text-gray-300" : "border-gray-300 bg-white hover:bg-gray-50 text-gray-700"}`}
                                 >
-                                    <div>
-                                        <Video className="h-5 w-5" />
-                                        <span>Video</span>
-                                    </div>
-                                </Button>
-                            </label>
-                            <input
-                                id="video-upload"
-                                type="file"
-                                accept="video/*"
-                                onChange={handleVideoChange}
-                                className="hidden"
-                            />
+                                    <LinkIcon className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                                    <p className="text-xs font-medium">URL Ảnh</p>
+                                    <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        Từ internet
+                                    </p>
+                                </button>
 
-                            <label htmlFor="file-upload" className="cursor-pointer">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    asChild
-                                    title="Thêm tệp đính kèm"
-                                    className={`rounded-full px-5 py-2.5 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"} shadow-sm hover:shadow-md transition-all duration-200`}
-                                >
-                                    <div>
-                                        <Paperclip className="h-5 w-5" />
-                                        <span>Tệp</span>
+                                <label htmlFor="video-upload" className="cursor-pointer group">
+                                    <div className={`p-4 rounded-lg border text-center transition-all duration-200 group-hover:scale-105 group-hover:shadow-md ${isDarkMode ? "border-gray-600 bg-gray-600 hover:bg-gray-550 text-gray-300" : "border-gray-300 bg-white hover:bg-gray-50 text-gray-700"}`}>
+                                        <Video className="h-8 w-8 mx-auto mb-2 text-red-600" />
+                                        <p className="text-xs font-medium">Video</p>
+                                        <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                            Tối đa 50MB
+                                        </p>
                                     </div>
-                                </Button>
-                            </label>
-                            <input
-                                id="file-upload"
-                                type="file"
-                                multiple
-                                onChange={handleAttachmentChange}
-                                className="hidden"
-                            />
+                                </label>
+                                <input
+                                    id="video-upload"
+                                    type="file"
+                                    accept="video/*"
+                                    onChange={handleVideoChange}
+                                    className="hidden"
+                                />
 
-                            <div className="relative" ref={emojiPickerRef}>
+                                <label htmlFor="file-upload" className="cursor-pointer group">
+                                    <div className={`p-4 rounded-lg border text-center transition-all duration-200 group-hover:scale-105 group-hover:shadow-md ${isDarkMode ? "border-gray-600 bg-gray-600 hover:bg-gray-550 text-gray-300" : "border-gray-300 bg-white hover:bg-gray-50 text-gray-700"}`}>
+                                        <Paperclip className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                                        <p className="text-xs font-medium">Tệp đính kèm</p>
+                                        <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                            Tối đa 10MB
+                                        </p>
+                                    </div>
+                                </label>
+                                <input
+                                    id="file-upload"
+                                    type="file"
+                                    multiple
+                                    onChange={handleAttachmentChange}
+                                    className="hidden"
+                                />
+                            </div>
+
+                            {/* Emoji Picker */}
+                            <div className="relative mt-4" ref={emojiPickerRef}>
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                                    title="Thêm emoji"
-                                    className={`rounded-full px-5 py-2.5 flex items-center space-x-2 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"} shadow-sm hover:shadow-md transition-all duration-200`}
+                                    className={`w-full justify-center py-3 rounded-lg transition-all duration-200 ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-600" : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}
                                 >
-                                    <Smile className="h-5 w-5" />
-                                    <span>Cảm xúc</span>
+                                    <Smile className="h-5 w-5 mr-2" />
+                                    Thêm biểu tượng cảm xúc
                                 </Button>
 
                                 {showEmojiPicker && (
-                                    <div className={`absolute bottom-full mb-3 left-0 w-72 p-4 rounded-xl shadow-xl grid grid-cols-6 gap-3 z-10 ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border border-gray-200"}`}>
+                                    <div className={`absolute bottom-full mb-3 left-0 right-0 p-4 rounded-xl shadow-xl grid grid-cols-8 gap-2 z-10 max-h-40 overflow-y-auto ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border border-gray-200"}`}>
                                         {emojis.map((emoji, index) => (
                                             <span
                                                 key={index}
                                                 onClick={() => handleSelectEmoji(emoji)}
-                                                className="cursor-pointer text-2xl hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg p-2 flex items-center justify-center transition-all duration-200"
+                                                className="cursor-pointer text-2xl hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg p-2 flex items-center justify-center transition-all duration-200 hover:scale-110"
                                                 title={`Add ${emoji}`}
                                             >
                                                 {emoji}
@@ -674,95 +902,88 @@ export function CreatePostModal({
                             </div>
                         </div>
 
-                        {/* Preview sections for uploaded files */}
-                        {selectedImages.length > 0 && (
-                            <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mt-4">
-                                {selectedImages.map((file, index) => (
-                                    <div key={index} className="relative aspect-square">
-                                        <img
-                                            src={URL.createObjectURL(file)}
-                                            alt={`Selected image ${index + 1}`}
-                                            className="w-full h-full object-cover rounded-lg shadow-md"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedImages(selectedImages.filter((_, i) => i !== index));
-                                                showToast("Đã xóa ảnh", "info");
-                                            }}
-                                            className="absolute top-2 right-2 bg-black bg-opacity-60 text-white rounded-full p-1.5 text-xs hover:bg-opacity-80 transition-all duration-200"
-                                            aria-label="Remove image"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        {/* Media Previews */}
+                        <ImageGallery
+                            images={selectedImages}
+                            onRemove={(index) => {
+                                setSelectedImages(selectedImages.filter((_, i) => i !== index));
+                                showToast("Đã xóa ảnh", "info");
+                            }}
+                            isDarkMode={isDarkMode}
+                        />
 
                         {selectedVideo && (
-                            <div className="relative mt-4">
-                                <video src={URL.createObjectURL(selectedVideo)} controls className="w-full max-h-72 object-cover rounded-xl shadow-md" />
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setSelectedVideo(null);
-                                        showToast("Đã xóa video", "info");
-                                    }}
-                                    className="absolute top-2 right-2 bg-black bg-opacity-60 text-white rounded-full p-1.5 text-xs hover:bg-opacity-80 transition-all duration-200"
-                                    aria-label="Remove video"
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
-                            </div>
+                            <VideoPreview
+                                video={selectedVideo}
+                                onRemove={() => {
+                                    setSelectedVideo(null);
+                                    showToast("Đã xóa video", "info");
+                                }}
+                                isDarkMode={isDarkMode}
+                            />
                         )}
 
-                        {selectedAttachments.length > 0 && (
-                            <div className="space-y-2 mt-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm">
-                                <p className={`text-base font-semibold mb-3 ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                                    Tệp đã chọn ({selectedAttachments.length}):
-                                </p>
-                                {selectedAttachments.map((file, index) => (
-                                    <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${isDarkMode ? "bg-gray-600 hover:bg-gray-500" : "bg-gray-100 hover:bg-gray-200"} transition-all duration-200`}>
-                                        <div className="flex items-center space-x-2">
-                                            <Paperclip className={`h-5 w-5 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`} />
-                                            <span className={`text-sm font-medium ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>{file.name}</span>
-                                            <span className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
-                                                ({(file.size / 1024 / 1024).toFixed(1)} MB)
-                                            </span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedAttachments(selectedAttachments.filter((_, i) => i !== index));
-                                                showToast(`Đã xóa ${file.name}`, "info");
-                                            }}
-                                            className={`text-sm font-medium rounded-full p-1.5 ${isDarkMode ? "text-red-400 hover:bg-red-900" : "text-red-600 hover:bg-red-100"} transition-all duration-200`}
-                                            aria-label="Remove file"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        <FileAttachments
+                            files={selectedAttachments}
+                            onRemove={(index) => {
+                                const fileName = selectedAttachments[index].name;
+                                setSelectedAttachments(selectedAttachments.filter((_, i) => i !== index));
+                                showToast(`Đã xóa ${fileName}`, "info");
+                            }}
+                            isDarkMode={isDarkMode}
+                        />
 
                         {/* Action Buttons */}
-                        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-                            <Button
-                                variant="outline"
-                                onClick={onClose}
-                                className={`rounded-full px-6 py-2.5 text-base font-medium ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"} shadow-sm hover:shadow-md transition-all duration-200`}
-                            >
-                                Hủy
-                            </Button>
-                            <Button
-                                onClick={handleSubmit}
-                                disabled={isOverLimit || (!stripHtml(content).trim() && selectedImages.length === 0 && !selectedVideo && selectedAttachments.length === 0)}
-                                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-full px-7 py-2.5 text-base font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                            >
-                                Đăng bài
-                            </Button>
+                        <div className="flex justify-between items-center pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center space-x-4 text-sm">
+                                {/* Media count summary */}
+                                {(selectedImages.length > 0 || selectedVideo || selectedAttachments.length > 0) && (
+                                    <div className={`flex items-center space-x-3 px-3 py-2 rounded-full ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                                        {selectedImages.length > 0 && (
+                                            <span className="flex items-center space-x-1">
+                                                <ImageIcon className="h-4 w-4" />
+                                                <span>{selectedImages.length}</span>
+                                            </span>
+                                        )}
+                                        {selectedVideo && (
+                                            <span className="flex items-center space-x-1">
+                                                <Video className="h-4 w-4" />
+                                                <span>1</span>
+                                            </span>
+                                        )}
+                                        {selectedAttachments.length > 0 && (
+                                            <span className="flex items-center space-x-1">
+                                                <Paperclip className="h-4 w-4" />
+                                                <span>{selectedAttachments.length}</span>
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex space-x-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={onClose}
+                                    className={`rounded-full px-6 py-2.5 text-base font-medium ${isDarkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"} shadow-sm hover:shadow-md transition-all duration-200`}
+                                >
+                                    Hủy
+                                </Button>
+                                <Button
+                                    onClick={handleSubmit}
+                                    disabled={isOverLimit || (!stripHtml(content).trim() && selectedImages.length === 0 && !selectedVideo && selectedAttachments.length === 0)}
+                                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-full px-7 py-2.5 text-base font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                                >
+                                    <span className="flex items-center space-x-2">
+                                        <span>Đăng bài</span>
+                                        {(selectedImages.length > 0 || selectedVideo || selectedAttachments.length > 0) && (
+                                            <span className="bg-white bg-opacity-20 rounded-full px-2 py-1 text-xs">
+                                                {selectedImages.length + (selectedVideo ? 1 : 0) + selectedAttachments.length}
+                                            </span>
+                                        )}
+                                    </span>
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>

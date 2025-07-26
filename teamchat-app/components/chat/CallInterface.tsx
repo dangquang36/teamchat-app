@@ -16,7 +16,8 @@ const ParticipantVideo: React.FC<ParticipantVideoProps> = ({ participant, isLoca
         const videoEl = videoRef.current;
 
         const setupVideoTrack = () => {
-            const videoPublication = participant.getTrack(Track.Source.Camera);
+            // Fix: Sử dụng getTrackPublication thay vì getTrack
+            const videoPublication = participant.getTrackPublication(Track.Source.Camera);
 
             if (isLocal) {
                 // For local participant, check if camera is enabled
@@ -56,7 +57,8 @@ const ParticipantVideo: React.FC<ParticipantVideoProps> = ({ participant, isLoca
         };
 
         const handleMuteChange = () => {
-            const audioPublication = participant.getTrack(Track.Source.Microphone);
+            // Fix: Sử dụng getTrackPublication thay vì getTrack
+            const audioPublication = participant.getTrackPublication(Track.Source.Microphone);
             setIsMuted(!!audioPublication?.isMuted);
             setupVideoTrack();
         };
@@ -70,8 +72,8 @@ const ParticipantVideo: React.FC<ParticipantVideoProps> = ({ participant, isLoca
         setupVideoTrack();
         handleMuteChange();
 
-        // Event listeners
-        const eventHandlers = {
+        // Event listeners with proper typing
+        const eventHandlers: Record<string, (...args: any[]) => void> = {
             trackPublished: handleTrackChange,
             trackSubscribed: handleTrackChange,
             trackUnpublished: handleTrackChange,
@@ -82,7 +84,7 @@ const ParticipantVideo: React.FC<ParticipantVideoProps> = ({ participant, isLoca
 
         // For remote participants, add subscription events
         if (!isLocal) {
-            const additionalEvents = {
+            const additionalEvents: Record<string, (...args: any[]) => void> = {
                 trackSubscriptionPermissionChanged: handleTrackChange,
                 trackStreamStateChanged: handleTrackChange,
             };
@@ -102,9 +104,9 @@ const ParticipantVideo: React.FC<ParticipantVideoProps> = ({ participant, isLoca
             }
         }, isLocal ? 5000 : 10000);
 
-        // Attach event listeners
+        // Attach event listeners with proper typing
         Object.entries(eventHandlers).forEach(([event, handler]) => {
-            participant.on(event as any, handler);
+            (participant as any).on(event, handler);
         });
 
         return () => {
@@ -113,13 +115,13 @@ const ParticipantVideo: React.FC<ParticipantVideoProps> = ({ participant, isLoca
                 clearInterval(checkInterval);
             }
 
-            // Remove event listeners
+            // Remove event listeners with proper typing
             Object.entries(eventHandlers).forEach(([event, handler]) => {
-                participant.off(event as any, handler);
+                (participant as any).off(event, handler);
             });
 
             // Detach video track
-            const videoPublication = participant.getTrack(Track.Source.Camera);
+            const videoPublication = participant.getTrackPublication(Track.Source.Camera);
             if (videoPublication?.track) {
                 videoPublication.track.detach(videoEl);
             }
@@ -214,43 +216,43 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
         // Set initial state immediately
         updateLocalParticipantState();
 
-        // Event handlers with immediate update
-        const handleTrackMuted = (publication: any) => {
+        // Event handlers with proper typing
+        const handleTrackMuted = (publication: TrackPublication) => {
             console.log('Track muted:', publication.source);
             setTimeout(updateLocalParticipantState, 50);
         };
 
-        const handleTrackUnmuted = (publication: any) => {
+        const handleTrackUnmuted = (publication: TrackPublication) => {
             console.log('Track unmuted:', publication.source);
             setTimeout(updateLocalParticipantState, 50);
         };
 
-        const handleTrackPublished = (publication: any) => {
+        const handleTrackPublished = (publication: TrackPublication) => {
             console.log('Track published:', publication.source);
             setTimeout(updateLocalParticipantState, 50);
         };
 
-        const handleTrackUnpublished = (publication: any) => {
+        const handleTrackUnpublished = (publication: TrackPublication) => {
             console.log('Track unpublished:', publication.source);
             setTimeout(updateLocalParticipantState, 50);
         };
 
-        // Add event listeners
-        localParticipant.on('trackMuted', handleTrackMuted);
-        localParticipant.on('trackUnmuted', handleTrackUnmuted);
-        localParticipant.on('trackPublished', handleTrackPublished);
-        localParticipant.on('trackUnpublished', handleTrackUnpublished);
+        // Add event listeners with proper typing
+        (localParticipant as any).on('trackMuted', handleTrackMuted);
+        (localParticipant as any).on('trackUnmuted', handleTrackUnmuted);
+        (localParticipant as any).on('trackPublished', handleTrackPublished);
+        (localParticipant as any).on('trackUnpublished', handleTrackUnpublished);
 
         // Also poll every 500ms to ensure sync
         const interval = setInterval(updateLocalParticipantState, 500);
 
         return () => {
             clearInterval(interval);
-            // Remove event listeners
-            localParticipant.off('trackMuted', handleTrackMuted);
-            localParticipant.off('trackUnmuted', handleTrackUnmuted);
-            localParticipant.off('trackPublished', handleTrackPublished);
-            localParticipant.off('trackUnpublished', handleTrackUnpublished);
+            // Remove event listeners with proper typing
+            (localParticipant as any).off('trackMuted', handleTrackMuted);
+            (localParticipant as any).off('trackUnmuted', handleTrackUnmuted);
+            (localParticipant as any).off('trackPublished', handleTrackPublished);
+            (localParticipant as any).off('trackUnpublished', handleTrackUnpublished);
         };
     }, [localParticipant]);
 

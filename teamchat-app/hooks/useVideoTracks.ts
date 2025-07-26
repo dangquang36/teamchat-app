@@ -17,7 +17,7 @@ export const useVideoTracks = (participant: LocalParticipant | RemoteParticipant
     });
 
     const updateVideoState = useCallback(() => {
-        const videoPublication = participant.getTrack(Track.Source.Camera);
+        const videoPublication = participant.getTrackPublication(Track.Source.Camera);
 
         if (isLocal) {
             // For local participant
@@ -59,9 +59,9 @@ export const useVideoTracks = (participant: LocalParticipant | RemoteParticipant
             events.push('trackSubscriptionPermissionChanged', 'trackStreamStateChanged');
         }
 
-        // Attach listeners
+        // Attach listeners with proper typing
         events.forEach(event => {
-            participant.on(event as any, updateVideoState);
+            (participant as any).on(event, updateVideoState);
         });
 
         // For local participant, also listen to camera enable/disable
@@ -77,14 +77,14 @@ export const useVideoTracks = (participant: LocalParticipant | RemoteParticipant
             return () => {
                 clearInterval(interval);
                 events.forEach(event => {
-                    participant.off(event as any, updateVideoState);
+                    (participant as any).off(event, updateVideoState);
                 });
             };
         }
 
         return () => {
             events.forEach(event => {
-                participant.off(event as any, updateVideoState);
+                (participant as any).off(event, updateVideoState);
             });
         };
     }, [participant, isLocal, updateVideoState]);

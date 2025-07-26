@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Room, RemoteParticipant, LocalParticipant, ConnectionState } from 'livekit-client';
 import { Socket } from 'socket.io-client';
@@ -127,9 +126,9 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             setCallStatus('connected');
 
             setLocalParticipant(roomInstance.localParticipant);
-            setRemoteParticipants(Array.from(roomInstance.participants.values()));
+            setRemoteParticipants(Array.from(roomInstance.remoteParticipants.values()));
 
-            console.log(`🏠 Room connected. Local: ${roomInstance.localParticipant.identity}, Remotes found: ${roomInstance.participants.size}`);
+            console.log(`🏠 Room connected. Local: ${roomInstance.localParticipant.identity}, Remotes found: ${roomInstance.numParticipants}`);
         });
 
         roomInstance.on('disconnected', () => {

@@ -78,8 +78,8 @@ export function ChatMessages({ messages, currentUser, otherUser, isDarkMode = fa
                                             }
                                         }}
                                         className={`text-sm font-medium transition-colors duration-200 ${!isMyMessage
-                                                ? `hover:text-cyan-500 cursor-pointer ${isDarkMode ? "text-white" : "text-gray-900"}`
-                                                : isDarkMode ? "text-white" : "text-gray-900"
+                                            ? `hover:text-cyan-500 cursor-pointer ${isDarkMode ? "text-white" : "text-gray-900"}`
+                                            : isDarkMode ? "text-white" : "text-gray-900"
                                             }`}
                                         whileHover={!isMyMessage ? { scale: 1.02 } : {}}
                                         transition={{ duration: 0.2 }}

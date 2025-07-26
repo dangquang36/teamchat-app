@@ -25,8 +25,8 @@ export function FriendRequestSheet({
             <SheetContent
                 side="left"
                 className={`w-[350px] sm:w-[400px] p-0 transition-colors duration-300 ${isDarkMode
-                        ? 'bg-gray-800 border-gray-700 text-white'
-                        : 'bg-white border-gray-200 text-gray-900'
+                    ? 'bg-gray-800 border-gray-700 text-white'
+                    : 'bg-white border-gray-200 text-gray-900'
                     }`}
             >
                 <SheetHeader className={`p-6 pb-4 border-b transition-colors duration-300 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'

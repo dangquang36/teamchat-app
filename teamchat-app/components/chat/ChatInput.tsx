@@ -130,8 +130,8 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
         <button
             onClick={onClick}
             className={`w-full flex items-center gap-3 p-3 rounded-md text-sm transition-all duration-200 ${isDarkMode
-                    ? "text-gray-300 hover:bg-gray-600 hover:text-white"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                ? "text-gray-300 hover:bg-gray-600 hover:text-white"
+                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                 }`}
         >
             <span className={color}>{icon}</span>
@@ -182,8 +182,8 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                                             </div>
                                         ) : (
                                             <div className={`relative w-48 p-3 rounded-md border shadow-md ${isDarkMode
-                                                    ? 'bg-gray-700 border-gray-600'
-                                                    : 'bg-white border-gray-200'
+                                                ? 'bg-gray-700 border-gray-600'
+                                                : 'bg-white border-gray-200'
                                                 }`}>
                                                 <div className="flex items-center gap-3">
                                                     <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${isDarkMode ? 'bg-gray-600' : 'bg-gray-100'
@@ -279,8 +279,8 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
                         className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 pr-12 transition-all duration-300 ${isDarkMode
-                                ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                            ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                            : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                             }`}
                     />
 
@@ -333,8 +333,8 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                     size="sm"
                     onClick={toggleListening}
                     className={`transition-all duration-200 ${isListening
-                            ? "text-red-500 bg-red-50 dark:bg-red-900/20"
-                            : (isDarkMode ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100")
+                        ? "text-red-500 bg-red-50 dark:bg-red-900/20"
+                        : (isDarkMode ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100")
                         }`}
                 >
                     <Mic className="h-5 w-5" />
@@ -349,8 +349,8 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                         onClick={handleSendMessage}
                         disabled={(!message.trim() && selectedFiles.length === 0) || isSending}
                         className={`rounded-full w-12 h-12 p-0 transition-all duration-300 ${(!message.trim() && selectedFiles.length === 0) || isSending
-                                ? "bg-gray-400 cursor-not-allowed opacity-50"
-                                : "bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 shadow-lg hover:shadow-xl"
+                            ? "bg-gray-400 cursor-not-allowed opacity-50"
+                            : "bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 shadow-lg hover:shadow-xl"
                             }`}
                     >
                         <motion.div

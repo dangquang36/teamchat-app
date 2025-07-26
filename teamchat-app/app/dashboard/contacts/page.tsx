@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { GroupProvider } from "@/contexts/GroupContext";
 import { MessagesSection } from "@/components/chat/MessagesSection";
-import { VideoCallModal } from "@/components/modals/VideoCallModal";
-import { AudioCallModal } from "@/components/modals/AudioCallModal";
 
 
 export default function ChatPage() {
@@ -29,10 +27,6 @@ export default function ChatPage() {
                     onAudioCall={() => setShowAudioCall(true)}
                     isDarkMode={isDarkMode} // Truyền dark mode vào MessagesSection
                 />
-
-                {/* Modals */}
-                {showVideoCall && <VideoCallModal onClose={() => setShowVideoCall(false)} />}
-                {showAudioCall && <AudioCallModal onClose={() => setShowAudioCall(false)} />}
             </div>
         </GroupProvider>
     );

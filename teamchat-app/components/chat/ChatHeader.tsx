@@ -27,8 +27,8 @@ export function ChatHeader({
         <motion.div
             layout
             className={`flex items-center justify-between p-4 border-b transition-all duration-300 backdrop-blur-sm ${isDarkMode
-                    ? "bg-gray-800/95 border-gray-700/50"
-                    : "bg-white/95 border-gray-200"
+                ? "bg-gray-800/95 border-gray-700/50"
+                : "bg-white/95 border-gray-200"
                 }`}
         >
             {/* User Info Section */}
@@ -66,8 +66,8 @@ export function ChatHeader({
                         <div className={`w-2 h-2 rounded-full mr-2 ${user.online ? 'bg-green-500' : 'bg-gray-400'
                             }`} />
                         <p className={`text-sm font-medium ${user.online
-                                ? 'text-green-500'
-                                : isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                            ? 'text-green-500'
+                            : isDarkMode ? 'text-gray-400' : 'text-gray-500'
                             }`}>
                             {user.online ? "Đang hoạt động" : "Ngoại tuyến"}
                         </p>
@@ -88,8 +88,8 @@ export function ChatHeader({
                         size="icon"
                         onClick={onAudioCall}
                         className={`relative rounded-full h-10 w-10 transition-all duration-300 group ${isDarkMode
-                                ? "text-gray-300 hover:text-white hover:bg-green-600/20 hover:border-green-500/30"
-                                : "text-gray-600 hover:text-green-600 hover:bg-green-50 hover:border-green-200"
+                            ? "text-gray-300 hover:text-white hover:bg-green-600/20 hover:border-green-500/30"
+                            : "text-gray-600 hover:text-green-600 hover:bg-green-50 hover:border-green-200"
                             } border border-transparent`}
                         title="Gọi thoại"
                     >
@@ -110,8 +110,8 @@ export function ChatHeader({
                             size="icon"
                             onClick={onVideoCall}
                             className={`relative rounded-full h-10 w-10 transition-all duration-300 group ${isDarkMode
-                                    ? "text-gray-300 hover:text-white hover:bg-blue-600/20 hover:border-blue-500/30"
-                                    : "text-gray-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
+                                ? "text-gray-300 hover:text-white hover:bg-blue-600/20 hover:border-blue-500/30"
+                                : "text-gray-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
                                 } border border-transparent`}
                             title="Gọi video"
                         >
@@ -132,13 +132,13 @@ export function ChatHeader({
                         size="icon"
                         onClick={onToggleDetails}
                         className={`relative rounded-full h-10 w-10 transition-all duration-300 group border ${isDetailsOpen
-                                ? (isDarkMode
-                                    ? 'bg-purple-600/20 text-purple-300 border-purple-500/30 shadow-lg shadow-purple-500/20'
-                                    : 'bg-purple-100 text-purple-600 border-purple-200 shadow-lg shadow-purple-500/20')
-                                : (isDarkMode
-                                    ? "text-gray-300 hover:text-purple-300 hover:bg-purple-600/20 hover:border-purple-500/30 border-transparent"
-                                    : "text-gray-600 hover:text-purple-600 hover:bg-purple-50 hover:border-purple-200 border-transparent"
-                                )
+                            ? (isDarkMode
+                                ? 'bg-purple-600/20 text-purple-300 border-purple-500/30 shadow-lg shadow-purple-500/20'
+                                : 'bg-purple-100 text-purple-600 border-purple-200 shadow-lg shadow-purple-500/20')
+                            : (isDarkMode
+                                ? "text-gray-300 hover:text-purple-300 hover:bg-purple-600/20 hover:border-purple-500/30 border-transparent"
+                                : "text-gray-600 hover:text-purple-600 hover:bg-purple-50 hover:border-purple-200 border-transparent"
+                            )
                             }`}
                         title="Thông tin chi tiết"
                     >

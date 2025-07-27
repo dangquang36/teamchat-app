@@ -16,6 +16,7 @@ interface SocketContextType {
     endCall: () => Promise<void>;
     isInCall: boolean;
     callStatus: CallStatus;
+    callEndReason: string | null;
 }
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
@@ -78,6 +79,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         callStatus,
         localParticipant,
         remoteParticipants,
+        autoEndMessage,
+        callEndReason,
         initiateCall,
         acceptCall,
         rejectCall,
@@ -92,7 +95,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         rejectCall,
         endCall,
         isInCall,
-        callStatus
+        callStatus,
+        callEndReason
     };
 
     return (
@@ -108,13 +112,15 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 />
             )}
 
-            {/* Call Interface - Fixed props */}
+            {/* Call Interface - với auto end message support và call end reason */}
             {isInCall && room && localParticipant && (
                 <CallInterface
                     room={room}
                     localParticipant={localParticipant}
                     remoteParticipants={remoteParticipants}
                     onEndCall={endCall}
+                    autoEndMessage={autoEndMessage}
+                    callEndReason={callEndReason}
                 />
             )}
         </SocketContext.Provider>

@@ -9,7 +9,7 @@ export interface CallData {
     roomName: string;
 }
 
-export type CallStatus = 'idle' | 'calling' | 'ringing' | 'connected' | 'rejected' | 'ended' | 'connecting';
+export type CallStatus = 'idle' | 'calling' | 'ringing' | 'connected' | 'rejected' | 'ended' | 'connecting' | 'timeout' | 'busy' | 'unavailable';
 
 export const useCall = (socket: Socket | null, currentUserId: string) => {
     const [room, setRoom] = useState<Room | null>(null);
@@ -19,8 +19,50 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
     const [localParticipant, setLocalParticipant] = useState<LocalParticipant | null>(null);
     const [remoteParticipants, setRemoteParticipants] = useState<RemoteParticipant[]>([]);
     const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.Disconnected);
+    const [autoEndMessage, setAutoEndMessage] = useState<string | null>(null);
+    const [callEndReason, setCallEndReason] = useState<string | null>(null);
 
     const roomRef = useRef<Room | null>(null);
+    const autoEndTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const callStartTimeRef = useRef<number | null>(null);
+
+    // Hàm bắt đầu timer tự động tắt cuộc gọi (2 phút)
+    const startAutoEndTimer = () => {
+        console.log('🕐 Starting auto-end timer (2 minutes)...');
+
+        if (autoEndTimerRef.current) {
+            clearTimeout(autoEndTimerRef.current);
+        }
+
+        autoEndTimerRef.current = setTimeout(() => {
+            console.log('⏰ Auto-ending call after 2 minutes of waiting...');
+            setAutoEndMessage('Cuộc gọi đã tự động kết thúc sau 2 phút chờ đợi');
+            setCallEndReason('Không có người tham gia trong 2 phút');
+            endCall('timeout');
+        }, 2 * 60 * 1000); // 2 phút
+    };
+
+    // Hàm dừng timer tự động tắt cuộc gọi
+    const stopAutoEndTimer = () => {
+        console.log('🛑 Stopping auto-end timer...');
+        if (autoEndTimerRef.current) {
+            clearTimeout(autoEndTimerRef.current);
+            autoEndTimerRef.current = null;
+        }
+    };
+
+    // Hàm kiểm tra và quản lý timer dựa trên số lượng participants
+    const manageAutoEndTimer = (remoteCount: number) => {
+        if (remoteCount === 0) {
+            // Không có remote participants, bắt đầu timer
+            if (!autoEndTimerRef.current) {
+                startAutoEndTimer();
+            }
+        } else {
+            // Có remote participants, dừng timer
+            stopAutoEndTimer();
+        }
+    };
 
     // Hàm yêu cầu quyền truy cập camera và mic với retry logic
     const requestMediaPermissions = async (): Promise<boolean> => {
@@ -85,6 +127,14 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             setCallStatus('rejected');
             setIncomingCall(null);
 
+            // Set call end reason based on rejection reason
+            const reasonMessages = {
+                busy: 'Người dùng đang bận',
+                declined: 'Cuộc gọi bị từ chối',
+                unavailable: 'Người dùng không có sẵn'
+            };
+            setCallEndReason(reasonMessages[data.reason as keyof typeof reasonMessages] || 'Cuộc gọi không thành công');
+
             // Cleanup room nếu có
             if (roomRef.current) {
                 roomRef.current.disconnect();
@@ -92,27 +142,58 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
                 setRoom(null);
             }
 
+            // Dừng timer
+            stopAutoEndTimer();
+
             // Reset sau 3 giây
             setTimeout(() => {
                 setCallStatus('idle');
+                setCallEndReason(null);
             }, 3000);
         };
 
         const handleCallEnded = (data: any) => {
             console.log('📞 Call ended by:', data.endedBy);
+            if (data.reason === 'timeout') {
+                setCallEndReason('Người dùng đã ngắt kết nối');
+            } else if (data.reason === 'disconnect') {
+                setCallEndReason('Mất kết nối với người dùng');
+            } else {
+                setCallEndReason('Cuộc gọi đã kết thúc');
+            }
             endCall();
+        };
+
+        // Thêm handler cho call timeout
+        const handleCallTimeout = () => {
+            console.log('⏰ Call timeout received from server');
+            setAutoEndMessage('Không có phản hồi từ người nhận');
+            setCallEndReason('Không có phản hồi');
+            endCall('timeout');
         };
 
         socket.on('incomingCall', handleIncomingCall);
         socket.on('callAccepted', handleCallAccepted);
         socket.on('callRejected', handleCallRejected);
         socket.on('callEnded', handleCallEnded);
+        socket.on('callTimeout', handleCallTimeout);
+
+        // Listen for call status changes
+        socket.on('callStatusChange', (data: { type: string; message?: string }) => {
+            if (data.type === 'timeout') {
+                setAutoEndMessage(data.message || 'Cuộc gọi đã hết thời gian');
+                setCallEndReason('Hết thời gian chờ');
+                endCall('timeout');
+            }
+        });
 
         return () => {
             socket.off('incomingCall', handleIncomingCall);
             socket.off('callAccepted', handleCallAccepted);
             socket.off('callRejected', handleCallRejected);
             socket.off('callEnded', handleCallEnded);
+            socket.off('callTimeout', handleCallTimeout);
+            socket.off('callStatusChange');
         };
     }, [socket, currentUserId]);
 
@@ -124,9 +205,14 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             setConnectionState(ConnectionState.Connected);
             setIsInCall(true);
             setCallStatus('connected');
+            callStartTimeRef.current = Date.now();
 
             setLocalParticipant(roomInstance.localParticipant);
-            setRemoteParticipants(Array.from(roomInstance.remoteParticipants.values()));
+            const remotes = Array.from(roomInstance.remoteParticipants.values());
+            setRemoteParticipants(remotes);
+
+            // Bắt đầu quản lý timer dựa trên số lượng remote participants
+            manageAutoEndTimer(remotes.length);
 
             console.log(`🏠 Room connected. Local: ${roomInstance.localParticipant.identity}, Remotes found: ${roomInstance.numParticipants}`);
         });
@@ -137,17 +223,31 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             setIsInCall(false);
             setLocalParticipant(null);
             setRemoteParticipants([]);
+            stopAutoEndTimer();
         });
 
         roomInstance.on('participantConnected', (participant: RemoteParticipant) => {
             console.log('👤 Participant connected:', participant.identity);
-            setRemoteParticipants(prev => [...prev, participant]);
+            setRemoteParticipants(prev => {
+                const newParticipants = [...prev, participant];
+                // Dừng timer khi có người tham gia
+                manageAutoEndTimer(newParticipants.length);
+                return newParticipants;
+            });
             setCallStatus('connected');
         });
 
         roomInstance.on('participantDisconnected', (participant: RemoteParticipant) => {
             console.log('👤 Participant disconnected:', participant.identity);
-            setRemoteParticipants(prev => prev.filter(p => p.identity !== participant.identity));
+            setRemoteParticipants(prev => {
+                const newParticipants = prev.filter(p => p.identity !== participant.identity);
+                // Quản lý timer dựa trên số lượng participants còn lại
+                manageAutoEndTimer(newParticipants.length);
+                return newParticipants;
+            });
+
+            // Set reason when participant disconnects
+            setCallEndReason('Người dùng đã rời cuộc gọi');
         });
 
         roomInstance.on('trackSubscribed', (track, publication, participant) => {
@@ -173,6 +273,8 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
         try {
             console.log('📞 Initiating call to:', receiverName, 'ID:', receiverId);
             setCallStatus('calling');
+            setAutoEndMessage(null); // Reset message
+            setCallEndReason(null); // Reset reason
 
             // Kiểm tra quyền truy cập media trước
             const hasPermissions = await requestMediaPermissions();
@@ -268,6 +370,7 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
         } catch (error) {
             console.error('❌ Error initiating call:', error);
             setCallStatus('idle');
+            setCallEndReason('Không thể khởi tạo cuộc gọi');
 
             // Cleanup room nếu có lỗi
             if (roomRef.current) {
@@ -275,6 +378,8 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
                 roomRef.current = null;
                 setRoom(null);
             }
+
+            stopAutoEndTimer();
 
             return {
                 success: false,
@@ -292,10 +397,13 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
         try {
             console.log('✅ Accepting call from:', incomingCall.callerName);
             setCallStatus('connecting');
+            setAutoEndMessage(null); // Reset message
+            setCallEndReason(null); // Reset reason
 
             // Kiểm tra quyền truy cập media
             const hasPermissions = await requestMediaPermissions();
             if (!hasPermissions) {
+                setCallEndReason('Không thể truy cập camera/microphone');
                 rejectCall('unavailable');
                 return { success: false, error: 'Không thể truy cập camera/microphone' };
             }
@@ -364,6 +472,7 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             console.error('❌ Error accepting call:', error);
             setCallStatus('idle');
             setIncomingCall(null);
+            setCallEndReason('Không thể chấp nhận cuộc gọi');
 
             // Cleanup room nếu có lỗi
             if (roomRef.current) {
@@ -371,6 +480,8 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
                 roomRef.current = null;
                 setRoom(null);
             }
+
+            stopAutoEndTimer();
 
             return { success: false, error: 'Failed to accept call' };
         }
@@ -381,6 +492,14 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
 
         console.log('❌ Rejecting call, reason:', reason);
 
+        const reasonMessages = {
+            busy: 'Bạn đang bận',
+            declined: 'Bạn đã từ chối cuộc gọi',
+            unavailable: 'Không thể kết nối'
+        };
+
+        setCallEndReason(reasonMessages[reason]);
+
         socket.emit('rejectCall', {
             callerId: incomingCall.callerId,
             reason
@@ -388,22 +507,40 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
 
         setIncomingCall(null);
         setCallStatus('idle');
+        stopAutoEndTimer();
+
+        // Reset reason after 3 seconds
+        setTimeout(() => {
+            setCallEndReason(null);
+        }, 3000);
     };
 
-    const endCall = async () => {
-        console.log('📞 Ending call...');
+    const endCall = async (reason?: 'timeout' | 'manual') => {
+        console.log('📞 Ending call...', reason ? `Reason: ${reason}` : '');
 
         try {
+            // Set reason if not already set
+            if (!callEndReason) {
+                if (reason === 'timeout') {
+                    setCallEndReason('Cuộc gọi đã hết thời gian');
+                } else {
+                    setCallEndReason('Cuộc gọi đã kết thúc');
+                }
+            }
+
             // Cleanup room
             if (roomRef.current) {
                 await roomRef.current.disconnect();
                 roomRef.current = null;
             }
 
+            // Stop timer
+            stopAutoEndTimer();
+
             // Reset states
             setRoom(null);
             setIsInCall(false);
-            setCallStatus('idle');
+            setCallStatus(reason === 'timeout' ? 'timeout' : 'ended');
             setLocalParticipant(null);
             setRemoteParticipants([]);
             setConnectionState(ConnectionState.Disconnected);
@@ -413,9 +550,22 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             if (socket && currentUserId) {
                 socket.emit('endCall', {
                     userId: currentUserId,
-                    callData: { endedBy: currentUserId }
+                    callData: {
+                        endedBy: currentUserId,
+                        reason: reason || 'manual'
+                    }
                 });
             }
+
+            // Reset status sau vài giây
+            setTimeout(() => {
+                setCallStatus('idle');
+                setAutoEndMessage(null);
+                // Keep callEndReason for a bit longer to show in chat
+                setTimeout(() => {
+                    setCallEndReason(null);
+                }, 2000);
+            }, reason === 'timeout' ? 5000 : 2000);
 
             console.log('✅ Call ended successfully');
         } catch (error) {
@@ -429,6 +579,7 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             if (roomRef.current) {
                 roomRef.current.disconnect();
             }
+            stopAutoEndTimer();
         };
     }, []);
 
@@ -441,11 +592,13 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
         localParticipant,
         remoteParticipants,
         connectionState,
+        autoEndMessage,
+        callEndReason,
 
         // Actions
         initiateCall,
         acceptCall,
         rejectCall,
-        endCall
+        endCall: () => endCall('manual')
     };
 };

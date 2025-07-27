@@ -178,18 +178,64 @@ interface CallInterfaceProps {
     localParticipant: LocalParticipant;
     remoteParticipants: RemoteParticipant[];
     onEndCall: () => void;
+    autoEndMessage?: string | null;
+    callEndReason?: string | null;
 }
 
 const CallInterface: React.FC<CallInterfaceProps> = ({
     room,
     localParticipant,
     remoteParticipants,
-    onEndCall
+    onEndCall,
+    autoEndMessage,
+    callEndReason
 }) => {
     const [isMuted, setIsMuted] = useState(true); // Start with muted = true (mic OFF initially)
     const [isVideoOff, setIsVideoOff] = useState(true); // Start with video OFF initially
     const [participants, setParticipants] = useState<RemoteParticipant[]>(remoteParticipants);
     const [remoteVideoKey, setRemoteVideoKey] = useState(0);
+    const [showAutoEndNotification, setShowAutoEndNotification] = useState(false);
+    const [showCallEndOverlay, setShowCallEndOverlay] = useState(false);
+    const [callDuration, setCallDuration] = useState<string>('00:00');
+
+    // Track call duration
+    useEffect(() => {
+        if (participants.length > 0) {
+            const startTime = Date.now();
+            const interval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                setCallDuration(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+            }, 1000);
+
+            return () => clearInterval(interval);
+        }
+    }, [participants.length]);
+
+    // Show call end overlay when call ends with reason
+    useEffect(() => {
+        if (callEndReason && !participants.length) {
+            setShowCallEndOverlay(true);
+            const timer = setTimeout(() => {
+                setShowCallEndOverlay(false);
+                onEndCall();
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [callEndReason, participants.length, onEndCall]);
+
+    // Hiển thị thông báo auto end
+    useEffect(() => {
+        if (autoEndMessage) {
+            setShowAutoEndNotification(true);
+            // Tự động ẩn thông báo sau 5 giây
+            const timer = setTimeout(() => {
+                setShowAutoEndNotification(false);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [autoEndMessage]);
 
     // Update participants when remote participants change
     useEffect(() => {
@@ -313,8 +359,68 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
         );
     }
 
+    // Call End Overlay
+    if (showCallEndOverlay && callEndReason) {
+        return (
+            <div className="fixed inset-0 bg-gradient-to-br from-red-900 via-gray-900 to-black flex items-center justify-center z-50">
+                <div className="text-center text-white animate-fade-in">
+                    <div className="mb-6">
+                        <div className="w-24 h-24 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse">
+                            <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-2xl font-bold mb-2">Cuộc gọi đã kết thúc</h2>
+                        <p className="text-lg text-gray-300 mb-2">{callEndReason}</p>
+                        {callDuration !== '00:00' && (
+                            <p className="text-sm text-gray-400">Thời gian: {callDuration}</p>
+                        )}
+                    </div>
+                    <div className="flex items-center justify-center space-x-2 text-sm text-gray-400">
+                        <div className="animate-bounce">●</div>
+                        <div className="animate-bounce" style={{ animationDelay: '0.1s' }}>●</div>
+                        <div className="animate-bounce" style={{ animationDelay: '0.2s' }}>●</div>
+                        <span className="ml-2">Đang trở về chat...</span>
+                    </div>
+                </div>
+
+                <style jsx>{`
+                    @keyframes fade-in {
+                        from { opacity: 0; transform: scale(0.9); }
+                        to { opacity: 1; transform: scale(1); }
+                    }
+                    .animate-fade-in {
+                        animation: fade-in 0.5s ease-out;
+                    }
+                `}</style>
+            </div>
+        );
+    }
+
     return (
         <div className="fixed inset-0 bg-black flex flex-col z-50">
+            {/* Auto End Notification */}
+            {showAutoEndNotification && autoEndMessage && (
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-60 max-w-md">
+                    <div className="bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 animate-pulse">
+                        <svg className="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                        <div className="flex-1">
+                            <p className="text-sm font-medium">{autoEndMessage}</p>
+                        </div>
+                        <button
+                            onClick={() => setShowAutoEndNotification(false)}
+                            className="text-white hover:text-gray-200 transition-colors"
+                        >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Video Area */}
             <div className="flex-1 relative overflow-hidden">
                 {remoteParticipant ? (
@@ -326,13 +432,12 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-800">
                         <div className="text-center text-white">
-                            <div className="w-24 h-24 bg-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                            <div className="w-24 h-24 bg-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse">
                                 <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                                 </svg>
                             </div>
-                            <p className="text-lg">Đang chờ người khác tham gia...</p>
-                            <p className="text-gray-400">Cuộc gọi đã được khởi tạo</p>
+
                         </div>
                     </div>
                 )}
@@ -346,15 +451,7 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
                     />
                 </div>
 
-                {/* Call info overlay */}
-                <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded-lg">
-                    <p className="text-sm">
-                        {participants.length > 0 ? 'Đang trong cuộc gọi' : 'Đang kết nối...'}
-                    </p>
-                    <p className="text-xs text-gray-300">
-                        {participants.length} người tham gia
-                    </p>
-                </div>
+
             </div>
 
             {/* Controls */}
@@ -363,9 +460,9 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
                     {/* Microphone Button */}
                     <button
                         onClick={toggleMute}
-                        className={`p-3 rounded-full transition-colors ${isMuted
-                            ? 'bg-red-500 hover:bg-red-600' // Red when muted (mic OFF)
-                            : 'bg-green-600 hover:bg-green-700' // Green when not muted (mic ON)
+                        className={`p-4 rounded-full transition-all duration-200 transform hover:scale-110 ${isMuted
+                            ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30' // Red when muted (mic OFF)
+                            : 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/30' // Green when not muted (mic ON)
                             }`}
                         title={isMuted ? 'Bật mic' : 'Tắt mic'}
                     >
@@ -383,9 +480,9 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
                     {/* Camera Button */}
                     <button
                         onClick={toggleVideo}
-                        className={`p-3 rounded-full transition-colors ${isVideoOff
-                            ? 'bg-red-500 hover:bg-red-600' // Red when video is off
-                            : 'bg-green-600 hover:bg-green-700' // Green when video is on
+                        className={`p-4 rounded-full transition-all duration-200 transform hover:scale-110 ${isVideoOff
+                            ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30' // Red when video is off
+                            : 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/30' // Green when video is on
                             }`}
                         title={isVideoOff ? 'Bật camera' : 'Tắt camera'}
                     >
@@ -403,7 +500,7 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
                     {/* End Call Button */}
                     <button
                         onClick={onEndCall}
-                        className="p-3 rounded-full bg-red-600 hover:bg-red-700 transition-colors"
+                        className="p-4 rounded-full bg-red-600 hover:bg-red-700 transition-all duration-200 transform hover:scale-110 shadow-lg shadow-red-600/40"
                         title="Kết thúc cuộc gọi"
                     >
                         <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -412,15 +509,7 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
                     </button>
                 </div>
 
-                {/* Debug info - chỉ hiển thị trong development */}
-                {process.env.NODE_ENV === 'development' && (
-                    <div className="mt-2 text-center text-xs text-gray-400">
-                        Mic: {localParticipant?.isMicrophoneEnabled ? 'ON' : 'OFF'} |
-                        isMuted: {isMuted ? 'true' : 'false'} |
-                        Camera: {localParticipant?.isCameraEnabled ? 'ON' : 'OFF'} |
-                        isVideoOff: {isVideoOff ? 'true' : 'false'}
-                    </div>
-                )}
+
             </div>
         </div>
     );

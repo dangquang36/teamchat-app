@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, X, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +8,7 @@ import { ChatItem } from './ChatItem';
 import { ChatHeader } from './ChatHeader';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
+import { CallEndNotification } from '@/components/modals/Call/CallEndNotification';
 import { UserProfileModal } from '@/components/modals/UserProfileModalChat';
 import { ConversationDetails } from '@/components/modals/Awuamen/ConversationDetails';
 import { AddContactModal } from '@/components/modals/AddContactModal';
@@ -75,7 +76,25 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
     } = useChatContext();
 
     const { isPinned, togglePin, sortChatsWithPinned } = usePinnedChats();
+    const currentUser = useCurrentUser();
 
+    // Access call functions từ SocketContext
+    const { initiateCall, callStatus, isInCall, callEndReason } = useSocket();
+
+    // States for UI management
+    const [rightPanelView, setRightPanelView] = useState<'details' | 'archive' | 'closed'>('closed');
+    const [archiveInitialTab, setArchiveInitialTab] = useState<'media' | 'files'>('media');
+    const [isFriendRequestSheetOpen, setIsFriendRequestSheetOpen] = useState(false);
+
+    // Call End Notification states
+    const [showCallEndNotification, setShowCallEndNotification] = useState(false);
+    const [callEndNotificationData, setCallEndNotificationData] = useState<{
+        reason: string;
+        callerName?: string;
+        duration?: string;
+    } | null>(null);
+
+    // Pin notification state
     const [pinNotification, setPinNotification] = useState<{
         show: boolean;
         isPinned: boolean;
@@ -85,6 +104,23 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
         isPinned: false,
         userName: ''
     });
+
+    // Handle call end notifications
+    useEffect(() => {
+        if (callEndReason && !isInCall && callStatus === 'idle') {
+            setCallEndNotificationData({
+                reason: callEndReason,
+                callerName: selectedChatUser?.name,
+                duration: undefined // You can add call duration tracking here
+            });
+            setShowCallEndNotification(true);
+        }
+    }, [callEndReason, isInCall, callStatus, selectedChatUser?.name]);
+
+    const handleDismissCallEndNotification = () => {
+        setShowCallEndNotification(false);
+        setCallEndNotificationData(null);
+    };
 
     const handleTogglePin = () => {
         if (!selectedChatUser) return;
@@ -106,15 +142,6 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
     };
 
     const sortedDirectMessages = sortChatsWithPinned(filteredDirectMessages);
-
-    const currentUser = useCurrentUser();
-
-    // Access call functions từ SocketContext
-    const { initiateCall, callStatus, isInCall } = useSocket();
-
-    const [rightPanelView, setRightPanelView] = useState<'details' | 'archive' | 'closed'>('closed');
-    const [archiveInitialTab, setArchiveInitialTab] = useState<'media' | 'files'>('media');
-    const [isFriendRequestSheetOpen, setIsFriendRequestSheetOpen] = useState(false);
 
     if (!currentUser) {
         return <div className="flex-1 flex items-center justify-center">Đang tải dữ liệu người dùng...</div>;
@@ -191,8 +218,62 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
         initiateCall(selectedChatUser.id, selectedChatUser.name);
     };
 
+    // Get call status display info
+    const getCallStatusInfo = () => {
+        if (isInCall) {
+            return {
+                text: `Đang trong cuộc gọi video với ${selectedChatUser?.name}`,
+                color: 'green',
+                icon: 'phone'
+            };
+        }
+
+        switch (callStatus) {
+            case 'calling':
+                return {
+                    text: `Đang gọi ${selectedChatUser?.name}...`,
+                    color: 'yellow',
+                    icon: 'calling'
+                };
+            case 'ringing':
+                return {
+                    text: `${selectedChatUser?.name} đang gọi video...`,
+                    color: 'blue',
+                    icon: 'ringing'
+                };
+            case 'connecting':
+                return {
+                    text: 'Đang kết nối cuộc gọi...',
+                    color: 'orange',
+                    icon: 'connecting'
+                };
+            case 'rejected':
+                return {
+                    text: 'Cuộc gọi bị từ chối',
+                    color: 'red',
+                    icon: 'rejected'
+                };
+            default:
+                return null;
+        }
+    };
+
+    const callStatusInfo = getCallStatusInfo();
+
     return (
         <>
+            {/* Call End Notification - Global */}
+            {callEndNotificationData && (
+                <CallEndNotification
+                    callEndReason={callEndNotificationData.reason}
+                    callerName={callEndNotificationData.callerName}
+                    callDuration={callEndNotificationData.duration}
+                    isVisible={showCallEndNotification}
+                    onDismiss={handleDismissCallEndNotification}
+                    isDarkMode={isDarkMode}
+                />
+            )}
+
             <div className="flex h-screen w-full bg-white dark:bg-gray-900 overflow-hidden">
                 {/* Phần danh sách chat bên trái */}
                 <div className={`w-80 border-r transition-colors duration-300 flex-shrink-0 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
@@ -200,18 +281,37 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                         <div className="flex items-center justify-between mb-4">
                             <h2 className={`text-lg font-semibold flex items-center gap-2 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                 Tin Nhắn
-                                {/* Call status indicator */}
+                                {/* Enhanced Call status indicator */}
                                 {isInCall && (
-                                    <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full animate-pulse">
+                                    <motion.span
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        className="text-xs bg-green-500 text-white px-2 py-1 rounded-full animate-pulse flex items-center gap-1"
+                                    >
+                                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping"></div>
                                         Đang gọi
-                                    </span>
+                                    </motion.span>
                                 )}
                                 {callStatus !== 'idle' && !isInCall && (
-                                    <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded-full">
+                                    <motion.span
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        className={`text-xs text-white px-2 py-1 rounded-full flex items-center gap-1 ${callStatus === 'calling' ? 'bg-orange-500' :
+                                            callStatus === 'ringing' ? 'bg-blue-500 animate-pulse' :
+                                                callStatus === 'connecting' ? 'bg-yellow-500' :
+                                                    callStatus === 'rejected' ? 'bg-red-500' :
+                                                        'bg-gray-500'
+                                            }`}
+                                    >
+                                        <div className={`w-1.5 h-1.5 bg-white rounded-full ${callStatus === 'ringing' ? 'animate-ping' :
+                                            callStatus === 'calling' ? 'animate-bounce' : ''
+                                            }`}></div>
                                         {callStatus === 'calling' ? 'Đang gọi...' :
                                             callStatus === 'ringing' ? 'Có cuộc gọi đến' :
-                                                callStatus}
-                                    </span>
+                                                callStatus === 'connecting' ? 'Kết nối...' :
+                                                    callStatus === 'rejected' ? 'Bị từ chối' :
+                                                        callStatus}
+                                    </motion.span>
                                 )}
                             </h2>
                         </div>
@@ -334,6 +434,8 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                 onToggleDetails={handleToggleDetails}
                                 isDetailsOpen={rightPanelView !== 'closed'}
                             />
+
+                            {/* Mute Banner */}
                             <AnimatePresence>
                                 {currentMuteInfo.isMuted && (
                                     <motion.div
@@ -351,45 +453,68 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                 )}
                             </AnimatePresence>
 
-                            {/* Call status banner */}
-                            {(isInCall || callStatus !== 'idle') && (
-                                <div className={`p-3 text-center border-b ${isDarkMode ? 'bg-blue-900 border-gray-700 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800'
-                                    }`}>
-                                    {isInCall ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                            Đang trong cuộc gọi video với {selectedChatUser.name}
-                                        </span>
-                                    ) : (
-                                        <span className="flex items-center justify-center gap-2">
-                                            {callStatus === 'calling' && (
-                                                <>
-                                                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                                                    Đang gọi {selectedChatUser.name}...
-                                                </>
+                            {/* Enhanced Call status banner */}
+                            <AnimatePresence>
+                                {callStatusInfo && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -20 }}
+                                        transition={{ duration: 0.3 }}
+                                        className={`p-4 text-center border-b backdrop-blur-sm ${callStatusInfo.color === 'green' ? (isDarkMode ? 'bg-green-900/50 border-green-700 text-green-200' : 'bg-green-50 border-green-200 text-green-800') :
+                                            callStatusInfo.color === 'yellow' ? (isDarkMode ? 'bg-yellow-900/50 border-yellow-700 text-yellow-200' : 'bg-yellow-50 border-yellow-200 text-yellow-800') :
+                                                callStatusInfo.color === 'blue' ? (isDarkMode ? 'bg-blue-900/50 border-blue-700 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800') :
+                                                    callStatusInfo.color === 'orange' ? (isDarkMode ? 'bg-orange-900/50 border-orange-700 text-orange-200' : 'bg-orange-50 border-orange-200 text-orange-800') :
+                                                        callStatusInfo.color === 'red' ? (isDarkMode ? 'bg-red-900/50 border-red-700 text-red-200' : 'bg-red-50 border-red-200 text-red-800') :
+                                                            (isDarkMode ? 'bg-gray-800/50 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-800')
+                                            }`}
+                                    >
+                                        <div className="flex items-center justify-center gap-3">
+                                            <motion.div
+                                                className={`w-3 h-3 rounded-full ${callStatusInfo.color === 'green' ? 'bg-green-500' :
+                                                    callStatusInfo.color === 'yellow' ? 'bg-yellow-500' :
+                                                        callStatusInfo.color === 'blue' ? 'bg-blue-500' :
+                                                            callStatusInfo.color === 'orange' ? 'bg-orange-500' :
+                                                                callStatusInfo.color === 'red' ? 'bg-red-500' :
+                                                                    'bg-gray-500'
+                                                    }`}
+                                                animate={{
+                                                    scale: callStatusInfo.icon === 'ringing' ? [1, 1.2, 1] : 1,
+                                                    opacity: isInCall ? [1, 0.5, 1] : 1
+                                                }}
+                                                transition={{
+                                                    duration: callStatusInfo.icon === 'ringing' ? 1 : 2,
+                                                    repeat: Infinity,
+                                                    ease: "easeInOut"
+                                                }}
+                                            />
+                                            <span className="font-medium">
+                                                {callStatusInfo.text}
+                                            </span>
+                                            {(callStatus === 'calling' || callStatus === 'connecting') && (
+                                                <div className="flex gap-1">
+                                                    <motion.div
+                                                        className="w-1 h-1 bg-current rounded-full"
+                                                        animate={{ opacity: [0, 1, 0] }}
+                                                        transition={{ duration: 1, repeat: Infinity, delay: 0 }}
+                                                    />
+                                                    <motion.div
+                                                        className="w-1 h-1 bg-current rounded-full"
+                                                        animate={{ opacity: [0, 1, 0] }}
+                                                        transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+                                                    />
+                                                    <motion.div
+                                                        className="w-1 h-1 bg-current rounded-full"
+                                                        animate={{ opacity: [0, 1, 0] }}
+                                                        transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+                                                    />
+                                                </div>
                                             )}
-                                            {callStatus === 'ringing' && (
-                                                <>
-                                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                                    {selectedChatUser.name} đang gọi video...
-                                                </>
-                                            )}
-                                            {callStatus === 'connecting' && (
-                                                <>
-                                                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                                                    Đang kết nối cuộc gọi...
-                                                </>
-                                            )}
-                                            {callStatus === 'rejected' && (
-                                                <>
-                                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                                    Cuộc gọi bị từ chối
-                                                </>
-                                            )}
-                                        </span>
-                                    )}
-                                </div>
-                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
                             <ChatMessages
                                 messages={currentMessages}
                                 currentUser={currentUser}
@@ -408,21 +533,48 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                             animate={{ opacity: 1 }}
                             className={`flex-1 flex items-center justify-center transition-colors duration-300 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
                         >
-                            <div className="text-center">
+                            <div className="text-center max-w-md">
                                 <div className="text-6xl mb-4">💬</div>
-                                <p className="text-lg">Chọn một cuộc trò chuyện để bắt đầu</p>
-                                {(isInCall || callStatus !== 'idle') && (
-                                    <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-                                        <p className="text-sm">
-                                            {isInCall ? 'Bạn đang trong cuộc gọi video' : (
-                                                callStatus === 'calling' ? 'Đang thực hiện cuộc gọi...' :
-                                                    callStatus === 'ringing' ? 'Có cuộc gọi đến' :
-                                                        callStatus === 'connecting' ? 'Đang kết nối...' :
-                                                            `Trạng thái cuộc gọi: ${callStatus}`
-                                            )}
-                                        </p>
-                                    </div>
-                                )}
+                                <p className="text-lg mb-2">Chọn một cuộc trò chuyện để bắt đầu</p>
+
+                                {/* Global call status when no chat selected */}
+                                <AnimatePresence>
+                                    {callStatusInfo && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 20 }}
+                                            className={`mt-4 p-4 rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                                                }`}
+                                        >
+                                            <div className="flex items-center justify-center gap-2 mb-2">
+                                                <motion.div
+                                                    className={`w-2 h-2 rounded-full ${callStatusInfo.color === 'green' ? 'bg-green-500' :
+                                                        callStatusInfo.color === 'blue' ? 'bg-blue-500' :
+                                                            callStatusInfo.color === 'yellow' ? 'bg-yellow-500' :
+                                                                callStatusInfo.color === 'orange' ? 'bg-orange-500' :
+                                                                    'bg-red-500'
+                                                        }`}
+                                                    animate={{
+                                                        scale: [1, 1.2, 1],
+                                                        opacity: [1, 0.5, 1]
+                                                    }}
+                                                    transition={{
+                                                        duration: 2,
+                                                        repeat: Infinity,
+                                                        ease: "easeInOut"
+                                                    }}
+                                                />
+                                                <span className="text-sm font-medium">
+                                                    {callStatusInfo.text}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs opacity-75">
+                                                Chọn cuộc trò chuyện để xem chi tiết cuộc gọi
+                                            </p>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </motion.div>
                     )}

@@ -1,4 +1,4 @@
-// components/editor/TiptapEditor.tsx (Improved with Enhanced Previews)
+// components/editor/TiptapEditor.tsx (Enhanced with Icon Support & Facebook-style Media)
 'use client'
 
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -28,7 +28,28 @@ import {
     Upload,
     Eye,
     EyeOff,
-    Globe
+    Globe,
+    Smile,
+    Heart,
+    ThumbsUp,
+    Star,
+    Coffee,
+    Music,
+    Gift,
+    Camera,
+    MapPin,
+    Sun,
+    Moon,
+    Zap,
+    Award,
+    Target,
+    Bookmark,
+    Flag,
+    Crown,
+    Sparkles,
+    Rocket,
+    Flame,
+    Gem
 } from "lucide-react"
 
 interface TiptapEditorProps {
@@ -38,8 +59,87 @@ interface TiptapEditorProps {
     isDarkMode?: boolean
 }
 
+// Icon picker modal
+function IconPickerModal({
+    isOpen,
+    onClose,
+    onSelectIcon,
+    isDarkMode
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    onSelectIcon: (icon: string) => void;
+    isDarkMode: boolean;
+}) {
+    const icons = [
+        { icon: Smile, name: "smile", label: "😊" },
+        { icon: Heart, name: "heart", label: "❤️" },
+        { icon: ThumbsUp, name: "thumbs-up", label: "👍" },
+        { icon: Star, name: "star", label: "⭐" },
+        { icon: Flame, name: "flame", label: "🔥" },
+        { icon: Coffee, name: "coffee", label: "☕" },
+        { icon: Music, name: "music", label: "🎵" },
+        { icon: Gift, name: "gift", label: "🎁" },
+        { icon: Camera, name: "camera", label: "📷" },
+        { icon: MapPin, name: "map-pin", label: "📍" },
+        { icon: Sun, name: "sun", label: "☀️" },
+        { icon: Moon, name: "moon", label: "🌙" },
+        { icon: Zap, name: "zap", label: "⚡" },
+        { icon: Award, name: "award", label: "🏆" },
+        { icon: Target, name: "target", label: "🎯" },
+        { icon: Bookmark, name: "bookmark", label: "🔖" },
+        { icon: Flag, name: "flag", label: "🚩" },
+        { icon: Crown, name: "crown", label: "👑" },
+        { icon: Gem, name: "gem", label: "💎" },
+        { icon: Sparkles, name: "sparkles", label: "✨" },
+        { icon: Rocket, name: "rocket", label: "🚀" },
+    ];
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+            <div className={`rounded-2xl p-6 max-w-md w-full shadow-2xl transform transition-all duration-200 max-h-[80vh] overflow-y-auto ${isDarkMode ? "bg-gray-800 text-white border border-gray-700" : "bg-white text-gray-900 border border-gray-200"}`}>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                        Chọn icon
+                    </h3>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onClose}
+                        className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                </div>
+
+                <div className="grid grid-cols-6 gap-3">
+                    {icons.map(({ icon: IconComponent, name, label }) => (
+                        <button
+                            key={name}
+                            onClick={() => {
+                                onSelectIcon(label);
+                                onClose();
+                            }}
+                            className={`p-3 rounded-xl transition-all duration-200 hover:scale-110 ${isDarkMode
+                                ? "hover:bg-gray-700 border border-gray-600"
+                                : "hover:bg-gray-100 border border-gray-200"
+                                }`}
+                            title={name}
+                        >
+                            <IconComponent className="h-6 w-6 mx-auto text-purple-600" />
+                            <span className="text-xs mt-1 block">{label}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // Enhanced Modal with File Upload and URL Input
-function ImageUploadModal({
+function MediaUploadModal({
     isOpen,
     onClose,
     onConfirm,
@@ -64,7 +164,7 @@ function ImageUploadModal({
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [linkPreview, setLinkPreview] = useState<{ title: string, domain: string } | null>(null);
-    const [uploadMode, setUploadMode] = useState<'url' | 'file'>('url');
+    const [uploadMode, setUploadMode] = useState<'file'>('file');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [filePreview, setFilePreview] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -76,21 +176,19 @@ function ImageUploadModal({
         setLinkPreview(null);
         setSelectedFile(null);
         setFilePreview(null);
-        setUploadMode('url');
+        setUploadMode('file');
     }, [initialValue]);
 
     // Handle file selection
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            // Validate file type
             const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
             if (!validTypes.includes(file.type)) {
                 setIsValid(false);
                 return;
             }
 
-            // Validate file size (max 10MB)
             const maxSize = 10 * 1024 * 1024; // 10MB
             if (file.size > maxSize) {
                 setIsValid(false);
@@ -100,7 +198,6 @@ function ImageUploadModal({
             setSelectedFile(file);
             setIsValid(true);
 
-            // Create preview
             const reader = new FileReader();
             reader.onload = (e) => {
                 setFilePreview(e.target?.result as string);
@@ -109,14 +206,9 @@ function ImageUploadModal({
         }
     };
 
-    // Convert file to base64 or upload to service
     const handleFileUpload = async (): Promise<string> => {
         if (!selectedFile) return '';
-
         setIsUploading(true);
-
-        // For demo purposes, we'll convert to base64
-        // In production, you should upload to a file service like Cloudinary, AWS S3, etc.
         return new Promise((resolve) => {
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -130,29 +222,19 @@ function ImageUploadModal({
     useEffect(() => {
         const validateAndPreview = async () => {
             if (type === "url") {
-                // Validate URL
                 try {
                     if (value && value.trim()) {
                         const url = new URL(value);
                         setIsValid(true);
-
-                        // Generate link preview
                         const domain = url.hostname.replace('www.', '');
                         let title = domain;
 
-                        // Simple title extraction for common domains
                         if (domain.includes('youtube.com') || domain.includes('youtu.be')) {
                             title = '📺 YouTube Video';
                         } else if (domain.includes('github.com')) {
                             title = '🐱 GitHub Repository';
                         } else if (domain.includes('twitter.com') || domain.includes('x.com')) {
                             title = '🐦 Twitter/X Post';
-                        } else if (domain.includes('facebook.com')) {
-                            title = '📘 Facebook Post';
-                        } else if (domain.includes('instagram.com')) {
-                            title = '📷 Instagram Post';
-                        } else if (domain.includes('linkedin.com')) {
-                            title = '💼 LinkedIn Post';
                         } else {
                             title = `🌐 ${domain}`;
                         }
@@ -167,7 +249,6 @@ function ImageUploadModal({
                     setLinkPreview(null);
                 }
             } else if (type === "image") {
-                // Validate image URL
                 if (!value || !value.trim()) {
                     setIsValid(true);
                     setImageError(false);
@@ -180,12 +261,10 @@ function ImageUploadModal({
                     value.includes('unsplash') ||
                     value.includes('pixabay') ||
                     value.includes('pexels') ||
-                    value.includes('freepik') ||
                     value.includes('cloudinary') ||
                     value.includes('amazonaws.com');
 
                 setIsValid(isImageUrl);
-
                 if (isImageUrl) {
                     setImageError(false);
                     setImageLoaded(false);
@@ -200,7 +279,7 @@ function ImageUploadModal({
     const handleConfirm = async () => {
         if (!isValid) return;
 
-        if (type === "image" && uploadMode === 'file' && selectedFile) {
+        if (type === "image" && selectedFile) {
             const fileUrl = await handleFileUpload();
             onConfirm(fileUrl);
         } else {
@@ -209,125 +288,51 @@ function ImageUploadModal({
         onClose();
     };
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && isValid && uploadMode === 'url') {
-            handleConfirm();
-        }
-        if (e.key === 'Escape') {
-            onClose();
-        }
-    };
-
-    const handleImageLoad = () => {
-        setImageLoaded(true);
-        setImageError(false);
-    };
-
-    const handleImageError = () => {
-        setImageError(true);
-        setImageLoaded(false);
-        setIsValid(false);
-    };
-
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-            <div className={`rounded-2xl p-6 max-w-lg w-full shadow-2xl transform transition-all duration-200 max-h-[90vh] overflow-y-auto ${isDarkMode ? "bg-gray-800 text-white border border-gray-700" : "bg-white text-gray-900 border border-gray-200"}`}>
+            <div className={`rounded-2xl p-6 max-w-2xl w-full shadow-2xl transform transition-all duration-200 max-h-[90vh] overflow-y-auto ${isDarkMode ? "bg-gray-800 text-white border border-gray-700" : "bg-white text-gray-900 border border-gray-200"}`}>
                 {/* Header */}
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-3">
                         {type === "image" ? (
-                            <ImageIcon className="h-5 w-5 text-purple-600" />
+                            <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                                <ImageIcon className="h-6 w-6 text-purple-600" />
+                            </div>
                         ) : (
-                            <ExternalLink className="h-5 w-5 text-purple-600" />
+                            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                                <ExternalLink className="h-6 w-6 text-blue-600" />
+                            </div>
                         )}
-                        <h3 className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                        <h3 className={`text-xl font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
                             {title}
                         </h3>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        {(type === "image" && value) && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setShowPreview(!showPreview)}
-                                className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                title={showPreview ? "Ẩn preview" : "Hiện preview"}
-                            >
-                                {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                        )}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={onClose}
-                            className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onClose}
+                        className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                        <X className="h-5 w-5" />
+                    </Button>
                 </div>
 
-                {/* Upload Mode Toggle for Images */}
-                {type === "image" && (
-                    <div className="mb-4">
-                        <div className={`flex rounded-lg p-1 ${isDarkMode ? "bg-gray-700" : "bg-gray-100"}`}>
-                            <button
-                                type="button"
-                                onClick={() => setUploadMode('file')}
-                                className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-all duration-200 ${uploadMode === 'file'
-                                    ? 'bg-purple-600 text-white shadow-sm'
-                                    : isDarkMode
-                                        ? 'text-gray-300 hover:text-white hover:bg-gray-600'
-                                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                                    }`}
-                            >
-                                <Upload className="h-4 w-4" />
-                                <span>Tải lên</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
 
-                {/* Input */}
-                <div className="space-y-4">
-                    {uploadMode === 'url' ? (
+
+                {/* Input Section */}
+                <div className="space-y-6">
+                    {type === "image" ? (
                         <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                {type === "image" ? "URL hình ảnh" : "URL liên kết"}
-                            </label>
-                            <input
-                                type="url"
-                                placeholder={placeholder}
-                                value={value}
-                                onChange={(e) => setValue(e.target.value)}
-                                onKeyDown={handleKeyPress}
-                                className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 ${!isValid
-                                    ? 'border-red-500 focus:ring-red-500'
-                                    : isDarkMode
-                                        ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
-                                    }`}
-                                autoFocus
-                            />
-                            {!isValid && (
-                                <p className="text-red-500 text-sm mt-1 flex items-center space-x-1">
-                                    <X className="h-3 w-3" />
-                                    <span>
-                                        {type === "image" ? "URL hình ảnh không hợp lệ hoặc không thể tải" : "URL không hợp lệ"}
-                                    </span>
-                                </p>
-                            )}
-                        </div>
-                    ) : (
-                        <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                            <label className={`block text-sm font-medium mb-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
                                 Chọn hình ảnh từ máy tính
                             </label>
-                            <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 ${isDarkMode
-                                ? "border-gray-600 hover:border-gray-500 bg-gray-700"
-                                : "border-gray-300 hover:border-gray-400 bg-gray-50"
+                            <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${selectedFile
+                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                : isDarkMode
+                                    ? "border-gray-600 hover:border-gray-500 bg-gray-700"
+                                    : "border-gray-300 hover:border-gray-400 bg-gray-50"
                                 }`}>
                                 <input
                                     type="file"
@@ -338,172 +343,129 @@ function ImageUploadModal({
                                 />
                                 <label
                                     htmlFor="image-upload"
-                                    className="cursor-pointer flex flex-col items-center space-y-2"
+                                    className="cursor-pointer flex flex-col items-center space-y-3"
                                 >
-                                    <Upload className={`h-12 w-12 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`} />
+                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${selectedFile ? 'bg-purple-500' : isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+                                        <Upload className={`h-8 w-8 ${selectedFile ? 'text-white' : isDarkMode ? "text-gray-400" : "text-gray-500"}`} />
+                                    </div>
                                     <div>
                                         <p className={`text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                            Nhấp để chọn ảnh
+                                            {selectedFile ? 'Thay đổi ảnh' : 'Nhấp để chọn ảnh'}
                                         </p>
-                                        <p className={`text-xs ${isDarkMode ? "text-gray-500" : "text-gray-500"}`}>
+                                        <p className={`text-xs mt-1 ${isDarkMode ? "text-gray-500" : "text-gray-500"}`}>
                                             hoặc kéo thả ảnh vào đây
                                         </p>
                                     </div>
                                 </label>
                                 {selectedFile && (
-                                    <div className="mt-3 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                                        <p className="text-sm text-purple-700 dark:text-purple-300">
-                                            📎 {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                                    <div className="mt-4 p-3 bg-white dark:bg-gray-800 rounded-lg border">
+                                        <p className="text-sm text-purple-700 dark:text-purple-300 font-medium">
+                                            📎 {selectedFile.name}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {(selectedFile.size / 1024).toFixed(1)} KB
                                         </p>
                                     </div>
                                 )}
                             </div>
                             {!isValid && selectedFile && (
-                                <p className="text-red-500 text-sm mt-1 flex items-center space-x-1">
-                                    <X className="h-3 w-3" />
+                                <p className="text-red-500 text-sm mt-2 flex items-center space-x-2">
+                                    <X className="h-4 w-4" />
                                     <span>File không hợp lệ. Chỉ hỗ trợ ảnh dưới 10MB</span>
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                        <div>
+                            <label className={`block text-sm font-medium mb-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                                URL liên kết
+                            </label>
+                            <input
+                                type="url"
+                                placeholder={placeholder}
+                                value={value}
+                                onChange={(e) => setValue(e.target.value)}
+                                className={`w-full p-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 ${!isValid
+                                    ? 'border-red-500 focus:ring-red-500'
+                                    : isDarkMode
+                                        ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                        : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                                    } shadow-sm`}
+                                autoFocus
+                            />
+                            {!isValid && (
+                                <p className="text-red-500 text-sm mt-2 flex items-center space-x-2">
+                                    <X className="h-4 w-4" />
+                                    <span>URL không hợp lệ</span>
                                 </p>
                             )}
                         </div>
                     )}
 
-                    {/* Preview for image */}
-                    {type === "image" && showPreview && (
-                        <>
-                            {/* URL Preview */}
-                            {uploadMode === 'url' && value && (
-                                <div className="mt-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <p className={`text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                            Xem trước hình ảnh:
-                                        </p>
-                                        {imageLoaded && (
-                                            <span className="text-xs text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300 px-2 py-1 rounded-full">
-                                                ✓ Đã tải thành công
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className={`border rounded-lg p-3 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"} relative`}>
-                                        {!imageError ? (
-                                            <>
-                                                <img
-                                                    src={value}
-                                                    alt="Preview"
-                                                    className="max-w-full max-h-64 object-contain mx-auto rounded shadow-sm"
-                                                    onLoad={handleImageLoad}
-                                                    onError={handleImageError}
-                                                />
-                                                {!imageLoaded && !imageError && (
-                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                        <div className="flex items-center space-x-2 text-gray-500">
-                                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
-                                                            <span className="text-sm">Đang tải...</span>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-                                                <ImageIcon className="h-12 w-12 mb-2 opacity-50" />
-                                                <p className="text-sm">Không thể tải hình ảnh</p>
-                                                <p className="text-xs mt-1">Vui lòng kiểm tra URL</p>
-                                            </div>
-                                        )}
-                                    </div>
+                    {/* Facebook-style Preview */}
+                    {((type === "image" && filePreview) ||
+                        (type === "url" && linkPreview)) && showPreview && (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <p className={`text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                                        Xem trước:
+                                    </p>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setShowPreview(!showPreview)}
+                                        className="rounded-full p-2"
+                                    >
+                                        <EyeOff className="h-4 w-4" />
+                                    </Button>
                                 </div>
-                            )}
 
-                            {/* File Preview */}
-                            {uploadMode === 'file' && filePreview && (
-                                <div className="mt-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <p className={`text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                            Xem trước hình ảnh:
-                                        </p>
-                                        <span className="text-xs text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded-full">
-                                            📎 File đã chọn
-                                        </span>
-                                    </div>
-                                    <div className={`border rounded-lg p-3 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
-                                        <img
-                                            src={filePreview}
-                                            alt="File preview"
-                                            className="max-w-full max-h-64 object-contain mx-auto rounded shadow-sm"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    )}
-
-                    {/* Preview for link */}
-                    {type === "url" && linkPreview && (
-                        <div className="mt-4">
-                            <p className={`text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                Xem trước liên kết:
-                            </p>
-                            <div className={`border rounded-lg p-3 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
-                                <div className="flex items-start space-x-3">
-                                    <div className="flex-shrink-0 mt-1">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDarkMode ? "bg-gray-600" : "bg-gray-200"}`}>
-                                            <Globe className="h-4 w-4 text-gray-500" />
+                                {/* Facebook-style media container */}
+                                <div className={`border rounded-2xl overflow-hidden ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50 border-gray-200"}`}>
+                                    {type === "image" ? (
+                                        <div className="relative">
+                                            <img
+                                                src={filePreview!}
+                                                alt="Preview"
+                                                className="w-full h-auto max-h-96 object-cover"
+                                            />
                                         </div>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className={`font-medium text-sm ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                                            {linkPreview.title}
-                                        </p>
-                                        <p className={`text-xs mt-1 ${isDarkMode ? "text-gray-400" : "text-gray-500"} truncate`}>
-                                            {linkPreview.domain}
-                                        </p>
-                                        <p className={`text-xs mt-1 ${isDarkMode ? "text-gray-500" : "text-gray-400"} truncate`}>
-                                            {value}
-                                        </p>
-                                    </div>
-                                    <ExternalLink className="h-4 w-4 text-purple-600 flex-shrink-0 mt-1" />
+                                    ) : linkPreview && (
+                                        <div className="p-4">
+                                            <div className="flex items-center space-x-3">
+                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isDarkMode ? "bg-gray-600" : "bg-gray-200"}`}>
+                                                    <Globe className="h-6 w-6 text-purple-600" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                                                        {linkPreview.title}
+                                                    </p>
+                                                    <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                                                        {linkPreview.domain}
+                                                    </p>
+                                                </div>
+                                                <ExternalLink className="h-5 w-5 text-purple-600" />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Helper text */}
-                    <div className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
-                        {type === "image" ? (
-                            <div className="space-y-1">
-                                {uploadMode === 'url' ? (
-                                    <>
-                                        <p>💡 <strong>Định dạng hỗ trợ:</strong> .jpg, .png, .gif, .webp, .svg</p>
-                                        <p>🌐 <strong>Nguồn tin cậy:</strong> Imgur, Unsplash, Pixabay, Pexels</p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <p>📁 <strong>Định dạng hỗ trợ:</strong> JPG, PNG, GIF, WEBP, SVG</p>
-                                        <p>📏 <strong>Kích thước tối đa:</strong> 10MB</p>
-                                    </>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="space-y-1">
-                                <p>🔗 <strong>Mẹo:</strong> Để trống để xóa liên kết hiện tại</p>
-                                <p>✅ <strong>Hỗ trợ:</strong> HTTP, HTTPS và các liên kết mạng xã hội</p>
                             </div>
                         )}
-                    </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-end space-x-3 mt-6">
+                <div className="flex justify-end space-x-3 mt-8">
                     <Button
                         variant="outline"
                         onClick={onClose}
-                        className="px-4 py-2 rounded-lg"
+                        className="px-6 py-3 rounded-xl"
                     >
                         Hủy
                     </Button>
                     <Button
                         onClick={handleConfirm}
                         disabled={!isValid || isUploading}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl disabled:opacity-50 transition-all duration-200"
                     >
                         {isUploading ? (
                             <div className="flex items-center space-x-2">
@@ -511,10 +473,7 @@ function ImageUploadModal({
                                 <span>Đang xử lý...</span>
                             </div>
                         ) : (
-                            <>
-                                {uploadMode === 'file' && selectedFile ? "Thêm ảnh" :
-                                    value ? (type === "image" ? "Thêm ảnh" : "Thêm liên kết") : "Xóa"}
-                            </>
+                            value || selectedFile ? "Thêm" : "Xóa"
                         )}
                     </Button>
                 </div>
@@ -527,6 +486,7 @@ export function TiptapEditor({ content, onChange, placeholder = "Bạn đang ngh
     const [isMounted, setIsMounted] = useState(false)
     const [showImageModal, setShowImageModal] = useState(false)
     const [showLinkModal, setShowLinkModal] = useState(false)
+    const [showIconModal, setShowIconModal] = useState(false)
     const [currentLinkUrl, setCurrentLinkUrl] = useState("")
 
     useEffect(() => {
@@ -541,7 +501,7 @@ export function TiptapEditor({ content, onChange, placeholder = "Bạn đang ngh
             }),
             Image.configure({
                 HTMLAttributes: {
-                    class: 'rounded-lg max-w-full h-auto shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-200',
+                    class: 'rounded-2xl max-w-full h-auto shadow-lg my-4 border',
                 },
             }),
             Link.configure({
@@ -561,7 +521,7 @@ export function TiptapEditor({ content, onChange, placeholder = "Bạn đang ngh
         },
         editorProps: {
             attributes: {
-                class: `prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[200px] p-4 ${isDarkMode
+                class: `prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[200px] p-6 ${isDarkMode
                     ? 'prose-invert text-white prose-headings:text-white prose-p:text-gray-200 prose-strong:text-white prose-em:text-gray-200'
                     : 'text-gray-900 prose-headings:text-gray-900'
                     }`,
@@ -569,19 +529,18 @@ export function TiptapEditor({ content, onChange, placeholder = "Bạn đang ngh
         },
     })
 
-    // Loading state
     if (!isMounted || !editor) {
         return (
-            <div className={`border rounded-xl overflow-hidden ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-                <div className={`flex flex-wrap items-center gap-1 p-3 border-b ${isDarkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
-                    <div className="flex gap-1">
+            <div className={`border rounded-2xl overflow-hidden shadow-sm ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                <div className={`flex flex-wrap items-center gap-2 p-4 border-b ${isDarkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
+                    <div className="flex gap-2">
                         {Array.from({ length: 12 }).map((_, i) => (
-                            <div key={i} className={`h-8 w-8 rounded ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'} animate-pulse`} />
+                            <div key={i} className={`h-10 w-10 rounded-lg ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'} animate-pulse`} />
                         ))}
                     </div>
                 </div>
-                <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-white'} p-4`}>
-                    <div className={`h-48 rounded flex items-center justify-center ${isDarkMode ? 'bg-gray-600' : 'bg-gray-100'} animate-pulse`}>
+                <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-white'} p-6`}>
+                    <div className={`h-48 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-gray-600' : 'bg-gray-100'} animate-pulse`}>
                         <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Đang tải editor...</span>
                     </div>
                 </div>
@@ -603,6 +562,10 @@ export function TiptapEditor({ content, onChange, placeholder = "Bạn đang ngh
         }
     }
 
+    const handleSelectIcon = (icon: string) => {
+        editor?.chain().focus().insertContent(icon).run()
+    }
+
     const openLinkModal = () => {
         const previousUrl = editor?.getAttributes('link').href || ""
         setCurrentLinkUrl(previousUrl)
@@ -611,193 +574,213 @@ export function TiptapEditor({ content, onChange, placeholder = "Bạn đang ngh
 
     return (
         <>
-            <div className={`border rounded-xl overflow-hidden shadow-sm ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-                {/* Toolbar */}
-                <div className={`flex flex-wrap items-center gap-1 p-3 border-b ${isDarkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
-                    {/* Text formatting */}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().toggleBold().run()}
-                        className={`h-8 w-8 p-0 rounded-md transition-all duration-200 ${editor.isActive('bold')
-                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                        title="Bold (Ctrl+B)"
-                    >
-                        <Bold className="h-4 w-4" />
-                    </Button>
+            <div className={`border rounded-2xl overflow-hidden shadow-lg ${isDarkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+                {/* Enhanced Toolbar */}
+                <div className={`flex flex-wrap items-center gap-2 p-4 border-b ${isDarkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
+                    {/* Text formatting group */}
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editor.chain().focus().toggleBold().run()}
+                            className={`h-10 w-10 p-0 rounded-lg transition-all duration-200 ${editor.isActive('bold')
+                                ? 'bg-purple-500 text-white shadow-md'
+                                : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            title="Bold (Ctrl+B)"
+                        >
+                            <Bold className="h-4 w-4" />
+                        </Button>
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().toggleItalic().run()}
-                        className={`h-8 w-8 p-0 rounded-md transition-all duration-200 ${editor.isActive('italic')
-                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                        title="Italic (Ctrl+I)"
-                    >
-                        <Italic className="h-4 w-4" />
-                    </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editor.chain().focus().toggleItalic().run()}
+                            className={`h-10 w-10 p-0 rounded-lg transition-all duration-200 ${editor.isActive('italic')
+                                ? 'bg-purple-500 text-white shadow-md'
+                                : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            title="Italic (Ctrl+I)"
+                        >
+                            <Italic className="h-4 w-4" />
+                        </Button>
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().toggleStrike().run()}
-                        className={`h-8 w-8 p-0 rounded-md transition-all duration-200 ${editor.isActive('strike')
-                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                        title="Strikethrough"
-                    >
-                        <Strikethrough className="h-4 w-4" />
-                    </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editor.chain().focus().toggleStrike().run()}
+                            className={`h-10 w-10 p-0 rounded-lg transition-all duration-200 ${editor.isActive('strike')
+                                ? 'bg-purple-500 text-white shadow-md'
+                                : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            title="Strikethrough"
+                        >
+                            <Strikethrough className="h-4 w-4" />
+                        </Button>
+                    </div>
 
-                    <div className={`w-px h-6 mx-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
+                    <div className={`w-px h-8 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
 
-                    {/* Lists */}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().toggleBulletList().run()}
-                        className={`h-8 w-8 p-0 rounded-md transition-all duration-200 ${editor.isActive('bulletList')
-                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                        title="Bullet List"
-                    >
-                        <List className="h-4 w-4" />
-                    </Button>
+                    {/* Lists group */}
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editor.chain().focus().toggleBulletList().run()}
+                            className={`h-10 w-10 p-0 rounded-lg transition-all duration-200 ${editor.isActive('bulletList')
+                                ? 'bg-purple-500 text-white shadow-md'
+                                : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            title="Bullet List"
+                        >
+                            <List className="h-4 w-4" />
+                        </Button>
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                        className={`h-8 w-8 p-0 rounded-md transition-all duration-200 ${editor.isActive('orderedList')
-                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                        title="Numbered List"
-                    >
-                        <ListOrdered className="h-4 w-4" />
-                    </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                            className={`h-10 w-10 p-0 rounded-lg transition-all duration-200 ${editor.isActive('orderedList')
+                                ? 'bg-purple-500 text-white shadow-md'
+                                : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            title="Numbered List"
+                        >
+                            <ListOrdered className="h-4 w-4" />
+                        </Button>
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                        className={`h-8 w-8 p-0 rounded-md transition-all duration-200 ${editor.isActive('blockquote')
-                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                        title="Quote"
-                    >
-                        <Quote className="h-4 w-4" />
-                    </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                            className={`h-10 w-10 p-0 rounded-lg transition-all duration-200 ${editor.isActive('blockquote')
+                                ? 'bg-purple-500 text-white shadow-md'
+                                : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            title="Quote"
+                        >
+                            <Quote className="h-4 w-4" />
+                        </Button>
+                    </div>
 
-                    <div className={`w-px h-6 mx-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
+                    <div className={`w-px h-8 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
 
-                    {/* Text alignment */}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().setTextAlign('left').run()}
-                        className={`h-8 w-8 p-0 rounded-md transition-all duration-200 ${editor.isActive({ textAlign: 'left' })
-                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                        title="Align Left"
-                    >
-                        <AlignLeft className="h-4 w-4" />
-                    </Button>
+                    {/* Alignment group */}
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                            className={`h-10 w-10 p-0 rounded-lg transition-all duration-200 ${editor.isActive({ textAlign: 'left' })
+                                ? 'bg-purple-500 text-white shadow-md'
+                                : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            title="Align Left"
+                        >
+                            <AlignLeft className="h-4 w-4" />
+                        </Button>
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().setTextAlign('center').run()}
-                        className={`h-8 w-8 p-0 rounded-md transition-all duration-200 ${editor.isActive({ textAlign: 'center' })
-                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                        title="Align Center"
-                    >
-                        <AlignCenter className="h-4 w-4" />
-                    </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                            className={`h-10 w-10 p-0 rounded-lg transition-all duration-200 ${editor.isActive({ textAlign: 'center' })
+                                ? 'bg-purple-500 text-white shadow-md'
+                                : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            title="Align Center"
+                        >
+                            <AlignCenter className="h-4 w-4" />
+                        </Button>
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().setTextAlign('right').run()}
-                        className={`h-8 w-8 p-0 rounded-md transition-all duration-200 ${editor.isActive({ textAlign: 'right' })
-                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                        title="Align Right"
-                    >
-                        <AlignRight className="h-4 w-4" />
-                    </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                            className={`h-10 w-10 p-0 rounded-lg transition-all duration-200 ${editor.isActive({ textAlign: 'right' })
+                                ? 'bg-purple-500 text-white shadow-md'
+                                : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            title="Align Right"
+                        >
+                            <AlignRight className="h-4 w-4" />
+                        </Button>
+                    </div>
 
-                    <div className={`w-px h-6 mx-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
+                    <div className={`w-px h-8 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
 
-                    {/* Media */}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowImageModal(true)}
-                        className="h-8 w-8 p-0 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
-                        title="Add Image"
-                    >
-                        <ImageIcon className="h-4 w-4" />
-                    </Button>
+                    {/* Media group */}
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowImageModal(true)}
+                            className="h-10 w-10 p-0 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 hover:scale-105"
+                            title="Add Image"
+                        >
+                            <ImageIcon className="h-4 w-4 text-green-600" />
+                        </Button>
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={openLinkModal}
-                        className={`h-8 w-8 p-0 rounded-md transition-all duration-200 ${editor.isActive('link')
-                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                        title="Add Link"
-                    >
-                        <LinkIcon className="h-4 w-4" />
-                    </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={openLinkModal}
+                            className={`h-10 w-10 p-0 rounded-lg transition-all duration-200 hover:scale-105 ${editor.isActive('link')
+                                ? 'bg-purple-500 text-white shadow-md'
+                                : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            title="Add Link"
+                        >
+                            <LinkIcon className="h-4 w-4 text-blue-600" />
+                        </Button>
 
-                    <div className={`w-px h-6 mx-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowIconModal(true)}
+                            className="h-10 w-10 p-0 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 hover:scale-105"
+                            title="Add Icon"
+                        >
+                            <Smile className="h-4 w-4 text-yellow-600" />
+                        </Button>
+                    </div>
 
-                    {/* Undo/Redo */}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().undo().run()}
-                        disabled={!editor.can().undo()}
-                        className="h-8 w-8 p-0 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Undo (Ctrl+Z)"
-                    >
-                        <Undo className="h-4 w-4" />
-                    </Button>
+                    <div className={`w-px h-8 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().redo().run()}
-                        disabled={!editor.can().redo()}
-                        className="h-8 w-8 p-0 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Redo (Ctrl+Y)"
-                    >
-                        <Redo className="h-4 w-4" />
-                    </Button>
+                    {/* History group */}
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editor.chain().focus().undo().run()}
+                            disabled={!editor.can().undo()}
+                            className="h-10 w-10 p-0 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Undo (Ctrl+Z)"
+                        >
+                            <Undo className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editor.chain().focus().redo().run()}
+                            disabled={!editor.can().redo()}
+                            className="h-10 w-10 p-0 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Redo (Ctrl+Y)"
+                        >
+                            <Redo className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
 
-                {/* Editor Content */}
-                <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-white'}`}>
+                {/* Editor Content with Facebook-style layout */}
+                <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                     <EditorContent editor={editor} />
                 </div>
             </div>
 
             {/* Image Modal */}
-            <ImageUploadModal
+            <MediaUploadModal
                 isOpen={showImageModal}
                 onClose={() => setShowImageModal(false)}
                 onConfirm={handleAddImage}
@@ -808,7 +791,7 @@ export function TiptapEditor({ content, onChange, placeholder = "Bạn đang ngh
             />
 
             {/* Link Modal */}
-            <ImageUploadModal
+            <MediaUploadModal
                 isOpen={showLinkModal}
                 onClose={() => setShowLinkModal(false)}
                 onConfirm={handleSetLink}
@@ -817,6 +800,14 @@ export function TiptapEditor({ content, onChange, placeholder = "Bạn đang ngh
                 initialValue={currentLinkUrl}
                 isDarkMode={isDarkMode}
                 type="url"
+            />
+
+            {/* Icon Modal */}
+            <IconPickerModal
+                isOpen={showIconModal}
+                onClose={() => setShowIconModal(false)}
+                onSelectIcon={handleSelectIcon}
+                isDarkMode={isDarkMode}
             />
         </>
     )

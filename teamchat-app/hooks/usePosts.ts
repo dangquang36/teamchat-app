@@ -40,6 +40,20 @@ export const usePosts = () => {
         setPosts((prev) => [newPost, ...prev])
     }
 
+    // DELETE POST FUNCTION - ADDED
+    const deletePost = (postId: string) => {
+        setPosts(prev => prev.filter(post => post.id !== postId));
+        // Also remove related comments
+        setComments(prev => prev.filter(comment => comment.postId !== postId));
+    };
+
+    // UPDATE POST FUNCTION - ADDED
+    const updatePost = (postId: string, updates: Partial<Post>) => {
+        setPosts(prev => prev.map(post =>
+            post.id === postId ? { ...post, ...updates } : post
+        ));
+    };
+
     const addComment = (postId: string, content: string, parentId?: string) => {
         const newComment: Comment = {
             id: Date.now().toString(),
@@ -120,6 +134,8 @@ export const usePosts = () => {
         handleBookmarkPost,
         handleSharePost,
         addPost,
+        deletePost,        // ← ADDED
+        updatePost,        // ← ADDED
         addComment,
         handleLikeComment,
     }

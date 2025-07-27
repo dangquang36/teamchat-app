@@ -1,7 +1,8 @@
+import { useState, useRef, useEffect } from "react";
 import { Post } from "@/app/types";
 import { Button } from "@/components/ui/button";
 import { HTMLContentRenderer } from "@/components/ui/HTMLContentRenderer";
-import { Heart, MessageCircle, Globe, Users, Lock, Paperclip } from "lucide-react";
+import { Heart, MessageCircle, Globe, Users, Lock, Paperclip, MoreHorizontal, Trash2 } from "lucide-react";
 
 export const formatTimeAgo = (timestamp: number) => {
     const now = Date.now()
@@ -16,12 +17,131 @@ export const formatTimeAgo = (timestamp: number) => {
     return "Vừa xong"
 }
 
+// Dropdown Menu Component - đã xóa bỏ confirmation dialog
+function PostDropdownMenu({
+    post,
+    isOpen,
+    onClose,
+    onDelete,
+    onChangeVisibility,
+    isDarkMode
+}: {
+    post: Post;
+    isOpen: boolean;
+    onClose: () => void;
+    onDelete: () => void;
+    onChangeVisibility: (visibility: "public" | "friends" | "private") => void;
+    isDarkMode: boolean;
+}) {
+    if (!isOpen) return null;
+
+    const handleDeleteClick = () => {
+        onDelete();
+        onClose();
+    };
+
+    return (
+        <div className={`absolute top-10 right-0 w-64 rounded-lg shadow-lg border z-50 ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            }`}>
+            {/* Privacy Settings */}
+            <div className="p-2">
+                <div className={`px-3 py-2 text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                    Thay đổi chế độ riêng tư
+                </div>
+
+                <button
+                    onClick={() => {
+                        onChangeVisibility("public");
+                        onClose();
+                    }}
+                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${post.visibility === "public"
+                        ? isDarkMode ? "bg-blue-900 text-blue-200" : "bg-blue-100 text-blue-700"
+                        : isDarkMode ? "hover:bg-gray-700 text-gray-300" : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                >
+                    <Globe className="h-4 w-4" />
+                    <div className="flex-1 text-left">
+                        <div className="font-medium">Công khai</div>
+                        <div className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                            Ai cũng có thể xem
+                        </div>
+                    </div>
+                    {post.visibility === "public" && (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    )}
+                </button>
+
+                <button
+                    onClick={() => {
+                        onChangeVisibility("friends");
+                        onClose();
+                    }}
+                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${post.visibility === "friends"
+                        ? isDarkMode ? "bg-blue-900 text-blue-200" : "bg-blue-100 text-blue-700"
+                        : isDarkMode ? "hover:bg-gray-700 text-gray-300" : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                >
+                    <Users className="h-4 w-4" />
+                    <div className="flex-1 text-left">
+                        <div className="font-medium">Bạn bè</div>
+                        <div className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                            Chỉ bạn bè có thể xem
+                        </div>
+                    </div>
+                    {post.visibility === "friends" && (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    )}
+                </button>
+
+                <button
+                    onClick={() => {
+                        onChangeVisibility("private");
+                        onClose();
+                    }}
+                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${post.visibility === "private"
+                        ? isDarkMode ? "bg-blue-900 text-blue-200" : "bg-blue-100 text-blue-700"
+                        : isDarkMode ? "hover:bg-gray-700 text-gray-300" : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                >
+                    <Lock className="h-4 w-4" />
+                    <div className="flex-1 text-left">
+                        <div className="font-medium">Riêng tư</div>
+                        <div className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                            Chỉ mình bạn có thể xem
+                        </div>
+                    </div>
+                    {post.visibility === "private" && (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    )}
+                </button>
+            </div>
+
+            {/* Divider */}
+            <div className={`border-t ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}></div>
+
+            {/* Actions */}
+            <div className="p-2">
+                <button
+                    onClick={handleDeleteClick}
+                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${isDarkMode ? "hover:bg-red-900 text-red-400 hover:text-red-300" : "hover:bg-red-50 text-red-600 hover:text-red-700"
+                        }`}
+                >
+                    <Trash2 className="h-4 w-4" />
+                    <span>Xóa bài viết</span>
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export function PostCard({
     post,
     onLike,
     onBookmark,
     onShare,
     onComment,
+    onDelete,
+    onChangeVisibility,
     isDarkMode,
 }: {
     post: Post;
@@ -29,8 +149,26 @@ export function PostCard({
     onBookmark: () => void;
     onShare: () => void;
     onComment: () => void;
+    onDelete?: () => void;
+    onChangeVisibility?: (visibility: "public" | "friends" | "private") => void;
     isDarkMode: boolean;
 }) {
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowDropdown(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
     const getVisibilityIcon = (): JSX.Element => {
         switch (post.visibility) {
             case "public": return <Globe className="h-4 w-4" />;
@@ -86,6 +224,27 @@ export function PostCard({
                         </div>
                     </div>
                 </div>
+
+                {/* Dropdown Menu */}
+                <div className="relative" ref={dropdownRef}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowDropdown(!showDropdown)}
+                        className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                        <MoreHorizontal className="h-5 w-5" />
+                    </Button>
+
+                    <PostDropdownMenu
+                        post={post}
+                        isOpen={showDropdown}
+                        onClose={() => setShowDropdown(false)}
+                        onDelete={() => onDelete?.()}
+                        onChangeVisibility={(visibility) => onChangeVisibility?.(visibility)}
+                        isDarkMode={isDarkMode}
+                    />
+                </div>
             </div>
 
             {/* Post Content */}
@@ -112,53 +271,151 @@ export function PostCard({
                 )}
             </div>
 
-            {/* Post Media */}
+            {/* Post Media - KHUNG CỐ ĐỊNH */}
             {(post.images || post.video) && (
                 <div className="mb-5">
-                    {post.images && post.images.length > 0 && (
-                        <div className="grid gap-3">
-                            {post.images.length === 1 ? (
-                                <img
-                                    src={post.images[0] || "/placeholder.svg"}
-                                    alt="Post image"
-                                    className="w-full h-72 object-cover rounded-xl shadow-md"
-                                />
-                            ) : post.images.length === 2 ? (
-                                <div className="grid grid-cols-2 gap-3">
-                                    {post.images.slice(0, 2).map((image, index) => (
-                                        <img
-                                            key={index}
-                                            src={image || "/placeholder.svg"}
-                                            alt={`Post image ${index + 1}`}
-                                            className="w-full h-72 object-cover rounded-xl shadow-md"
-                                        />
-                                    ))}
-                                </div>
-                            ) : post.images.length >= 3 ? (
-                                <div className="grid grid-cols-3 gap-3">
-                                    {post.images.slice(0, 3).map((image, index) => (
-                                        <img
-                                            key={index}
-                                            src={image || "/placeholder.svg"}
-                                            alt={`Post image ${index + 1}`}
-                                            className="w-full h-72 object-cover rounded-xl shadow-md"
-                                        />
-                                    ))}
-                                </div>
-                            ) : null}
-                        </div>
-                    )}
+                    {/* Khung cố định với tỷ lệ 16:9 */}
+                    <div className="w-full aspect-video bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden shadow-md">
+                        {(() => {
+                            // Tính tổng số media (ảnh + video)
+                            const hasImages = post.images && post.images.length > 0;
+                            const hasVideo = post.video;
+                            const imageCount = hasImages ? post.images!.length : 0;
+                            const totalMedia = imageCount + (hasVideo ? 1 : 0);
 
-                    {post.video && (
-                        <div className="relative bg-gray-900 rounded-xl aspect-video flex items-center justify-center overflow-hidden shadow-md">
-                            <video
-                                src={post.video}
-                                controls
-                                className="w-full h-full object-cover"
-                            />
-                            <span className="absolute bottom-2 right-2 text-white text-sm font-medium px-2 py-1 bg-black bg-opacity-60 rounded-md">Video</span>
-                        </div>
-                    )}
+                            // Nếu chỉ có video
+                            if (hasVideo && !hasImages) {
+                                return (
+                                    <video
+                                        src={post.video}
+                                        controls
+                                        className="w-full h-full object-cover"
+                                    />
+                                );
+                            }
+
+                            // Nếu chỉ có ảnh
+                            if (hasImages && !hasVideo) {
+                                return (
+                                    <div className="w-full h-full relative">
+                                        {imageCount === 1 ? (
+                                            // 1 ảnh - hiển thị full khung
+                                            <img
+                                                src={post.images![0] || "/placeholder.svg"}
+                                                alt="Post image"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : imageCount === 2 ? (
+                                            // 2 ảnh - chia đôi khung
+                                            <div className="flex w-full h-full">
+                                                <div className="w-1/2 h-full border-r border-gray-200 dark:border-gray-700">
+                                                    <img
+                                                        src={post.images![0] || "/placeholder.svg"}
+                                                        alt="Post image 1"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                                <div className="w-1/2 h-full">
+                                                    <img
+                                                        src={post.images![1] || "/placeholder.svg"}
+                                                        alt="Post image 2"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : imageCount === 3 ? (
+                                            // 3 ảnh - 1 lớn bên trái, 2 nhỏ bên phải
+                                            <div className="flex w-full h-full">
+                                                <div className="w-2/3 h-full border-r border-gray-200 dark:border-gray-700">
+                                                    <img
+                                                        src={post.images![0] || "/placeholder.svg"}
+                                                        alt="Post image 1"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                                <div className="w-1/3 h-full flex flex-col">
+                                                    <div className="h-1/2 border-b border-gray-200 dark:border-gray-700">
+                                                        <img
+                                                            src={post.images![1] || "/placeholder.svg"}
+                                                            alt="Post image 2"
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                    <div className="h-1/2">
+                                                        <img
+                                                            src={post.images![2] || "/placeholder.svg"}
+                                                            alt="Post image 3"
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            // 4+ ảnh - 2x2 grid
+                                            <div className="grid grid-cols-2 grid-rows-2 w-full h-full gap-px">
+                                                {post.images?.slice(0, 4).map((image, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="relative overflow-hidden"
+                                                    >
+                                                        <img
+                                                            src={image || "/placeholder.svg"}
+                                                            alt={`Post image ${index + 1}`}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                        {index === 3 && imageCount > 4 && (
+                                                            <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                                                                <span className="text-white text-2xl font-bold">
+                                                                    +{imageCount - 4}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }
+
+                            // Nếu có cả ảnh và video - sắp xếp trong grid
+                            if (hasImages && hasVideo) {
+                                if (totalMedia === 2) {
+                                    // 1 ảnh + 1 video = chia đôi
+                                    return (
+                                        <div className="flex w-full h-full">
+                                            <div className="w-1/2 h-full border-r border-gray-200 dark:border-gray-700">
+                                                <img
+                                                    src={post.images![0] || "/placeholder.svg"}
+                                                    alt="Post image"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                            <div className="w-1/2 h-full relative">
+                                                <video
+                                                    src={post.video}
+                                                    controls
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                {totalMedia > 4 && (
+                                                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                                                        <span className="text-white text-xl font-bold">
+                                                            +{totalMedia - 4}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <div className="absolute bottom-1 right-1 bg-black bg-opacity-60 text-white text-xs px-1 py-0.5 rounded">
+                                                    Video
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                            }
+
+                            return null;
+                        })()}
+                    </div>
                 </div>
             )}
 

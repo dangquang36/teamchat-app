@@ -7,11 +7,13 @@ import { motion } from "framer-motion";
 export interface ChatHeaderProps {
     user: DirectMessage;
     onAudioCall: () => void;
-    onVideoCall?: () => void;
+    onVideoCall: () => void;
     onViewProfile: () => void;
     isDetailsOpen: boolean;
     onToggleDetails: () => void;
     isDarkMode?: boolean;
+    callStatus?: 'idle' | 'calling' | 'ringing' | 'connected' | 'rejected' | 'ended' | 'connecting' | 'timeout' | 'busy' | 'unavailable';
+    isInCall?: boolean;
 }
 
 export function ChatHeader({
@@ -22,7 +24,13 @@ export function ChatHeader({
     isDetailsOpen,
     onToggleDetails,
     isDarkMode = false,
+    callStatus = 'idle',
+    isInCall = false,
 }: ChatHeaderProps) {
+
+    // Kiểm tra xem có thể thực hiện cuộc gọi không
+    const canMakeCall = callStatus === 'idle' && !isInCall;
+
     return (
         <motion.div
             layout
@@ -79,47 +87,69 @@ export function ChatHeader({
             <div className="flex items-center space-x-2">
                 {/* Audio Call Button */}
                 <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                    whileHover={canMakeCall ? { scale: 1.1 } : {}}
+                    whileTap={canMakeCall ? { scale: 0.9 } : {}}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={onAudioCall}
-                        className={`relative rounded-full h-10 w-10 transition-all duration-300 group ${isDarkMode
-                            ? "text-gray-300 hover:text-white hover:bg-green-600/20 hover:border-green-500/30"
-                            : "text-gray-600 hover:text-green-600 hover:bg-green-50 hover:border-green-200"
-                            } border border-transparent`}
-                        title="Gọi thoại"
+                        disabled={!canMakeCall}
+                        className={`relative rounded-full h-10 w-10 transition-all duration-300 group border ${!canMakeCall
+                            ? 'opacity-50 cursor-not-allowed border-transparent'
+                            : isDarkMode
+                                ? "text-gray-300 hover:text-white hover:bg-green-600/20 hover:border-green-500/30 border-transparent"
+                                : "text-gray-600 hover:text-green-600 hover:bg-green-50 hover:border-green-200 border-transparent"
+                            }`}
+                        title={canMakeCall ? "Gọi thoại" : "Không thể gọi"}
                     >
-                        <Phone className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                        <div className="absolute inset-0 rounded-full bg-green-500/10 scale-0 group-hover:scale-100 transition-transform duration-300" />
+                        <Phone className={`h-5 w-5 transition-transform duration-200 ${canMakeCall ? 'group-hover:scale-110' : ''}`} />
+                        {canMakeCall && (
+                            <div className="absolute inset-0 rounded-full bg-green-500/10 scale-0 group-hover:scale-100 transition-transform duration-300" />
+                        )}
+
+                        {/* Audio call indicator */}
+                        {callStatus === 'calling' || (isInCall && callStatus === 'connected') ? (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse">
+                                <div className="w-full h-full bg-orange-400 rounded-full animate-ping" />
+                            </div>
+                        ) : null}
                     </Button>
                 </motion.div>
 
                 {/* Video Call Button */}
-                {onVideoCall && (
-                    <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                <motion.div
+                    whileHover={canMakeCall ? { scale: 1.1 } : {}}
+                    whileTap={canMakeCall ? { scale: 0.9 } : {}}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onVideoCall}
+                        disabled={!canMakeCall}
+                        className={`relative rounded-full h-10 w-10 transition-all duration-300 group border ${!canMakeCall
+                            ? 'opacity-50 cursor-not-allowed border-transparent'
+                            : isDarkMode
+                                ? "text-gray-300 hover:text-white hover:bg-blue-600/20 hover:border-blue-500/30 border-transparent"
+                                : "text-gray-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 border-transparent"
+                            }`}
+                        title={canMakeCall ? "Gọi video" : "Không thể gọi"}
                     >
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={onVideoCall}
-                            className={`relative rounded-full h-10 w-10 transition-all duration-300 group ${isDarkMode
-                                ? "text-gray-300 hover:text-white hover:bg-blue-600/20 hover:border-blue-500/30"
-                                : "text-gray-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200"
-                                } border border-transparent`}
-                            title="Gọi video"
-                        >
-                            <Video className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                        <Video className={`h-5 w-5 transition-transform duration-200 ${canMakeCall ? 'group-hover:scale-110' : ''}`} />
+                        {canMakeCall && (
                             <div className="absolute inset-0 rounded-full bg-blue-500/10 scale-0 group-hover:scale-100 transition-transform duration-300" />
-                        </Button>
-                    </motion.div>
-                )}
+                        )}
+
+                        {/* Video call indicator */}
+                        {callStatus === 'calling' || (isInCall && callStatus === 'connected') ? (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse">
+                                <div className="w-full h-full bg-blue-400 rounded-full animate-ping" />
+                            </div>
+                        ) : null}
+                    </Button>
+                </motion.div>
 
                 {/* Details Toggle Button */}
                 <motion.div
@@ -184,6 +214,65 @@ export function ChatHeader({
                     </motion.div>
                 </motion.div>
             </div>
+
+            {/* Call Status Banner */}
+            {(callStatus !== 'idle' || isInCall) && (
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="absolute top-full left-0 right-0 z-10 px-4 py-2 text-center text-sm font-medium"
+                    style={{
+                        background: callStatus === 'connected' || isInCall
+                            ? (isDarkMode ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.1)')
+                            : callStatus === 'calling' || callStatus === 'connecting'
+                                ? (isDarkMode ? 'rgba(251, 191, 36, 0.1)' : 'rgba(251, 191, 36, 0.1)')
+                                : callStatus === 'ringing'
+                                    ? (isDarkMode ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.1)')
+                                    : (isDarkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.1)'),
+                        color: callStatus === 'connected' || isInCall
+                            ? '#22c55e'
+                            : callStatus === 'calling' || callStatus === 'connecting'
+                                ? '#f59e0b'
+                                : callStatus === 'ringing'
+                                    ? '#3b82f6'
+                                    : '#ef4444'
+                    }}
+                >
+                    <div className="flex items-center justify-center gap-2">
+                        <motion.div
+                            className="w-2 h-2 rounded-full"
+                            style={{
+                                backgroundColor: callStatus === 'connected' || isInCall
+                                    ? '#22c55e'
+                                    : callStatus === 'calling' || callStatus === 'connecting'
+                                        ? '#f59e0b'
+                                        : callStatus === 'ringing'
+                                            ? '#3b82f6'
+                                            : '#ef4444'
+                            }}
+                            animate={{
+                                scale: callStatus === 'ringing' ? [1, 1.2, 1] : 1,
+                                opacity: isInCall ? [1, 0.5, 1] : 1
+                            }}
+                            transition={{
+                                duration: callStatus === 'ringing' ? 1 : 2,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                        />
+                        <span>
+                            {isInCall ? 'Đang trong cuộc gọi' :
+                                callStatus === 'calling' ? 'Đang gọi...' :
+                                    callStatus === 'ringing' ? 'Có cuộc gọi đến' :
+                                        callStatus === 'connected' ? 'Đã kết nối' :
+                                            callStatus === 'rejected' ? 'Cuộc gọi bị từ chối' :
+                                                callStatus === 'timeout' ? 'Hết thời gian chờ' :
+                                                    'Cuộc gọi đã kết thúc'}
+                        </span>
+                    </div>
+                </motion.div>
+            )}
         </motion.div>
     );
 }

@@ -9,3 +9,4 @@ export const emojis = [
 export const mockPosts: Post[] = []
 
 export const mockComments: Comment[] = []
+

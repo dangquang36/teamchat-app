@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Phone, Video, Download, Paperclip as FileMessageIcon, BarChart3, Plus, X, Users, Clock, CheckCircle, Circle, Eye, MoreHorizontal, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChannelInput } from "./ChannelInput";
-import { UserProfileModal, UserProfile } from "../UserProfileModal";
+import { UserProfileModal, UserProfile } from "@/components/UserProfileModal";
 
 interface Group {
     id: string;

@@ -5,18 +5,19 @@ import { io, Socket } from 'socket.io-client';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useCall, CallStatus } from '@/hooks/useCall';
 import IncomingCallModal from '@/components/modals/Call/IncomingCallModal';
-import CallInterface from '@/components/chat/CallInterface';
+import CallInterface from '@/components/chat/VV/CallInterface';
 
 interface SocketContextType {
     socket: Socket | null;
     isConnected: boolean;
-    initiateCall: (receiverId: string, receiverName: string) => Promise<{ success: boolean; error?: string; roomName?: string }>;
+    initiateCall: (receiverId: string, receiverName: string, callType?: 'audio' | 'video') => Promise<{ success: boolean; error?: string; roomName?: string }>;
     acceptCall: () => Promise<{ success: boolean; error?: string }>;
     rejectCall: (reason?: 'busy' | 'declined' | 'unavailable') => void;
     endCall: () => Promise<void>;
     isInCall: boolean;
     callStatus: CallStatus;
     callEndReason: string | null;
+    callType: 'audio' | 'video';
 }
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
@@ -34,36 +35,33 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const [isConnected, setIsConnected] = useState(false);
     const currentUser = useCurrentUser();
 
-    // Chỉ sử dụng một useEffect để khởi tạo socket
+    // Socket initialization
     useEffect(() => {
-        // Chỉ kết nối khi có thông tin người dùng
         if (currentUser?.id) {
-            console.log('Initializing socket for user:', currentUser.id);
+            console.log('🔌 Initializing socket for user:', currentUser.name, currentUser.id);
 
-            // URL của server. Mặc định là URL hiện tại.
             const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000');
 
             newSocket.on('connect', () => {
-                console.log('Socket connected:', newSocket.id);
+                console.log('✅ Socket connected:', newSocket.id);
                 setIsConnected(true);
-                // Gửi sự kiện 'join' để server biết user ID của client này
                 newSocket.emit('join', currentUser.id);
             });
 
             newSocket.on('disconnect', () => {
-                console.log('Socket disconnected');
+                console.log('❌ Socket disconnected');
                 setIsConnected(false);
             });
 
             newSocket.on('connect_error', (error) => {
-                console.error('Socket connection error:', error);
+                console.error('❌ Socket connection error:', error);
                 setIsConnected(false);
             });
 
             setSocket(newSocket);
 
             return () => {
-                console.log('Cleaning up socket connection');
+                console.log('🧹 Cleaning up socket connection');
                 newSocket.disconnect();
                 setSocket(null);
                 setIsConnected(false);
@@ -71,7 +69,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
     }, [currentUser?.id]);
 
-    // Sử dụng call hook với socket và user ID
+    // Call hook with proper user info
     const {
         room,
         isInCall,
@@ -81,12 +79,36 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         remoteParticipants,
         autoEndMessage,
         callEndReason,
-        initiateCall,
+        callType,
+        callerName,
+        receiverName,
+        remoteUserName,
+        isInitiator,
+        initiateCall: originalInitiateCall,
         acceptCall,
         rejectCall,
         endCall
-    } = useCall(socket, currentUser?.id || '');
+    } = useCall(socket, currentUser?.id || '', currentUser?.name);
 
+    // Enhanced initiateCall wrapper
+    const initiateCall = async (receiverId: string, receiverName: string, callType: 'audio' | 'video' = 'video') => {
+        console.log(`📞 Initiating ${callType} call from ${currentUser?.name} to ${receiverName}`);
+        console.log('👤 Current user info:', {
+            id: currentUser?.id,
+            name: currentUser?.name,
+            email: currentUser?.email
+        });
+
+        // Gọi với đầy đủ thông tin
+        return await originalInitiateCall(
+            receiverId,
+            receiverName,
+            currentUser?.name || 'Unknown User',
+            callType
+        );
+    };
+
+    // Context value
     const contextValue: SocketContextType = {
         socket,
         isConnected,
@@ -96,8 +118,43 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         endCall,
         isInCall,
         callStatus,
-        callEndReason
+        callEndReason,
+        callType: callType || 'video'
     };
+
+    // Enhanced display names logic - FIX HERE
+    const getDisplayNames = () => {
+        if (isInitiator) {
+            // Người gọi (A) - hiển thị:
+            // - localUserName: tên của A (currentUser.name)
+            // - remoteUserName: tên của B (receiverName)
+            return {
+                localUserName: currentUser?.name || 'Bạn',
+                remoteUserName: receiverName || 'Người dùng'
+            };
+        } else {
+            // Người nhận (B) - hiển thị:
+            // - localUserName: tên của B (currentUser.name)  
+            // - remoteUserName: tên của A (callerName)
+            return {
+                localUserName: currentUser?.name || 'Bạn',
+                remoteUserName: callerName || 'Người dùng'
+            };
+        }
+    };
+
+    const displayNames = getDisplayNames();
+
+    // Debug logging
+    console.log('SocketContext Display Names Debug:', {
+        isInitiator,
+        currentUserName: currentUser?.name,
+        callerName,
+        receiverName,
+        displayNames,
+        isInCall,
+        callStatus
+    });
 
     return (
         <SocketContext.Provider value={contextValue}>
@@ -108,11 +165,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 <IncomingCallModal
                     incomingCall={incomingCall}
                     onAccept={acceptCall}
-                    onReject={() => rejectCall('busy')}
+                    onReject={() => rejectCall('declined')}
                 />
             )}
 
-            {/* Call Interface - với auto end message support và call end reason */}
+            {/* Call Interface với tên người dùng CHÍNH XÁC */}
             {isInCall && room && localParticipant && (
                 <CallInterface
                     room={room}
@@ -121,6 +178,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     onEndCall={endCall}
                     autoEndMessage={autoEndMessage}
                     callEndReason={callEndReason}
+                    callType={callType || 'video'}
+                    localUserName={displayNames.localUserName}
+                    remoteUserName={displayNames.remoteUserName}
+                    isInitiator={isInitiator}
                 />
             )}
         </SocketContext.Provider>

@@ -1,9 +1,9 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Search, MoreHorizontal } from "lucide-react";
-import { ChatHeader } from "@/components/chat/ChatHeader";
-import { ChatMessages } from "@/components/chat/ChatMessages";
-import { ChatInput } from "@/components/chat/ChatInput";
+import { ChatHeader } from "@/components/chat/11/ChatHeader";
+import { ChatMessages } from "@/components/chat/11/ChatMessages";
+import { ChatInput } from "@/components/chat/11/ChatInput";
 import type { DirectMessage } from "@/app/types";
 
 interface BookmarkSectionProps {
@@ -110,8 +110,8 @@ export function BookmarkSection({ isDarkMode = false }: BookmarkSectionProps) {
                             type="text"
                             placeholder="Tìm kiếm..."
                             className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors ${isDarkMode
-                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                                ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                                : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                                 }`}
                         />
                     </div>

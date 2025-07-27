@@ -1,6 +1,6 @@
 "use client";
 
-import { ChannelsSection } from "@/components/chat/ChannelsSection";
+import { ChannelsSection } from "@/components/chat/gr/ChannelsSection";
 
 export default function ChannelsPage() {
     const handleCreatePost = () => {

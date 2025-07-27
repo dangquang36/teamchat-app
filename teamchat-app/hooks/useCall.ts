@@ -6,12 +6,14 @@ export interface CallData {
     callerId: string;
     receiverId: string;
     callerName: string;
+    receiverName?: string;
     roomName: string;
+    callType: 'audio' | 'video';
 }
 
 export type CallStatus = 'idle' | 'calling' | 'ringing' | 'connected' | 'rejected' | 'ended' | 'connecting' | 'timeout' | 'busy' | 'unavailable';
 
-export const useCall = (socket: Socket | null, currentUserId: string) => {
+export const useCall = (socket: Socket | null, currentUserId: string, currentUserName?: string) => {
     const [room, setRoom] = useState<Room | null>(null);
     const [isInCall, setIsInCall] = useState(false);
     const [incomingCall, setIncomingCall] = useState<CallData | null>(null);
@@ -21,28 +23,42 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
     const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.Disconnected);
     const [autoEndMessage, setAutoEndMessage] = useState<string | null>(null);
     const [callEndReason, setCallEndReason] = useState<string | null>(null);
+    const [callType, setCallType] = useState<'audio' | 'video'>('video');
+
+    // Enhanced user name management
+    const [callerName, setCallerName] = useState<string | null>(null);
+    const [receiverName, setReceiverName] = useState<string | null>(null);
+    const [isInitiator, setIsInitiator] = useState<boolean>(false);
 
     const roomRef = useRef<Room | null>(null);
     const autoEndTimerRef = useRef<NodeJS.Timeout | null>(null);
     const callStartTimeRef = useRef<number | null>(null);
 
-    // Hàm bắt đầu timer tự động tắt cuộc gọi (2 phút)
+    // Utility function để lấy tên người dùng từ phía bên kia
+    const getRemoteUserName = () => {
+        if (isInitiator) {
+            // Nếu là người gọi, remote user là người nhận
+            return receiverName || 'Người dùng';
+        } else {
+            // Nếu là người nhận, remote user là người gọi
+            return callerName || 'Người dùng';
+        }
+    };
+
+    // Auto-end timer functions
     const startAutoEndTimer = () => {
         console.log('🕐 Starting auto-end timer (2 minutes)...');
-
         if (autoEndTimerRef.current) {
             clearTimeout(autoEndTimerRef.current);
         }
-
         autoEndTimerRef.current = setTimeout(() => {
             console.log('⏰ Auto-ending call after 2 minutes of waiting...');
             setAutoEndMessage('Cuộc gọi đã tự động kết thúc sau 2 phút chờ đợi');
             setCallEndReason('Không có người tham gia trong 2 phút');
             endCall('timeout');
-        }, 2 * 60 * 1000); // 2 phút
+        }, 2 * 60 * 1000);
     };
 
-    // Hàm dừng timer tự động tắt cuộc gọi
     const stopAutoEndTimer = () => {
         console.log('🛑 Stopping auto-end timer...');
         if (autoEndTimerRef.current) {
@@ -51,83 +67,90 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
         }
     };
 
-    // Hàm kiểm tra và quản lý timer dựa trên số lượng participants
     const manageAutoEndTimer = (remoteCount: number) => {
         if (remoteCount === 0) {
-            // Không có remote participants, bắt đầu timer
             if (!autoEndTimerRef.current) {
                 startAutoEndTimer();
             }
         } else {
-            // Có remote participants, dừng timer
             stopAutoEndTimer();
         }
     };
 
-    // Hàm yêu cầu quyền truy cập camera và mic với retry logic
-    const requestMediaPermissions = async (): Promise<boolean> => {
+    // Media permissions request
+    const requestMediaPermissions = async (type: 'audio' | 'video'): Promise<boolean> => {
         try {
-            console.log('🎥 Requesting media permissions...');
-
-            // Kiểm tra xem có permissions chưa
-            const permissions = await navigator.permissions.query({ name: 'camera' as PermissionName });
-            console.log('Camera permission status:', permissions.state);
-
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
-                    facingMode: 'user'
-                },
+            console.log(`🎥 Requesting ${type} permissions...`);
+            const constraints: MediaStreamConstraints = {
                 audio: {
                     echoCancellation: true,
                     noiseSuppression: true,
                     autoGainControl: true
                 }
-            });
+            };
 
-            console.log('✅ Media permissions granted, stream tracks:', stream.getTracks().map(t => t.kind));
+            if (type === 'video') {
+                constraints.video = {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'user'
+                };
+            }
 
-            // Dừng stream tạm thời vì LiveKit sẽ tự quản lý
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            console.log(`✅ ${type} permissions granted, stream tracks:`, stream.getTracks().map(t => t.kind));
             stream.getTracks().forEach(track => track.stop());
-
             return true;
         } catch (error) {
-            console.error('❌ Error requesting media permissions:', error);
+            console.error(`❌ Error requesting ${type} permissions:`, error);
             if (error instanceof Error) {
                 if (error.name === 'NotAllowedError') {
-                    alert('Vui lòng cho phép truy cập camera và microphone để thực hiện cuộc gọi');
+                    const mediaType = type === 'video' ? 'camera và microphone' : 'microphone';
+                    alert(`Vui lòng cho phép truy cập ${mediaType} để thực hiện cuộc gọi`);
                 } else if (error.name === 'NotFoundError') {
-                    alert('Không tìm thấy camera hoặc microphone');
+                    const mediaType = type === 'video' ? 'camera hoặc microphone' : 'microphone';
+                    alert(`Không tìm thấy ${mediaType}`);
                 } else if (error.name === 'NotReadableError') {
-                    alert('Camera hoặc microphone đang được sử dụng bởi ứng dụng khác');
+                    const mediaType = type === 'video' ? 'Camera hoặc microphone' : 'Microphone';
+                    alert(`${mediaType} đang được sử dụng bởi ứng dụng khác`);
                 }
             }
             return false;
         }
     };
 
-    // Setup socket listeners
+    // Socket event listeners với quản lý tên chính xác
     useEffect(() => {
         if (!socket || !currentUserId) return;
 
         const handleIncomingCall = (callData: CallData) => {
-            console.log('📞 Incoming call from:', callData.callerName);
+            console.log('📞 Incoming call from:', callData.callerName, 'Type:', callData.callType);
             setIncomingCall(callData);
             setCallStatus('ringing');
+            setCallType(callData.callType);
+
+            // Set names correctly for incoming call
+            setCallerName(callData.callerName);
+            setReceiverName(currentUserName || 'Bạn');
+            setIsInitiator(false); // Đây là người nhận
         };
 
         const handleCallAccepted = async (callData: CallData) => {
-            console.log('✅ Call accepted, connecting to room:', callData.roomName);
+            console.log('✅ Call accepted, connecting to room:', callData.roomName, 'Type:', callData.callType);
             setCallStatus('connected');
+            setCallType(callData.callType);
+
+            // Update receiver name when call is accepted
+            if (callData.receiverName && isInitiator) {
+                setReceiverName(callData.receiverName);
+            }
         };
 
-        const handleCallRejected = (data: { reason: string; message: string }) => {
-            console.log('❌ Call rejected:', data.message);
+        const handleCallRejected = (data: { reason: string; message: string; callType?: string }) => {
+            console.log('❌ Call rejected:', data.message, 'Type:', data.callType);
             setCallStatus('rejected');
             setIncomingCall(null);
 
-            // Set call end reason based on rejection reason
             const reasonMessages = {
                 busy: 'Người dùng đang bận',
                 declined: 'Cuộc gọi bị từ chối',
@@ -135,17 +158,15 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             };
             setCallEndReason(reasonMessages[data.reason as keyof typeof reasonMessages] || 'Cuộc gọi không thành công');
 
-            // Cleanup room nếu có
             if (roomRef.current) {
                 roomRef.current.disconnect();
                 roomRef.current = null;
                 setRoom(null);
             }
 
-            // Dừng timer
             stopAutoEndTimer();
+            resetCallState();
 
-            // Reset sau 3 giây
             setTimeout(() => {
                 setCallStatus('idle');
                 setCallEndReason(null);
@@ -153,7 +174,7 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
         };
 
         const handleCallEnded = (data: any) => {
-            console.log('📞 Call ended by:', data.endedBy);
+            console.log('📞 Call ended by:', data.endedBy, 'Type:', data.callType);
             if (data.reason === 'timeout') {
                 setCallEndReason('Người dùng đã ngắt kết nối');
             } else if (data.reason === 'disconnect') {
@@ -164,7 +185,6 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             endCall();
         };
 
-        // Thêm handler cho call timeout
         const handleCallTimeout = () => {
             console.log('⏰ Call timeout received from server');
             setAutoEndMessage('Không có phản hồi từ người nhận');
@@ -178,8 +198,8 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
         socket.on('callEnded', handleCallEnded);
         socket.on('callTimeout', handleCallTimeout);
 
-        // Listen for call status changes
-        socket.on('callStatusChange', (data: { type: string; message?: string }) => {
+        socket.on('callStatusChange', (data: { type: string; message?: string; callType?: string }) => {
+            console.log('📡 Call status change:', data);
             if (data.type === 'timeout') {
                 setAutoEndMessage(data.message || 'Cuộc gọi đã hết thời gian');
                 setCallEndReason('Hết thời gian chờ');
@@ -195,8 +215,16 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             socket.off('callTimeout', handleCallTimeout);
             socket.off('callStatusChange');
         };
-    }, [socket, currentUserId]);
+    }, [socket, currentUserId, currentUserName]);
 
+    // Reset call state helper
+    const resetCallState = () => {
+        setCallerName(null);
+        setReceiverName(null);
+        setIsInitiator(false);
+    };
+
+    // Room events setup
     const setupRoomEvents = (roomInstance: Room) => {
         console.log('🏠 Setting up room events...');
 
@@ -211,7 +239,6 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             const remotes = Array.from(roomInstance.remoteParticipants.values());
             setRemoteParticipants(remotes);
 
-            // Bắt đầu quản lý timer dựa trên số lượng remote participants
             manageAutoEndTimer(remotes.length);
 
             console.log(`🏠 Room connected. Local: ${roomInstance.localParticipant.identity}, Remotes found: ${roomInstance.numParticipants}`);
@@ -230,7 +257,6 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             console.log('👤 Participant connected:', participant.identity);
             setRemoteParticipants(prev => {
                 const newParticipants = [...prev, participant];
-                // Dừng timer khi có người tham gia
                 manageAutoEndTimer(newParticipants.length);
                 return newParticipants;
             });
@@ -241,12 +267,10 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             console.log('👤 Participant disconnected:', participant.identity);
             setRemoteParticipants(prev => {
                 const newParticipants = prev.filter(p => p.identity !== participant.identity);
-                // Quản lý timer dựa trên số lượng participants còn lại
                 manageAutoEndTimer(newParticipants.length);
                 return newParticipants;
             });
 
-            // Set reason when participant disconnects
             setCallEndReason('Người dùng đã rời cuộc gọi');
         });
 
@@ -259,59 +283,70 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
         });
     };
 
-    const initiateCall = async (receiverId: string, receiverName: string) => {
-        if (!socket) {
-            console.error('❌ Socket not connected');
-            return { success: false, error: 'Socket not connected' };
-        }
-
-        if (!currentUserId) {
-            console.error('❌ Current user ID not available');
-            return { success: false, error: 'User not authenticated' };
+    // Initiate call function với enhanced name management
+    const initiateCall = async (
+        receiverId: string,
+        receiverDisplayName: string,
+        callerDisplayName: string,
+        type: 'audio' | 'video' = 'video'
+    ) => {
+        if (!socket || !currentUserId) {
+            console.error('❌ Socket not connected or user not available');
+            return { success: false, error: 'Connection error' };
         }
 
         try {
-            console.log('📞 Initiating call to:', receiverName, 'ID:', receiverId);
-            setCallStatus('calling');
-            setAutoEndMessage(null); // Reset message
-            setCallEndReason(null); // Reset reason
+            console.log(`📞 Initiating ${type} call:`, {
+                from: callerDisplayName,
+                to: receiverDisplayName,
+                callerId: currentUserId,
+                receiverId: receiverId
+            });
 
-            // Kiểm tra quyền truy cập media trước
-            const hasPermissions = await requestMediaPermissions();
+            setCallStatus('calling');
+            setCallType(type);
+
+            // Set names correctly for outgoing call
+            setCallerName(callerDisplayName);
+            setReceiverName(receiverDisplayName);
+            setIsInitiator(true); // Đây là người gọi
+
+            setAutoEndMessage(null);
+            setCallEndReason(null);
+
+            const hasPermissions = await requestMediaPermissions(type);
             if (!hasPermissions) {
                 setCallStatus('idle');
-                return { success: false, error: 'Không thể truy cập camera/microphone' };
+                resetCallState();
+                return { success: false, error: 'Không thể truy cập media' };
             }
 
-            // Gọi API để tạo room và lấy token
-            console.log('🌐 Calling API to create room...');
             const response = await fetch('/api/call/initiate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     callerId: currentUserId,
                     receiverId,
-                    callerName: receiverName
+                    callerName: callerDisplayName,
+                    callType: type
                 })
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('❌ API call failed:', response.status, errorText);
                 throw new Error(`API call failed: ${response.status} ${errorText}`);
             }
 
             const { roomName, token, wsUrl } = await response.json();
             console.log('✅ API response received:', { roomName, wsUrl: wsUrl ? 'present' : 'missing' });
 
-            // Tạo room instance với cấu hình tối ưu
             const roomInstance = new Room({
                 adaptiveStream: true,
                 dynacast: true,
-                videoCaptureDefaults: {
+                videoCaptureDefaults: type === 'video' ? {
                     resolution: { width: 1280, height: 720 },
                     facingMode: 'user'
-                },
+                } : undefined,
                 audioCaptureDefaults: {
                     echoCancellation: true,
                     noiseSuppression: true,
@@ -322,57 +357,53 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             roomRef.current = roomInstance;
             setRoom(roomInstance);
 
-            // Setup events trước khi connect
             setupRoomEvents(roomInstance);
 
             console.log('🔗 Connecting to LiveKit room...');
             setCallStatus('connecting');
 
-            // Connect đến room với token
             await roomInstance.connect(wsUrl, token);
             console.log('✅ Connected to LiveKit room successfully');
 
-            // Set local participant sau khi connect thành công
             setLocalParticipant(roomInstance.localParticipant);
 
-            // Enable camera và microphone với retry logic
             try {
-                console.log('🎥 Enabling camera and microphone...');
-                await roomInstance.localParticipant.enableCameraAndMicrophone();
-                console.log('✅ Camera and microphone enabled');
-            } catch (enableError) {
-                console.error('❌ Error enabling camera/microphone:', enableError);
-                // Thử enable từng cái một
-                try {
-                    await roomInstance.localParticipant.setMicrophoneEnabled(true);
+                console.log(`🎥 Enabling ${type} media...`);
+                await roomInstance.localParticipant.setMicrophoneEnabled(true);
+
+                if (type === 'video') {
                     await roomInstance.localParticipant.setCameraEnabled(true);
-                    console.log('✅ Camera and microphone enabled individually');
-                } catch (individualError) {
-                    console.error('❌ Failed to enable media individually:', individualError);
+                } else {
+                    await roomInstance.localParticipant.setCameraEnabled(false);
                 }
+
+                console.log(`✅ ${type} media enabled successfully`);
+            } catch (enableError) {
+                console.error('❌ Error enabling media:', enableError);
             }
 
-            // Gửi thông báo cuộc gọi đến receiver thông qua socket
             console.log('📤 Sending call notification via socket...');
             socket.emit('initiateCall', {
                 receiverId,
                 callData: {
                     callerId: currentUserId,
                     receiverId,
-                    callerName: receiverName,
-                    roomName
+                    callerName: callerDisplayName,
+                    receiverName: receiverDisplayName,
+                    roomName,
+                    callType: type
                 }
             });
 
-            console.log('✅ Call initiated successfully');
+            console.log(`✅ ${type} call initiated successfully`);
             return { success: true, roomName };
 
         } catch (error) {
             console.error('❌ Error initiating call:', error);
             setCallStatus('idle');
+            resetCallState();
             setCallEndReason('Không thể khởi tạo cuộc gọi');
 
-            // Cleanup room nếu có lỗi
             if (roomRef.current) {
                 await roomRef.current.disconnect();
                 roomRef.current = null;
@@ -388,6 +419,7 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
         }
     };
 
+    // Accept call function
     const acceptCall = async () => {
         if (!incomingCall || !socket) {
             console.error('❌ No incoming call or socket not connected');
@@ -395,27 +427,27 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
         }
 
         try {
-            console.log('✅ Accepting call from:', incomingCall.callerName);
+            console.log(`✅ Accepting ${incomingCall.callType} call from:`, incomingCall.callerName);
             setCallStatus('connecting');
-            setAutoEndMessage(null); // Reset message
-            setCallEndReason(null); // Reset reason
+            setCallType(incomingCall.callType);
+            setAutoEndMessage(null);
+            setCallEndReason(null);
 
-            // Kiểm tra quyền truy cập media
-            const hasPermissions = await requestMediaPermissions();
+            const hasPermissions = await requestMediaPermissions(incomingCall.callType);
             if (!hasPermissions) {
-                setCallEndReason('Không thể truy cập camera/microphone');
+                setCallEndReason('Không thể truy cập media');
                 rejectCall('unavailable');
-                return { success: false, error: 'Không thể truy cập camera/microphone' };
+                return { success: false, error: 'Không thể truy cập media' };
             }
 
-            // Gọi API để lấy token cho receiver
             const response = await fetch('/api/call/accept', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     receiverId: currentUserId,
                     roomName: incomingCall.roomName,
-                    callerId: incomingCall.callerId
+                    callerId: incomingCall.callerId,
+                    callType: incomingCall.callType
                 })
             });
 
@@ -425,14 +457,13 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
 
             const { token, wsUrl } = await response.json();
 
-            // Tạo room instance mới cho receiver
             const roomInstance = new Room({
                 adaptiveStream: true,
                 dynacast: true,
-                videoCaptureDefaults: {
+                videoCaptureDefaults: incomingCall.callType === 'video' ? {
                     resolution: { width: 1280, height: 720 },
                     facingMode: 'user'
-                },
+                } : undefined,
                 audioCaptureDefaults: {
                     echoCancellation: true,
                     noiseSuppression: true,
@@ -443,38 +474,39 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             roomRef.current = roomInstance;
             setRoom(roomInstance);
 
-            // Setup events
             setupRoomEvents(roomInstance);
 
-            // Connect đến room
             await roomInstance.connect(wsUrl, token);
-
-            // Set local participant sau khi connect
             setLocalParticipant(roomInstance.localParticipant);
 
-            // Enable camera và microphone
-            await roomInstance.localParticipant.enableCameraAndMicrophone();
+            await roomInstance.localParticipant.setMicrophoneEnabled(true);
 
-            // Thông báo cho caller rằng call đã được chấp nhận
+            if (incomingCall.callType === 'video') {
+                await roomInstance.localParticipant.setCameraEnabled(true);
+            } else {
+                await roomInstance.localParticipant.setCameraEnabled(false);
+            }
+
             socket.emit('acceptCall', {
                 callerId: incomingCall.callerId,
                 callData: {
                     ...incomingCall,
-                    receiverId: currentUserId
+                    receiverId: currentUserId,
+                    receiverName: currentUserName || 'Bạn'
                 }
             });
 
             setIncomingCall(null);
-            console.log('✅ Call accepted successfully');
+            console.log(`✅ ${incomingCall.callType} call accepted successfully`);
             return { success: true };
 
         } catch (error) {
             console.error('❌ Error accepting call:', error);
             setCallStatus('idle');
             setIncomingCall(null);
+            resetCallState();
             setCallEndReason('Không thể chấp nhận cuộc gọi');
 
-            // Cleanup room nếu có lỗi
             if (roomRef.current) {
                 await roomRef.current.disconnect();
                 roomRef.current = null;
@@ -482,15 +514,15 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             }
 
             stopAutoEndTimer();
-
             return { success: false, error: 'Failed to accept call' };
         }
     };
 
+    // Reject call function
     const rejectCall = (reason: 'busy' | 'declined' | 'unavailable' = 'declined') => {
         if (!incomingCall || !socket) return;
 
-        console.log('❌ Rejecting call, reason:', reason);
+        console.log('❌ Rejecting call, reason:', reason, 'Type:', incomingCall.callType);
 
         const reasonMessages = {
             busy: 'Bạn đang bận',
@@ -502,24 +534,25 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
 
         socket.emit('rejectCall', {
             callerId: incomingCall.callerId,
-            reason
+            reason,
+            callType: incomingCall.callType
         });
 
         setIncomingCall(null);
         setCallStatus('idle');
+        resetCallState();
         stopAutoEndTimer();
 
-        // Reset reason after 3 seconds
         setTimeout(() => {
             setCallEndReason(null);
         }, 3000);
     };
 
+    // End call function
     const endCall = async (reason?: 'timeout' | 'manual') => {
-        console.log('📞 Ending call...', reason ? `Reason: ${reason}` : '');
+        console.log('📞 Ending call...', reason ? `Reason: ${reason}` : '', 'Type:', callType);
 
         try {
-            // Set reason if not already set
             if (!callEndReason) {
                 if (reason === 'timeout') {
                     setCallEndReason('Cuộc gọi đã hết thời gian');
@@ -528,16 +561,13 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
                 }
             }
 
-            // Cleanup room
             if (roomRef.current) {
                 await roomRef.current.disconnect();
                 roomRef.current = null;
             }
 
-            // Stop timer
             stopAutoEndTimer();
 
-            // Reset states
             setRoom(null);
             setIsInCall(false);
             setCallStatus(reason === 'timeout' ? 'timeout' : 'ended');
@@ -546,40 +576,44 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
             setConnectionState(ConnectionState.Disconnected);
             setIncomingCall(null);
 
-            // Thông báo qua socket
             if (socket && currentUserId) {
                 socket.emit('endCall', {
                     userId: currentUserId,
                     callData: {
                         endedBy: currentUserId,
-                        reason: reason || 'manual'
+                        reason: reason || 'manual',
+                        callType: callType
                     }
                 });
             }
 
-            // Reset status sau vài giây
+            // Reset call state after a delay
+            setTimeout(() => {
+                resetCallState();
+            }, 1000);
+
             setTimeout(() => {
                 setCallStatus('idle');
                 setAutoEndMessage(null);
-                // Keep callEndReason for a bit longer to show in chat
                 setTimeout(() => {
                     setCallEndReason(null);
                 }, 2000);
             }, reason === 'timeout' ? 5000 : 2000);
 
-            console.log('✅ Call ended successfully');
+            console.log(`✅ ${callType} call ended successfully`);
         } catch (error) {
             console.error('❌ Error ending call:', error);
         }
     };
 
-    // Cleanup khi component unmount
+    // Cleanup on unmount
     useEffect(() => {
         return () => {
             if (roomRef.current) {
                 roomRef.current.disconnect();
             }
             stopAutoEndTimer();
+            resetCallState();
         };
     }, []);
 
@@ -594,6 +628,13 @@ export const useCall = (socket: Socket | null, currentUserId: string) => {
         connectionState,
         autoEndMessage,
         callEndReason,
+        callType,
+
+        // Enhanced name management
+        callerName,
+        receiverName,
+        remoteUserName: getRemoteUserName(),
+        isInitiator,
 
         // Actions
         initiateCall,

@@ -1,9 +1,9 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Search, Plus, MoreHorizontal } from "lucide-react";
-import { ChatHeader } from "@/components/chat/ChatHeader";
-import { ChatMessages } from "@/components/chat/ChatMessages";
-import { ChatInput } from "@/components/chat/ChatInput";
+import { ChatHeader } from "@/components/chat/11/ChatHeader";
+import { ChatMessages } from "@/components/chat/11/ChatMessages";
+import { ChatInput } from "@/components/chat/11/ChatInput";
 
 interface ContactsSectionProps {
     isDarkMode?: boolean;

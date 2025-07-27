@@ -8,7 +8,6 @@ import { ChatItem } from './ChatItem';
 import { ChatHeader } from './ChatHeader';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
-import { CallEndNotification } from '@/components/modals/Call/CallEndNotification';
 import { UserProfileModal } from '@/components/modals/UserProfileModalChat';
 import { ConversationDetails } from '@/components/modals/Awuamen/ConversationDetails';
 import { AddContactModal } from '@/components/modals/AddContactModal';
@@ -27,6 +26,106 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useSocket } from '@/contexts/SocketContext';
 import { PinNotification } from '@/components/modals/Awuamen/PinNotification';
 import { usePinnedChats } from '@/hooks/usePinnedChats';
+
+// Inline CallEndNotification component
+const CallEndNotification: React.FC<{
+    callEndReason: string;
+    callerName?: string;
+    callDuration?: string;
+    callType?: 'audio' | 'video';
+    isVisible: boolean;
+    onDismiss: () => void;
+    isDarkMode?: boolean;
+}> = ({
+    callEndReason,
+    callerName,
+    callDuration,
+    callType = 'video',
+    isVisible,
+    onDismiss,
+    isDarkMode = false
+}) => {
+        return (
+            <AnimatePresence>
+                {isVisible && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -100, scale: 0.8 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -100, scale: 0.8 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                        className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4"
+                    >
+                        <div className={`relative rounded-xl border backdrop-blur-sm shadow-2xl ${isDarkMode
+                            ? 'bg-gray-800/95 border-gray-700/50'
+                            : 'bg-white/95 border-gray-200/50'
+                            }`}>
+                            {/* Close button */}
+                            <button
+                                onClick={onDismiss}
+                                className={`absolute top-3 right-3 p-1 rounded-full transition-colors ${isDarkMode
+                                    ? 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                    }`}
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+
+                            <div className="p-6">
+                                <div className="flex items-start space-x-4">
+                                    {/* Call type icon */}
+                                    <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${callType === 'audio'
+                                        ? 'bg-green-100 text-green-600'
+                                        : 'bg-blue-100 text-blue-600'
+                                        }`}>
+                                        {callType === 'audio' ? (
+                                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 715 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                            </svg>
+                                        )}
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className={`text-lg font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'
+                                            }`}>
+                                            Cuộc gọi {callType === 'audio' ? 'thoại' : 'video'} đã kết thúc
+                                        </h3>
+
+                                        {callerName && (
+                                            <p className={`text-sm mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                                                }`}>
+                                                với {callerName}
+                                            </p>
+                                        )}
+
+                                        <p className={`text-sm mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                                            }`}>
+                                            {callEndReason}
+                                        </p>
+
+                                        {callDuration && (
+                                            <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${isDarkMode
+                                                ? 'bg-gray-700 text-gray-300'
+                                                : 'bg-gray-100 text-gray-600'
+                                                }`}>
+                                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                                </svg>
+                                                Thời gian: {callDuration}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        );
+    };
 
 interface MessagesSectionProps {
     onVideoCall: () => void;
@@ -78,8 +177,8 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
     const { isPinned, togglePin, sortChatsWithPinned } = usePinnedChats();
     const currentUser = useCurrentUser();
 
-    // Access call functions từ SocketContext
-    const { initiateCall, callStatus, isInCall, callEndReason } = useSocket();
+    // Access call functions từ SocketContext với enhanced support
+    const { initiateCall, callStatus, isInCall, callEndReason, callType } = useSocket();
 
     // States for UI management
     const [rightPanelView, setRightPanelView] = useState<'details' | 'archive' | 'closed'>('closed');
@@ -92,6 +191,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
         reason: string;
         callerName?: string;
         duration?: string;
+        callType?: 'audio' | 'video';
     } | null>(null);
 
     // Pin notification state
@@ -108,14 +208,18 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
     // Handle call end notifications
     useEffect(() => {
         if (callEndReason && !isInCall && callStatus === 'idle') {
+            // Lấy tên của người được gọi hoặc người gọi từ selectedChatUser
+            const otherUserName = selectedChatUser?.name || 'Người dùng';
+
             setCallEndNotificationData({
                 reason: callEndReason,
-                callerName: selectedChatUser?.name,
-                duration: undefined // You can add call duration tracking here
+                callerName: otherUserName,
+                duration: undefined,
+                callType: callType
             });
             setShowCallEndNotification(true);
         }
-    }, [callEndReason, isInCall, callStatus, selectedChatUser?.name]);
+    }, [callEndReason, isInCall, callStatus, selectedChatUser, callType]);
 
     const handleDismissCallEndNotification = () => {
         setShowCallEndNotification(false);
@@ -187,42 +291,39 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
     const handleCallFromProfile = (user: UserProfile) => {
         setViewingProfile(null);
         if (selectedChatUser) {
+            // Mặc định sẽ gọi video call khi gọi từ profile
             handleVideoCall();
         }
     };
 
     // Handle video call - tích hợp với LiveKit system
     const handleVideoCall = () => {
-        if (!selectedChatUser || callStatus !== 'idle') {
-            console.log('Cannot initiate call:', { selectedChatUser, callStatus });
+        if (!selectedChatUser || !currentUser || callStatus !== 'idle') {
+            console.log('Cannot initiate video call:', { selectedChatUser, callStatus });
             return;
         }
-
-        console.log('Initiating video call to:', selectedChatUser.name, selectedChatUser.id);
-
-        // Call function từ useSocket hook
-        initiateCall(selectedChatUser.id, selectedChatUser.name);
+        console.log('Initiating video call to:', selectedChatUser.name);
+        initiateCall(selectedChatUser.id, selectedChatUser.name, 'video');
     };
 
-    // Handle audio call - có thể dùng chung logic hoặc tách riêng
+    // Handle audio call - gọi thoại chỉ có âm thanh
     const handleAudioCall = () => {
-        if (!selectedChatUser || callStatus !== 'idle') {
+        if (!selectedChatUser || !currentUser || callStatus !== 'idle') {
             console.log('Cannot initiate audio call:', { selectedChatUser, callStatus });
             return;
         }
-
-        console.log('Initiating audio call to:', selectedChatUser.name, selectedChatUser.id);
-
-        // Tạm thời dùng chung logic với video call
-        // Sau này có thể tách riêng cho audio-only call
-        initiateCall(selectedChatUser.id, selectedChatUser.name);
+        console.log('Initiating audio call to:', selectedChatUser.name);
+        initiateCall(selectedChatUser.id, selectedChatUser.name, 'audio');
     };
 
-    // Get call status display info
+    // Get call status display info với tên chính xác
     const getCallStatusInfo = () => {
+        if (!selectedChatUser) return null;
+
         if (isInCall) {
+            const callTypeText = callType === 'audio' ? 'thoại' : 'video';
             return {
-                text: `Đang trong cuộc gọi video với ${selectedChatUser?.name}`,
+                text: `Đang trong cuộc gọi ${callTypeText} với ${selectedChatUser.name}`,
                 color: 'green',
                 icon: 'phone'
             };
@@ -230,26 +331,28 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
 
         switch (callStatus) {
             case 'calling':
+                const callingTypeText = callType === 'audio' ? 'thoại' : 'video';
                 return {
-                    text: `Đang gọi ${selectedChatUser?.name}...`,
+                    text: `Đang gọi ${callingTypeText} ${selectedChatUser.name}...`,
                     color: 'yellow',
                     icon: 'calling'
                 };
             case 'ringing':
+                const ringingTypeText = callType === 'audio' ? 'thoại' : 'video';
                 return {
-                    text: `${selectedChatUser?.name} đang gọi video...`,
+                    text: `${selectedChatUser.name} đang gọi ${ringingTypeText}...`,
                     color: 'blue',
                     icon: 'ringing'
                 };
             case 'connecting':
                 return {
-                    text: 'Đang kết nối cuộc gọi...',
+                    text: `Đang kết nối cuộc gọi với ${selectedChatUser.name}...`,
                     color: 'orange',
                     icon: 'connecting'
                 };
             case 'rejected':
                 return {
-                    text: 'Cuộc gọi bị từ chối',
+                    text: `${selectedChatUser.name} đã từ chối cuộc gọi`,
                     color: 'red',
                     icon: 'rejected'
                 };
@@ -268,6 +371,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                     callEndReason={callEndNotificationData.reason}
                     callerName={callEndNotificationData.callerName}
                     callDuration={callEndNotificationData.duration}
+                    callType={callEndNotificationData.callType}
                     isVisible={showCallEndNotification}
                     onDismiss={handleDismissCallEndNotification}
                     isDarkMode={isDarkMode}
@@ -281,18 +385,19 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                         <div className="flex items-center justify-between mb-4">
                             <h2 className={`text-lg font-semibold flex items-center gap-2 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                 Tin Nhắn
-                                {/* Enhanced Call status indicator */}
-                                {isInCall && (
+                                {/* Enhanced Call status indicator with call type */}
+                                {isInCall && selectedChatUser && (
                                     <motion.span
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
-                                        className="text-xs bg-green-500 text-white px-2 py-1 rounded-full animate-pulse flex items-center gap-1"
+                                        className={`text-xs text-white px-2 py-1 rounded-full animate-pulse flex items-center gap-1 ${callType === 'audio' ? 'bg-green-500' : 'bg-blue-500'
+                                            }`}
                                     >
                                         <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping"></div>
-                                        Đang gọi
+                                        {callType === 'audio' ? 'Gọi thoại' : 'Gọi video'} với {selectedChatUser.name}
                                     </motion.span>
                                 )}
-                                {callStatus !== 'idle' && !isInCall && (
+                                {callStatus !== 'idle' && !isInCall && selectedChatUser && (
                                     <motion.span
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
@@ -306,10 +411,10 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                         <div className={`w-1.5 h-1.5 bg-white rounded-full ${callStatus === 'ringing' ? 'animate-ping' :
                                             callStatus === 'calling' ? 'animate-bounce' : ''
                                             }`}></div>
-                                        {callStatus === 'calling' ? 'Đang gọi...' :
-                                            callStatus === 'ringing' ? 'Có cuộc gọi đến' :
-                                                callStatus === 'connecting' ? 'Kết nối...' :
-                                                    callStatus === 'rejected' ? 'Bị từ chối' :
+                                        {callStatus === 'calling' ? `Gọi ${selectedChatUser.name}` :
+                                            callStatus === 'ringing' ? `${selectedChatUser.name} gọi đến` :
+                                                callStatus === 'connecting' ? `Kết nối với ${selectedChatUser.name}` :
+                                                    callStatus === 'rejected' ? `${selectedChatUser.name} từ chối` :
                                                         callStatus}
                                     </motion.span>
                                 )}
@@ -391,7 +496,6 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                                     isPinned={isPinned(dm.id)}
                                                 />
 
-                                                {/* Nút xóa - chỉ hiển thị khi hover */}
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
@@ -433,6 +537,8 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                 onViewProfile={() => setViewingProfile(selectedChatUser)}
                                 onToggleDetails={handleToggleDetails}
                                 isDetailsOpen={rightPanelView !== 'closed'}
+                                callStatus={callStatus}
+                                isInCall={isInCall}
                             />
 
                             {/* Mute Banner */}
@@ -491,6 +597,15 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                             <span className="font-medium">
                                                 {callStatusInfo.text}
                                             </span>
+                                            {/* Call type indicator */}
+                                            {(callStatus === 'calling' || callStatus === 'connecting' || isInCall) && (
+                                                <span className={`text-xs px-2 py-1 rounded-full ${callType === 'audio'
+                                                    ? 'bg-green-500/20 text-green-300'
+                                                    : 'bg-blue-500/20 text-blue-300'
+                                                    }`}>
+                                                    {callType === 'audio' ? '🎤 Thoại' : '📹 Video'}
+                                                </span>
+                                            )}
                                             {(callStatus === 'calling' || callStatus === 'connecting') && (
                                                 <div className="flex gap-1">
                                                     <motion.div
@@ -568,6 +683,14 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                                 <span className="text-sm font-medium">
                                                     {callStatusInfo.text}
                                                 </span>
+                                                {callType && (
+                                                    <span className={`text-xs px-1.5 py-0.5 rounded ${callType === 'audio'
+                                                        ? 'bg-green-500/20 text-green-600'
+                                                        : 'bg-blue-500/20 text-blue-600'
+                                                        }`}>
+                                                        {callType === 'audio' ? 'Thoại' : 'Video'}
+                                                    </span>
+                                                )}
                                             </div>
                                             <p className="text-xs opacity-75">
                                                 Chọn cuộc trò chuyện để xem chi tiết cuộc gọi

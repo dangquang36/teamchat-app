@@ -47,6 +47,8 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
         return "";
     };
 
+
+
     return (
         <div className={`flex h-screen overflow-hidden transition-colors ${isDarkMode ? "bg-gray-900" : "bg-gray-100"}`}>
             {/* Left Sidebar */}

@@ -17,7 +17,8 @@ export const useVideoTracks = (participant: LocalParticipant | RemoteParticipant
     });
 
     const updateVideoState = useCallback(() => {
-        const videoPublication = participant.getTrackPublication(Track.Source.Camera);
+        const videoPublications = Array.from(participant.getTrackPublications().values());
+        const videoPublication = videoPublications.find(pub => pub.source === Track.Source.Camera);
 
         if (isLocal) {
             // For local participant

@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 // Giao diện người dùng của Dashboard
 function LayoutUI({ children }: { children: React.ReactNode }) {
     const [currentPath, setCurrentPath] = useState("");
+    const [userAvatar, setUserAvatar] = useState<string | null>(null); // Thêm lại state để giữ ảnh
     const router = useRouter();
     const { isDarkMode, toggleDarkMode } = useTheme();
     const { isConnected, isInCall, callStatus } = useSocketContext();
@@ -25,6 +26,32 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
         }
     }, [router]);
 
+    // Lắng nghe thay đổi avatar từ localStorage hoặc từ sự kiện
+    useEffect(() => {
+        const loadUserData = () => {
+            try {
+                const userDataString = localStorage.getItem("currentUser");
+                if (userDataString) {
+                    const userData = JSON.parse(userDataString);
+                    setUserAvatar(userData.avatar || null);
+                }
+            } catch (error) {
+                console.error("Failed to parse user data from localStorage", error);
+            }
+        };
+
+        // Load dữ liệu người dùng lần đầu
+        loadUserData();
+
+        // Lắng nghe sự kiện 'userDataUpdated' được phát từ ProfileSection
+        window.addEventListener('userDataUpdated', loadUserData);
+
+        // Dọn dẹp listener khi component bị hủy
+        return () => {
+            window.removeEventListener('userDataUpdated', loadUserData);
+        };
+    }, []);
+
     const handleNavigation = (route: string) => {
         setCurrentPath(route);
         router.push(route);
@@ -32,14 +59,12 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
 
     const isActive = (path: string) => currentPath.startsWith(path);
 
-    // Get connection status color
     const getConnectionColor = () => {
-        if (isInCall) return "bg-blue-500"; // Blue when in call
-        if (isConnected) return "bg-green-500"; // Green when connected
-        return "bg-red-500"; // Red when disconnected
+        if (isInCall) return "bg-blue-500";
+        if (isConnected) return "bg-green-500";
+        return "bg-red-500";
     };
 
-    // Get call status badge
     const getCallStatusBadge = () => {
         if (isInCall) return "📞";
         if (callStatus === 'calling') return "📱";
@@ -47,7 +72,27 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
         return "";
     };
 
-
+    // ================= SỬA ĐỔI TẠI ĐÂY =================
+    const renderAvatar = () => {
+        // Ưu tiên hiển thị state userAvatar (là ảnh đã tải lên)
+        if (userAvatar) {
+            return (
+                <img
+                    src={userAvatar}
+                    alt="Avatar"
+                    className="w-full h-full object-cover rounded-full"
+                />
+            );
+        }
+        // Nếu không có ảnh, hiển thị chữ cái đầu
+        const firstLetter = currentUser?.name?.charAt(0).toUpperCase() || 'U';
+        return (
+            <span className="text-white font-bold text-xl">
+                {firstLetter}
+            </span>
+        );
+    };
+    // ================= KẾT THÚC SỬA ĐỔI =================
 
     return (
         <div className={`flex h-screen overflow-hidden transition-colors ${isDarkMode ? "bg-gray-900" : "bg-gray-100"}`}>
@@ -138,22 +183,12 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
 
                 {/* User Avatar with Connection Status */}
                 <div className="relative">
-                    <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
-                        {currentUser?.avatar ? (
-                            <img
-                                src={currentUser.avatar}
-                                alt={currentUser.name || 'User'}
-                                className="w-full h-full rounded-full object-cover"
-                            />
-                        ) : (
-                            <span className="text-white font-semibold text-sm">
-                                {currentUser?.name?.charAt(0).toUpperCase() || 'D'}
-                            </span>
-                        )}
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
+                        {renderAvatar()}
                     </div>
 
                     {/* Connection Status Dot */}
-                    <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${getConnectionColor()}`}>
+                    <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 ${isDarkMode ? 'border-gray-900' : 'border-indigo-500'} ${getConnectionColor()}`}>
                         {isInCall && (
                             <div className="absolute inset-0 rounded-full bg-blue-400 animate-ping"></div>
                         )}

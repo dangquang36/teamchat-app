@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { GroupProvider } from "@/contexts/GroupContext";
-import { MessagesSection } from "@/components/chat/11/MessagesSection";
+import { MessagesSection } from "@/components/chat/messages/MessagesSection";
 import { useTheme } from "@/contexts/ThemeContext";
 
 export default function ChatPage() {

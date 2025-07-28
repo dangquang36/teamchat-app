@@ -33,9 +33,9 @@ export interface Reaction {
 }
 
 export interface PollOption {
+    id: string;
     text: string;
-    votes: number;
-    voters: string[];
+    votes: PollVote[];
 }
 
 export interface Poll {
@@ -47,6 +47,19 @@ export interface Poll {
     createdBy: string;
     createdAt: string;
     voters: string[];
+    description?: string;
+    allowMultiple: boolean;
+    isAnonymous: boolean;
+    showResults: "always" | "after_vote" | "after_end";
+    createdByName: string;
+    endTime?: Date;
+    isActive: boolean;
+    totalVoters: number;
+}
+
+export interface MessageWithPoll extends Message {
+    poll?: Poll;
+    files?: { name: string; size: number }[];
 }
 
 // Thống nhất lại một interface Message duy nhất và đầy đủ nhất
@@ -150,4 +163,11 @@ export interface Group {
     name: string;
     members: number;
     pinnedMessages: boolean;
+}
+
+export interface PollVote {
+    userId: string;
+    userName: string;
+    userAvatar: string;
+    votedAt: Date;
 }

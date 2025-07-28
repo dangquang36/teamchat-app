@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { User, KeyRound, LogOut, Edit, Save, Camera, ArrowLeft, MoreHorizontal, Sun, Moon, CheckCircle, X, Phone, MessageCircle, Smartphone, Globe, Shield, AlertCircle, Eye, EyeOff } from "lucide-react";
 
+// ... (Các interfaces và translations giữ nguyên)
 interface ProfileSectionProps {
     onLogout: () => void;
     isDarkMode?: boolean;
@@ -210,6 +211,7 @@ const translations: translations = {
 };
 
 export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }: ProfileSectionProps) {
+    // ... (toàn bộ state và các hàm tiện ích giữ nguyên)
     const [view, setView] = useState<'profile' | 'settings' | 'security'>('profile');
     const [currentUser, setCurrentUser] = useState<UserData | null>(null);
     const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
@@ -383,6 +385,10 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
         }
         const updatedUser: UserData = { ...currentUser, ...formData };
         setCurrentUser(updatedUser);
+
+        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+        window.dispatchEvent(new CustomEvent('userDataUpdated'));
+
         setIsEditing(false);
         setShowToast({ show: true, message: t.profileUpdated, type: 'success' });
     };
@@ -407,11 +413,17 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
             reader.onloadend = () => {
                 const updatedUser: UserData = { ...currentUser, avatar: reader.result as string };
                 setCurrentUser(updatedUser);
+
+                localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+                window.dispatchEvent(new CustomEvent('userDataUpdated'));
+
                 setShowToast({ show: true, message: t.avatarUpdated, type: 'success' });
             };
             reader.readAsDataURL(file);
         }
     };
+
+    // ... (các hàm xử lý khác giữ nguyên)
 
     const handlePasswordUpdate = () => {
         if (!validatePasswordForm()) {
@@ -440,6 +452,28 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
     const toggleConfirmPasswordVisibility = () => {
         setShowConfirmPassword(!showConfirmPassword);
     };
+
+    // ================= SỬA ĐỔI TẠI ĐÂY =================
+    const renderAvatar = () => {
+        // Ưu tiên hiển thị ảnh từ state currentUser
+        if (currentUser?.avatar) {
+            return (
+                <img
+                    src={currentUser.avatar}
+                    alt="Avatar"
+                    className="w-full h-full object-cover rounded-full"
+                />
+            );
+        }
+        // Nếu không có ảnh, hiển thị chữ cái đầu
+        const firstLetter = currentUser?.name?.charAt(0).toUpperCase() || 'U';
+        return (
+            <div className="text-white text-3xl font-bold">
+                {firstLetter}
+            </div>
+        );
+    };
+    // ================= KẾT THÚC SỬA ĐỔI =================
 
     const renderMediaItem = (item: MediaItem) => {
         switch (item.type) {
@@ -474,6 +508,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
         }
     };
 
+    // ... (Toàn bộ phần JSX trả về giữ nguyên như cũ)
     const NavButton = ({ activeView, targetView, onClick, children }: {
         activeView: string;
         targetView: string;
@@ -572,12 +607,8 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                 <div className={`rounded-2xl p-8 shadow-xl transition-all duration-300 hover:shadow-2xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border`}>
                                     <div className="flex items-center mb-6">
                                         <div className="relative mr-6">
-                                            <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg">
-                                                {currentUser.avatar ? (
-                                                    <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
-                                                ) : (
-                                                    <div className="text-white text-4xl font-bold">{currentUser.name.charAt(0).toUpperCase()}</div>
-                                                )}
+                                            <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+                                                {renderAvatar()}
                                             </div>
                                         </div>
                                         <div>
@@ -648,12 +679,8 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center">
                                     <div className="relative mr-5">
-                                        <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg">
-                                            {currentUser.avatar ? (
-                                                <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
-                                            ) : (
-                                                <div className="text-white text-3xl font-bold">{currentUser.name.charAt(0).toUpperCase()}</div>
-                                            )}
+                                        <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+                                            {renderAvatar()}
                                         </div>
                                         <button
                                             onClick={() => avatarInputRef.current?.click()}
@@ -798,6 +825,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                     </div>
                 )}
 
+                {/* Phần còn lại của giao diện không thay đổi */}
                 {view === 'security' && (
                     <div className="max-w-3xl mx-auto">
                         <div className="flex items-center mb-8">

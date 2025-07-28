@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Search } from "lucide-react";
 import { useGroups } from "@/contexts/GroupContext";
-import { ChannelItem } from "./ChannelItem";
+import { ChannelItem } from "@/components/chat/1-n/gr/ChannelItem";
 import { Group } from "@/contexts/GroupContext";
 
 interface ChannelListProps {

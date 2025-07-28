@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useGroups } from "@/contexts/GroupContext";
 import { CreateGroupModal, GroupData } from "@/components/ui/CreateGroupModal";
-import { ChannelView } from "@/components/chat/gr/ChannelView";
+import { ChannelView } from "@/components/chat/1-n/gr/ChannelView";
 import { ChannelDetails } from "./ChannelDetails";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "@/components/ui/use-toast";

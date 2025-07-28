@@ -385,15 +385,7 @@ export function CreatePostModal({
                             />
                             <div>
                                 <h3 className={`font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>Bạn</h3>
-                                <select
-                                    value={visibility}
-                                    onChange={(e) => setVisibility(e.target.value as any)}
-                                    className={`text-sm px-2 py-1 rounded border ${isDarkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-100 border-gray-300 text-gray-700"}`}
-                                >
-                                    <option value="public">🌍 Công khai</option>
-                                    <option value="friends">👥 Bạn bè</option>
-                                    <option value="private">🔒 Riêng tư</option>
-                                </select>
+
                             </div>
                         </div>
 
@@ -485,22 +477,6 @@ export function CreatePostModal({
                                     }`}
                             />
                         </div>
-
-                        {/* Tags Input */}
-                        <div className="space-y-2">
-                            <input
-                                type="text"
-                                placeholder="#️⃣ Thêm hashtag và nhấn Enter..."
-                                value={currentTagInput}
-                                onChange={(e) => setCurrentTagInput(e.target.value)}
-                                onKeyPress={handleAddTag}
-                                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${isDarkMode
-                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                                    : "bg-white border-gray-200 text-gray-900 placeholder-gray-500"
-                                    }`}
-                            />
-                        </div>
-
                         {/* Add to post options */}
                         <div className={`border rounded-lg p-3 ${isDarkMode ? 'border-gray-700 bg-gray-700' : 'border-gray-200 bg-gray-50'}`}>
                             <div className="flex items-center justify-between">

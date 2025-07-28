@@ -50,8 +50,24 @@ export default function LoginPage() {
     try {
       const res = await apiClient.login(data.username, data.password)
       if (res.success) {
+        // ================= SỬA ĐỔI TẠI ĐÂY =================
         localStorage.setItem("userToken", res.data.token)
-        localStorage.setItem("currentUser", JSON.stringify(res.data))
+
+        // Chuẩn bị dữ liệu người dùng để lưu
+        const userDataFromApi = res.data;
+
+        // Tạo đối tượng người dùng mới, đảm bảo có trường 'name'
+        // và đặt trường 'avatar' thành null để component khác sẽ dùng chữ cái đầu
+        const userToStore = {
+          ...userDataFromApi,
+          name: userDataFromApi.name || userDataFromApi.username, // Đảm bảo trường 'name' tồn tại
+          avatar: null // Quan trọng: Xóa avatar từ API để fallback về chữ cái đầu
+        };
+
+        // Lưu đối tượng người dùng đã được chỉnh sửa
+        localStorage.setItem("currentUser", JSON.stringify(userToStore));
+        // ================= KẾT THÚC SỬA ĐỔI =================
+
         router.push("/")
       } else {
         setError(res.error || "Tên đăng nhập hoặc mật khẩu không đúng")

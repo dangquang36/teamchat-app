@@ -44,12 +44,15 @@ export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
     }
   };
 
-  // Handle delete post - xóa bỏ confirmation dialog
   const handleDeletePost = (postId: string) => {
     deletePost?.(postId);
   };
 
-  // Handle change visibility
+  // ✨ NEW: Hàm xử lý cập nhật nội dung bài đăng
+  const handleUpdatePost = (postId: string, updatedData: Partial<Post>) => {
+    updatePost?.(postId, updatedData);
+  };
+
   const handleChangeVisibility = (postId: string, visibility: "public" | "friends" | "private") => {
     updatePost?.(postId, { visibility });
   };
@@ -141,6 +144,8 @@ export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
                 onShare={() => handleSharePost(post.id)}
                 onComment={() => setSelectedPost(post)}
                 onDelete={() => handleDeletePost(post.id)}
+                // ✨ PROP MỚI ĐƯỢC TRUYỀN VÀO ĐÂY
+                onUpdate={(updatedData) => handleUpdatePost(post.id, updatedData)}
                 onChangeVisibility={(visibility) => handleChangeVisibility(post.id, visibility)}
                 isDarkMode={isDarkMode}
               />

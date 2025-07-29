@@ -25,12 +25,8 @@ interface UserData {
     avatar?: string;
 }
 
-interface Device {
-    id: string;
-    deviceName: string;
-    lastLogin: string;
-    ipAddress: string;
-}
+// Xóa interface Device không còn sử dụng
+// interface Device { ... }
 
 interface ValidationErrors {
     name?: string;
@@ -211,13 +207,13 @@ const translations: translations = {
 };
 
 export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }: ProfileSectionProps) {
-    // ... (toàn bộ state và các hàm tiện ích giữ nguyên)
     const [view, setView] = useState<'profile' | 'settings' | 'security'>('profile');
     const [currentUser, setCurrentUser] = useState<UserData | null>(null);
     const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
     const [formData, setFormData] = useState({ name: "", email: "", phone: "", dob: "" });
     const [isEditing, setIsEditing] = useState(false);
-    const [is2faEnabled, setIs2faEnabled] = useState(false);
+    // Xóa state is2faEnabled
+    // const [is2faEnabled, setIs2faEnabled] = useState(false);
     const [showToast, setShowToast] = useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: "", type: 'success' });
     const [language, setLanguage] = useState<'vi' | 'en'>('vi');
     const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -233,10 +229,8 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
     }>({});
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [devices, setDevices] = useState<Device[]>([
-        { id: "1", deviceName: "MacBook Pro", lastLogin: "2025-07-11 10:30", ipAddress: "192.168.1.1" },
-        { id: "2", deviceName: "Windows Desktop", lastLogin: "2025-07-10 15:45", ipAddress: "192.168.1.2" },
-    ]);
+    // Xóa state devices
+    // const [devices, setDevices] = useState<Device[]>([]);
     const avatarInputRef = useRef<HTMLInputElement>(null);
 
     const t = translations[language];
@@ -423,8 +417,6 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
         }
     };
 
-    // ... (các hàm xử lý khác giữ nguyên)
-
     const handlePasswordUpdate = () => {
         if (!validatePasswordForm()) {
             setShowToast({ show: true, message: t.validationFailed, type: 'error' });
@@ -434,17 +426,6 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
         setPasswordErrors({});
         setShowToast({ show: true, message: t.passwordUpdated, type: 'success' });
     };
-
-    const handleDeviceLogout = (deviceId: string) => {
-        setDevices(devices.filter(device => device.id !== deviceId));
-        setShowToast({ show: true, message: t.logoutDevice, type: 'success' });
-    };
-
-    const handle2FAChange = () => {
-        setIs2faEnabled(!is2faEnabled);
-        setShowToast({ show: true, message: is2faEnabled ? t.twoFADisabled : t.twoFAEnabled, type: 'success' });
-    };
-
     const toggleNewPasswordVisibility = () => {
         setShowNewPassword(!showNewPassword);
     };
@@ -453,9 +434,7 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
         setShowConfirmPassword(!showConfirmPassword);
     };
 
-    // ================= SỬA ĐỔI TẠI ĐÂY =================
     const renderAvatar = () => {
-        // Ưu tiên hiển thị ảnh từ state currentUser
         if (currentUser?.avatar) {
             return (
                 <img
@@ -465,7 +444,6 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                 />
             );
         }
-        // Nếu không có ảnh, hiển thị chữ cái đầu
         const firstLetter = currentUser?.name?.charAt(0).toUpperCase() || 'U';
         return (
             <div className="text-white text-3xl font-bold">
@@ -473,7 +451,6 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
             </div>
         );
     };
-    // ================= KẾT THÚC SỬA ĐỔI =================
 
     const renderMediaItem = (item: MediaItem) => {
         switch (item.type) {
@@ -508,7 +485,6 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
         }
     };
 
-    // ... (Toàn bộ phần JSX trả về giữ nguyên như cũ)
     const NavButton = ({ activeView, targetView, onClick, children }: {
         activeView: string;
         targetView: string;
@@ -614,13 +590,13 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                         <div>
                                             <h2 className="text-3xl font-bold">{currentUser.name}</h2>
                                             <p className="text-lg bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600">
-                                                Lập Trình Viên Frontend
+                                                Hô sơ cá nhân
                                             </p>
                                         </div>
                                     </div>
                                     <div className="mb-6">
                                         <p className={`text-base leading-relaxed ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                            Hồ sơ chuyên nghiệp là phần giới thiệu trong CV của bạn, làm nổi bật những kỹ năng và trình độ phù hợp, thể hiện kinh nghiệm và mục tiêu nghề nghiệp.
+                                            Thông tin tên, số điện thoại, email.
                                         </p>
                                     </div>
                                     <div className="space-y-4">
@@ -800,32 +776,9 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                 </div>
                             </div>
                         </div>
-                        <div className={`rounded-2xl p-8 shadow-xl transition-all duration-300 hover:shadow-2xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border mt-8`}>
-                            <h3 className="text-2xl font-semibold mb-6">{t.deviceManagement}</h3>
-                            <div className="space-y-4">
-                                {devices.map((device) => (
-                                    <div key={device.id} className={`flex items-center justify-between p-4 border rounded-lg ${isDarkMode ? "border-gray-600" : "border-gray-200"}`}>
-                                        <div>
-                                            <p className="font-medium">{t.deviceName}: {device.deviceName}</p>
-                                            <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>{t.lastLogin}: {device.lastLogin}</p>
-                                            <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>{t.ipAddress}: {device.ipAddress}</p>
-                                        </div>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleDeviceLogout(device.id)}
-                                            className="rounded-full"
-                                        >
-                                            {t.logoutDevice}
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
                     </div>
                 )}
 
-                {/* Phần còn lại của giao diện không thay đổi */}
                 {view === 'security' && (
                     <div className="max-w-3xl mx-auto">
                         <div className="flex items-center mb-8">
@@ -918,35 +871,6 @@ export function ProfileSection({ onLogout, isDarkMode = false, toggleDarkMode }:
                                         {t.updatePassword}
                                     </Button>
                                 </div>
-                            </div>
-                        </div>
-                        <div className={`rounded-2xl p-8 shadow-xl transition-all duration-300 hover:shadow-2xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border mt-8`}>
-                            <h3 className="text-2xl font-semibold mb-6">{t.twoFactorAuth}</h3>
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center">
-                                        <Shield className="w-5 h-5 mr-4 text-purple-500" />
-                                        <span className="text-lg">{t.twoFactorAuth}</span>
-                                    </div>
-                                    <Button
-                                        onClick={handle2FAChange}
-                                        className={`px-5 py-2 text-base rounded-full ${is2faEnabled ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"}`}
-                                    >
-                                        {is2faEnabled ? t.disable2FA : t.enable2FA}
-                                    </Button>
-                                </div>
-                                {is2faEnabled && (
-                                    <div>
-                                        <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"} mb-4`}>{t.scanQRCode}</p>
-                                        <div className="flex justify-center">
-                                            <img
-                                                src="/placeholder.svg?height=150&width=150&text=QR"
-                                                alt="2FA QR Code"
-                                                className="w-32 h-32 rounded-lg shadow-md"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { MessageItem, Message, UserProfile } from './MessageItem';
-import { Poll } from '@/components/chat/1-n/poll/PollMessage';
+import { Poll } from '@/components/chat/poll/PollMessage';
 
 interface MessageListProps {
     messages: Message[];

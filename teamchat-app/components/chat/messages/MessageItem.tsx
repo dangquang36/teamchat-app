@@ -1,7 +1,7 @@
 'use client';
 
 import { Paperclip as FileMessageIcon } from 'lucide-react';
-import { PollMessage, Poll } from '@/components/chat/1-n/poll/PollMessage';
+import { PollMessage, Poll } from '@/components/chat/poll/PollMessage';
 
 export interface UserProfile {
     id: string;

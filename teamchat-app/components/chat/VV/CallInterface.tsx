@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Room, LocalParticipant, RemoteParticipant, Track, TrackPublication, RemoteTrackPublication, LocalTrackPublication } from 'livekit-client';
+import { showToast } from '@/lib/utils';
+import { useDebouncedToast } from '@/hooks/use-debounced-toast';
 
 interface ParticipantVideoProps {
     participant: LocalParticipant | RemoteParticipant;
@@ -204,7 +206,8 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
     const [isMuted, setIsMuted] = useState(false);
     const [isVideoOff, setIsVideoOff] = useState(callType === 'audio');
     const [participants, setParticipants] = useState<RemoteParticipant[]>(remoteParticipants);
-    const [showAutoEndNotification, setShowAutoEndNotification] = useState(false);
+    const { debouncedToast } = useDebouncedToast();
+
     const [showCallEndOverlay, setShowCallEndOverlay] = useState(false);
     const [callDuration, setCallDuration] = useState<string>('00:00');
 
@@ -236,13 +239,13 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
     // Auto end notification
     useEffect(() => {
         if (autoEndMessage) {
-            setShowAutoEndNotification(true);
-            const timer = setTimeout(() => {
-                setShowAutoEndNotification(false);
-            }, 5000);
-            return () => clearTimeout(timer);
+            // Show debounced toast notification to prevent duplicates
+            debouncedToast(autoEndMessage, {
+                title: '⚠️ Thông báo cuộc gọi',
+                variant: 'destructive'
+            }, `call-auto-end`, 1000);
         }
-    }, [autoEndMessage]);
+    }, [autoEndMessage, debouncedToast]);
 
     // Update participants when remote participants change
     useEffect(() => {
@@ -462,14 +465,7 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
 
     return (
         <div className="fixed inset-0 bg-gray-900 flex flex-col z-50">
-            {/* Auto End Notification */}
-            {showAutoEndNotification && autoEndMessage && (
-                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-60 max-w-md">
-                    <div className="bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg">
-                        <p className="text-sm font-medium">{autoEndMessage}</p>
-                    </div>
-                </div>
-            )}
+
 
             {/* Header */}
             <div className="bg-black/80 backdrop-blur-sm">

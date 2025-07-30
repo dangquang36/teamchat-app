@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+// Removed framer-motion - using CSS transitions only
 import { Pin } from 'lucide-react';
 
 interface ChatItemProps {
@@ -24,7 +24,7 @@ export function ChatItem({
     isPinned = false
 }: ChatItemProps) {
     return (
-        <motion.div
+        <div
             className={`
                 relative p-3 rounded-xl cursor-pointer transition-all duration-300 border
                 ${active
@@ -36,43 +36,33 @@ export function ChatItem({
                         : 'hover:bg-gray-50 border-transparent hover:border-gray-200'
                 }
                 ${isPinned ? 'ring-2 ring-yellow-400/20' : ''}
+                hover-lift transition-transform
             `}
             onClick={onClick}
-            whileHover={{ y: -1, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            layoutId={`chat-item-${name}`}
         >
             {/* Pin indicator background */}
             {isPinned && (
-                <motion.div
-                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-400/5 to-orange-400/5"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
+                <div
+                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-400/5 to-orange-400/5 animate-in fade-in duration-300"
                 />
             )}
 
             <div className="flex items-center relative z-10">
                 {/* Avatar with pin indicator */}
                 <div className="relative flex-shrink-0 mr-3">
-                    <motion.img
+                    <img
                         src={avatar}
                         alt={name}
-                        className="w-12 h-12 rounded-full object-cover shadow-md"
-                        whileHover={{ scale: 1.05 }}
-                        transition={{ duration: 0.2 }}
+                        className="w-12 h-12 rounded-full object-cover shadow-md hover-scale transition-transform"
                     />
 
                     {/* Pin badge on avatar */}
                     {isPinned && (
-                        <motion.div
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                            className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-gray-800"
+                        <div
+                            className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-gray-800 animate-in zoom-in duration-300"
                         >
                             <Pin className="w-2.5 h-2.5 text-white" />
-                        </motion.div>
+                        </div>
                     )}
 
                     {/* Online indicator */}
@@ -84,48 +74,43 @@ export function ChatItem({
                 {/* Chat content */}
                 <div className="flex-1 min-w-0 mr-2">
                     <div className="flex items-center justify-between mb-1">
-                        <motion.h3
+                        <h3
                             className={`font-semibold text-sm truncate flex items-center gap-2 ${active
                                 ? isDarkMode ? 'text-blue-300' : 'text-blue-700'
                                 : isDarkMode ? 'text-gray-200' : 'text-gray-800'
                                 }`}
-                            layoutId={`chat-name-${name}`}
+
                         >
                             {name}
                             {isPinned && (
-                                <motion.div
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{ delay: 0.1, duration: 0.2 }}
-                                    className="text-yellow-500"
+                                <div
+                                    className="text-yellow-500 animate-in zoom-in duration-200"
                                 >
-                                </motion.div>
+                                </div>
                             )}
-                        </motion.h3>
+                        </h3>
 
                         {/* Unread count */}
                         {unreadCount > 0 && (
-                            <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="flex-shrink-0 min-w-[20px] h-5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg"
+                            <div
+                                className="flex-shrink-0 min-w-[20px] h-5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-200"
                             >
                                 <span className="text-white text-xs font-bold px-1">
                                     {unreadCount > 99 ? '99+' : unreadCount}
                                 </span>
-                            </motion.div>
+                            </div>
                         )}
                     </div>
 
-                    <motion.p
+                    <p
                         className={`text-xs truncate ${active
                             ? isDarkMode ? 'text-blue-200/80' : 'text-blue-600/80'
                             : isDarkMode ? 'text-gray-400' : 'text-gray-500'
                             }`}
-                        layoutId={`chat-message-${name}`}
+
                     >
                         {message}
-                    </motion.p>
+                    </p>
                 </div>
 
                 {/* Status indicators */}
@@ -141,37 +126,21 @@ export function ChatItem({
             </div>
 
             {/* Hover glow effect */}
-            <motion.div
-                className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/10 to-purple-400/10 opacity-0 pointer-events-none"
-                whileHover={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
+            <div
+                className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/10 to-purple-400/10 opacity-0 pointer-events-none hover:opacity-100 transition-opacity duration-300"
             />
 
             {/* Active indicator line */}
             {active && (
-                <motion.div
-                    className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-r-full shadow-lg"
-                    layoutId="active-indicator"
-                    initial={{ scaleY: 0 }}
-                    animate={{ scaleY: 1 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
+                <div
+                    className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-r-full shadow-lg animate-in slide-in-from-left duration-300"
                 />
             )}
 
             {/* Pin glow effect */}
             {isPinned && (
-                <motion.div
-                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-400/5 to-orange-400/5 pointer-events-none"
-                    animate={{
-                        opacity: [0.3, 0.6, 0.3]
-                    }}
-                    transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                    }}
-                />
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-400/5 to-orange-400/5 pointer-events-none animate-pulse" />
             )}
-        </motion.div>
+        </div>
     );
 }

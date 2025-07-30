@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Room, LocalParticipant, RemoteParticipant, Track, TrackPublication, RemoteTrackPublication, LocalTrackPublication } from 'livekit-client';
+import { showToast } from '@/lib/utils';
 
 interface ParticipantVideoProps {
     participant: LocalParticipant | RemoteParticipant;
@@ -246,7 +247,7 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
     const [isVideoOff, setIsVideoOff] = useState(callType === 'audio'); // Video off for audio calls
     const [participants, setParticipants] = useState<RemoteParticipant[]>(remoteParticipants);
     const [remoteVideoKey, setRemoteVideoKey] = useState(0);
-    const [showAutoEndNotification, setShowAutoEndNotification] = useState(false);
+
     const [showCallEndOverlay, setShowCallEndOverlay] = useState(false);
     const [callDuration, setCallDuration] = useState<string>('00:00');
 
@@ -280,11 +281,8 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
     // Auto end notification
     useEffect(() => {
         if (autoEndMessage) {
-            setShowAutoEndNotification(true);
-            const timer = setTimeout(() => {
-                setShowAutoEndNotification(false);
-            }, 5000);
-            return () => clearTimeout(timer);
+            // Show toast notification instead of overlay
+            showToast(autoEndMessage, 'Thông báo cuộc gọi', 'destructive');
         }
     }, [autoEndMessage]);
 
@@ -464,33 +462,13 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
 
     return (
         <div className="fixed inset-0 bg-black flex flex-col z-50">
-            {/* Auto End Notification */}
-            {showAutoEndNotification && autoEndMessage && (
-                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-60 max-w-md">
-                    <div className="bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 animate-pulse">
-                        <svg className="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                        </svg>
-                        <div className="flex-1">
-                            <p className="text-sm font-medium">{autoEndMessage}</p>
-                        </div>
-                        <button
-                            onClick={() => setShowAutoEndNotification(false)}
-                            className="text-white hover:text-gray-200 transition-colors"
-                        >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            )}
+
 
             {/* Call Type Header */}
             <div className="absolute top-4 left-4 z-10">
                 <div className={`px-4 py-2 rounded-lg backdrop-blur-sm border ${callType === 'audio'
-                        ? 'bg-green-500/20 border-green-500/30 text-green-300'
-                        : 'bg-blue-500/20 border-blue-500/30 text-blue-300'
+                    ? 'bg-green-500/20 border-green-500/30 text-green-300'
+                    : 'bg-blue-500/20 border-blue-500/30 text-blue-300'
                     }`}>
                     <div className="flex items-center gap-2 text-sm font-medium">
                         {callType === 'audio' ? (

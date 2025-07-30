@@ -168,7 +168,7 @@ export function ConversationDetails({
                             }`}>
                             {mediaFiles.length}
                         </span>
-                        <button 
+                        <button
                             onClick={onViewAllMedia}
                             className="float-right text-blue-500 hover:text-blue-600 text-sm font-medium hover:translate-x-1 transition-transform"
                         >
@@ -221,7 +221,7 @@ export function ConversationDetails({
                             }`}>
                             {otherFiles.length}
                         </span>
-                        <button 
+                        <button
                             onClick={onViewAllFiles}
                             className="float-right text-blue-500 hover:text-blue-600 text-sm font-medium hover:translate-x-1 transition-transform"
                         >

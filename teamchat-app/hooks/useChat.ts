@@ -3,6 +3,7 @@ import type { UserProfile, DirectMessage, Message } from '@/app/types';
 import { apiClient } from '@/lib/api';
 import { useCurrentUser } from './useCurrentUser';
 import { useSocketContext } from '@/contexts/SocketContext';
+import { showToast as showShadcnToast } from '@/lib/utils';
 
 const initialAllMessages: Record<string, Message[]> = {};
 
@@ -27,7 +28,7 @@ export const useChat = (isDarkMode: boolean) => {
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [isMuteModalOpen, setIsMuteModalOpen] = useState(false);
     const [muteStatus, setMuteStatus] = useState<Record<string, MuteInfo>>({});
-    const [toast, setToast] = useState<{ message: string; show: boolean }>({ message: '', show: false });
+
 
     // Tạo chatId từ 2 userId (luôn sắp xếp để đảm bảo consistent)
     const createChatId = useCallback((userId1: string, userId2: string) => {
@@ -189,8 +190,7 @@ export const useChat = (isDarkMode: boolean) => {
     }, [currentUser, selectedChatId, receiveNewMessage, socket, fileToBase64]);
 
     const showToast = useCallback((message: string) => {
-        setToast({ show: true, message });
-        setTimeout(() => setToast({ show: false, message: '' }), 3000);
+        showShadcnToast(message);
     }, []);
 
     const addContact = useCallback((newContact: DirectMessage) => {
@@ -309,7 +309,6 @@ export const useChat = (isDarkMode: boolean) => {
         currentMessages,
         isDetailsOpen,
         viewingProfile,
-        toast,
         notification,
         isAddContactModalOpen,
         showConfirmDelete,

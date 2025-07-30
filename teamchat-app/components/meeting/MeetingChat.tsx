@@ -154,7 +154,7 @@ export default function MeetingChat({
                             {filteredMessages.map((message) => (
                                 <div key={message.id} className="group">
                                     <div className="flex items-start space-x-3 hover:bg-slate-700/20 rounded-lg p-2 -m-2 transition-colors">
-                                        <Avatar className="h-8 w-8 ring-2 ring-slate-600">
+                                        <Avatar className="h-8 w-8">
                                             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
                                                 {getParticipantInitials(message.participantName)}
                                             </AvatarFallback>

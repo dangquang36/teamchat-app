@@ -7,13 +7,13 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import { MeetingModal } from '@/components/modals/hop/MeetingModal';
 import { JoinMeetingModal } from '@/components/modals/hop/JoinMeetingModal';
-import { CreateChannelModal } from '@/components/modals/CreateChannelModal';
+import { CreateChannelModal } from '@/components/modals/hop/CreateChannelModal';
 import { useChannels } from '@/contexts/ChannelContext';
 import { ChannelSidebar } from '@/components/chat/ChannelSidebar';
 import { NotificationBell } from '@/components/ui/NotificationBell';
-import { PendingInvitationsModal } from '@/components/modals/PendingInvitationsModal';
-import { FeaturesModal } from '@/components/modals/FeaturesModal';
-import { MeetingHistoryModal } from '@/components/modals/MeetingHistoryModal';
+import { PendingInvitationsModal } from '@/components/modals/hop/PendingInvitationsModal';
+import { FeaturesModal } from '@/components/modals/hop/FeaturesModal';
+import { MeetingHistoryModal } from '@/components/modals/hop/MeetingHistoryModal';
 
 interface Meeting {
     id: string;

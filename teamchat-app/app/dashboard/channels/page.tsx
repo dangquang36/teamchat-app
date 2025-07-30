@@ -1,7 +1,7 @@
 "use client";
 
 
-import { ChannelsSection } from "@/components/chat/hop/ChannelsSection";
+import { ChannelsSection } from "@/components/chat/channel/ChannelsSection";
 
 
 export default function ChannelsPage() {

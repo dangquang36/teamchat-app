@@ -7,6 +7,7 @@ import { useChannels } from '@/contexts/ChannelContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useSocketContext } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
+import { useDebouncedToast } from '@/hooks/use-debounced-toast';
 
 interface MeetingModalProps {
     isOpen: boolean;
@@ -28,6 +29,7 @@ export function MeetingModal({ isOpen, onClose, onStartCall }: MeetingModalProps
     const currentUser = useCurrentUser();
     const { socket } = useSocketContext();
     const { toast } = useToast();
+    const { debouncedToast } = useDebouncedToast();
 
     if (!isOpen) return null;
 
@@ -123,10 +125,10 @@ export function MeetingModal({ isOpen, onClose, onStartCall }: MeetingModalProps
             });
         }
 
-        toast({
-            title: "Thông báo đã gửi",
-            description: `Đã thông báo cuộc họp đến kênh "${channel.name}". Đang tham gia...`,
-        });
+        debouncedToast(`Đã thông báo cuộc họp đến kênh "${channel.name}". Đang tham gia...`, {
+            title: "📢 Thông báo đã gửi",
+            variant: 'success'
+        }, `meeting-notify-${selectedChannelId}`, 500);
 
         // Auto-join meeting for creator
         const joinUrl = `/dashboard/meeting/${roomName}?title=${encodeURIComponent(meetingTitle)}`;

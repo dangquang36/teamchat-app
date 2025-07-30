@@ -6,7 +6,7 @@ import * as z from "zod"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { motion } from "framer-motion"
+// Removed framer-motion - using CSS transitions only
 import { Button } from "@/components/ui/button"
 import { MessageCircle, ArrowLeft } from "lucide-react"
 import { apiClient } from "@/lib/api"

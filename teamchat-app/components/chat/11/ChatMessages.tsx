@@ -1,5 +1,5 @@
 import React from "react";
-import { motion } from 'framer-motion';
+// Removed framer-motion - using CSS transitions only
 import { useEffect, useRef } from 'react';
 import { FileText, Download, Image as ImageIcon } from 'lucide-react';
 import type { Message, UserProfile } from "@/app/types";
@@ -42,50 +42,42 @@ export function ChatMessages({ messages, currentUser, otherUser, isDarkMode = fa
                 const sender = isMyMessage ? currentUser : otherUser;
 
                 return (
-                    <motion.div
+                    <div
                         key={msg.id}
-                        className={`flex w-full ${isMyMessage ? "justify-end" : "justify-start"}`}
-                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className={`flex w-full animate-in slide-in-from-bottom-1 duration-200 ${isMyMessage ? "justify-end" : "justify-start"}`}
                     >
                         <div className={`flex items-start gap-3 max-w-[70%] ${isMyMessage ? 'flex-row-reverse' : 'flex-row'}`}>
-                            <motion.button
+                            <button
                                 onClick={() => {
                                     if (sender && !isMyMessage) {
                                         // Chỉ cho phép xem profile của người khác, không phải mình
                                         setViewingProfile?.(sender);
                                     }
                                 }}
-                                className="group cursor-pointer"
-                                whileHover={{ scale: 1.05 }}
-                                transition={{ duration: 0.2 }}
+                                className="group cursor-pointer hover-scale transition-transform"
                             >
                                 <img
                                     src={sender?.avatar || defaultAvatar}
                                     alt={sender?.name || 'User'}
-                                    className={`w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm ${!isMyMessage ? 'group-hover:ring-2 group-hover:ring-cyan-400 transition-all duration-200' : ''
-                                        }`}
+                                    className="w-8 h-8 rounded-full object-cover shadow-sm"
                                 />
-                            </motion.button>
+                            </button>
 
                             <div className={`flex flex-col ${isMyMessage ? 'items-end' : 'items-start'}`}>
                                 <div className={`flex items-center space-x-2 mb-1 ${isMyMessage ? 'flex-row-reverse' : 'flex-row'}`}>
-                                    <motion.button
+                                    <button
                                         onClick={() => {
                                             if (sender && !isMyMessage) {
                                                 setViewingProfile?.(sender);
                                             }
                                         }}
-                                        className={`text-sm font-medium transition-colors duration-200 ${!isMyMessage
-                                            ? `hover:text-cyan-500 cursor-pointer ${isDarkMode ? "text-white" : "text-gray-900"}`
+                                        className={`text-sm font-medium transition-all duration-200 ${!isMyMessage
+                                            ? `hover:text-cyan-500 cursor-pointer hover-scale-sm ${isDarkMode ? "text-white" : "text-gray-900"}`
                                             : isDarkMode ? "text-white" : "text-gray-900"
                                             }`}
-                                        whileHover={!isMyMessage ? { scale: 1.02 } : {}}
-                                        transition={{ duration: 0.2 }}
                                     >
                                         {sender?.name || 'User'}
-                                    </motion.button>
+                                    </button>
                                     <span className={`text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>{msg.time}</span>
                                 </div>
 
@@ -94,11 +86,10 @@ export function ChatMessages({ messages, currentUser, otherUser, isDarkMode = fa
                                     {msg.attachments && msg.attachments.length > 0 && (
                                         <div className="space-y-2">
                                             {msg.attachments.map((file, index) => (
-                                                <motion.div
+                                                <div
                                                     key={index}
-                                                    initial={{ opacity: 0, scale: 0.8 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                                                    className="animate-in zoom-in duration-200"
+                                                    style={{ animationDelay: `${index * 50}ms` }}
                                                 >
                                                     {file.type.startsWith('image/') ? (
                                                         <div className="relative group">
@@ -118,17 +109,14 @@ export function ChatMessages({ messages, currentUser, otherUser, isDarkMode = fa
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <motion.a
+                                                        <a
                                                             href={file.url}
                                                             download={file.name}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            whileHover={{ scale: 1.02 }}
-                                                            whileTap={{ scale: 0.98 }}
-                                                            className={`flex items-center gap-3 p-3 rounded-lg w-64 cursor-pointer shadow-md transition-all duration-200 border
-                                                                ${isDarkMode
-                                                                    ? 'bg-gray-700 hover:bg-gray-600 border-gray-600 hover:border-cyan-500'
-                                                                    : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-cyan-400'
+                                                            className={`flex items-center gap-3 p-3 rounded-lg w-64 cursor-pointer shadow-md transition-all duration-200 border hover-scale-sm ${isDarkMode
+                                                                ? 'bg-gray-700 hover:bg-gray-600 border-gray-600 hover:border-cyan-500'
+                                                                : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-cyan-400'
                                                                 }`}
                                                         >
                                                             <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center
@@ -146,38 +134,32 @@ export function ChatMessages({ messages, currentUser, otherUser, isDarkMode = fa
                                                                 )}
                                                             </div>
                                                             <Download className={`h-4 w-4 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                                                        </motion.a>
+                                                        </a>
                                                     )}
-                                                </motion.div>
+                                                </div>
                                             ))}
                                         </div>
                                     )}
 
                                     {/* Hiển thị text message */}
                                     {msg.text && (
-                                        <motion.div
-                                            className={`p-3 rounded-lg shadow-sm max-w-md break-words
+                                        <div
+                                            className={`p-3 rounded-lg shadow-sm max-w-md break-words transition-all duration-200 hover-scale-sm animate-in zoom-in duration-200
                                                 ${isMyMessage
-                                                    ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-br-none shadow-lg'
+                                                    ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-br-none shadow-lg hover:shadow-xl'
                                                     : (isDarkMode
-                                                        ? 'bg-gray-800 text-white border border-gray-700'
-                                                        : 'bg-white text-gray-800 border border-gray-200'
+                                                        ? 'bg-gray-800 text-white border border-gray-700 hover:border-gray-600'
+                                                        : 'bg-white text-gray-800 border border-gray-200 hover:border-gray-300'
                                                     ) + ' rounded-bl-none'
                                                 }`}
-                                            initial={{ scale: 0.95, opacity: 0 }}
-                                            animate={{ scale: 1, opacity: 1 }}
-                                            transition={{ duration: 0.3 }}
-                                            whileHover={isMyMessage ? {
-                                                boxShadow: "0 8px 25px rgba(139, 92, 246, 0.3)"
-                                            } : {}}
                                         >
                                             <p className="leading-relaxed">{msg.text}</p>
-                                        </motion.div>
+                                        </div>
                                     )}
                                 </div>
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
                 );
             })}
             <div ref={messagesEndRef} />

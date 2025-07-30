@@ -3,15 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, X, Bell } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+// Removed framer-motion - using CSS transitions only
 import { ChatItem } from '@/components/chat/11/ChatItem';
 import { ChatHeader } from '@/components/chat/11/ChatHeader';
 import { ChatMessages } from '@/components/chat/11/ChatMessages';
 import { ChatInput } from '@/components/chat/11/ChatInput';
 import { UserProfileModal } from '@/components/modals/UserProfileModalChat';
 import { ConversationDetails } from '@/components/modals/Awuamen/ConversationDetails';
-import { AddContactModal } from '@/components/modals/AddContactModal';
-import { CustomToast } from '@/components/modals/Awuamen/CustomToast';
+import { AddContactModal } from '@/components/modals/hop/AddContactModal';
+
 import { MuteBanner } from '@/components/modals/Awuamen/MuteBanner';
 import { MuteNotificationsModal } from '@/components/modals/Awuamen/MuteNotificationsModal';
 import { Notification } from '@/components/ui/Notification';
@@ -19,113 +19,17 @@ import { ConfirmDelete } from '@/components/ui/ConfirmDeleteDialog';
 import { ArchiveView } from '@/components/modals/Awuamen/ArchiveView';
 import type { UserProfile } from '@/app/types';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { FriendRequestList } from '@/components/modals/FriendRequestList';
-import { FriendRequestSheet } from '@/components/modals/FriendRequestSheet';
+import { FriendRequestList } from '@/components/modals/hop/FriendRequestList';
+import { FriendRequestSheet } from '@/components/modals/hop/FriendRequestSheet';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useSocket } from '@/contexts/SocketContext';
-import { PinNotification } from '@/components/modals/Awuamen/PinNotification';
+import { showToast as showShadcnToast } from '@/lib/utils';
+
 import { usePinnedChats } from '@/hooks/usePinnedChats';
+import { useDebouncedToast } from '@/hooks/use-debounced-toast';
 
-// Inline CallEndNotification component
-const CallEndNotification: React.FC<{
-    callEndReason: string;
-    callerName?: string;
-    callDuration?: string;
-    callType?: 'audio' | 'video';
-    isVisible: boolean;
-    onDismiss: () => void;
-    isDarkMode?: boolean;
-}> = ({
-    callEndReason,
-    callerName,
-    callDuration,
-    callType = 'video',
-    isVisible,
-    onDismiss,
-    isDarkMode = false
-}) => {
-        return (
-            <AnimatePresence>
-                {isVisible && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -100, scale: 0.8 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -100, scale: 0.8 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                        className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4"
-                    >
-                        <div className={`relative rounded-xl border backdrop-blur-sm shadow-2xl ${isDarkMode
-                            ? 'bg-gray-800/95 border-gray-700/50'
-                            : 'bg-white/95 border-gray-200/50'
-                            }`}>
-                            {/* Close button */}
-                            <button
-                                onClick={onDismiss}
-                                className={`absolute top-3 right-3 p-1 rounded-full transition-colors ${isDarkMode
-                                    ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                                    }`}
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
 
-                            <div className="p-6">
-                                <div className="flex items-start space-x-4">
-                                    {/* Call type icon */}
-                                    <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${callType === 'audio'
-                                        ? 'bg-green-100 text-green-600'
-                                        : 'bg-blue-100 text-blue-600'
-                                        }`}>
-                                        {callType === 'audio' ? (
-                                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 715 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
-                                            </svg>
-                                        ) : (
-                                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                                            </svg>
-                                        )}
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className={`text-lg font-semibold mb-1 ${isDarkMode ? 'text-white' : 'text-gray-900'
-                                            }`}>
-                                            Cuộc gọi {callType === 'audio' ? 'thoại' : 'video'} đã kết thúc
-                                        </h3>
-
-                                        {callerName && (
-                                            <p className={`text-sm mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'
-                                                }`}>
-                                                với {callerName}
-                                            </p>
-                                        )}
-
-                                        <p className={`text-sm mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                                            }`}>
-                                            {callEndReason}
-                                        </p>
-
-                                        {callDuration && (
-                                            <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${isDarkMode
-                                                ? 'bg-gray-700 text-gray-300'
-                                                : 'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                                                </svg>
-                                                Thời gian: {callDuration}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        );
-    };
 
 interface MessagesSectionProps {
     onVideoCall: () => void;
@@ -169,13 +73,14 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
         handleConfirmMute,
         handleSendMessage,
         refreshContacts,
-        toast,
         showToast,
         unreadChats,
+        addContact,
     } = useChatContext();
 
     const { isPinned, togglePin, sortChatsWithPinned } = usePinnedChats();
     const currentUser = useCurrentUser();
+    const { debouncedToast } = useDebouncedToast();
 
     // Access call functions từ SocketContext với enhanced support
     const { initiateCall, callStatus, isInCall, callEndReason, callType } = useSocket();
@@ -185,25 +90,9 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
     const [archiveInitialTab, setArchiveInitialTab] = useState<'media' | 'files'>('media');
     const [isFriendRequestSheetOpen, setIsFriendRequestSheetOpen] = useState(false);
 
-    // Call End Notification states
-    const [showCallEndNotification, setShowCallEndNotification] = useState(false);
-    const [callEndNotificationData, setCallEndNotificationData] = useState<{
-        reason: string;
-        callerName?: string;
-        duration?: string;
-        callType?: 'audio' | 'video';
-    } | null>(null);
 
-    // Pin notification state
-    const [pinNotification, setPinNotification] = useState<{
-        show: boolean;
-        isPinned: boolean;
-        userName: string;
-    }>({
-        show: false,
-        isPinned: false,
-        userName: ''
-    });
+
+
 
     // Handle call end notifications
     useEffect(() => {
@@ -211,20 +100,17 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
             // Lấy tên của người được gọi hoặc người gọi từ selectedChatUser
             const otherUserName = selectedChatUser?.name || 'Người dùng';
 
-            setCallEndNotificationData({
-                reason: callEndReason,
-                callerName: otherUserName,
-                duration: undefined,
-                callType: callType
-            });
-            setShowCallEndNotification(true);
-        }
-    }, [callEndReason, isInCall, callStatus, selectedChatUser, callType]);
+            // Determine call type emoji and variant
+            const callTypeEmoji = callType === 'audio' ? '📞' : '📹';
+            const message = `Cuộc gọi ${callType === 'audio' ? 'thoại' : 'video'} với ${otherUserName} đã kết thúc. ${callEndReason}`;
 
-    const handleDismissCallEndNotification = () => {
-        setShowCallEndNotification(false);
-        setCallEndNotificationData(null);
-    };
+            // Show debounced toast notification to prevent duplicates
+            debouncedToast(message, {
+                title: `${callTypeEmoji} Cuộc gọi kết thúc`,
+                variant: 'default'
+            }, `call-end-${selectedChatUser?.id}`, 1000);
+        }
+    }, [callEndReason, isInCall, callStatus, selectedChatUser, callType, debouncedToast]);
 
     const handleTogglePin = () => {
         if (!selectedChatUser) return;
@@ -232,17 +118,13 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
         const wasPinned = isPinned(selectedChatUser.id);
         togglePin(selectedChatUser.id);
 
-        // Hiển thị thông báo
-        setPinNotification({
-            show: true,
-            isPinned: !wasPinned,
-            userName: selectedChatUser.name
-        });
-
-        // Ẩn thông báo sau 3 giây
-        setTimeout(() => {
-            setPinNotification(prev => ({ ...prev, show: false }));
-        }, 3000);
+        // Hiển thị thông báo bằng debounced toast
+        const action = wasPinned ? 'Đã bỏ ghim' : 'Đã ghim';
+        const variant = wasPinned ? 'default' : 'success';
+        debouncedToast(`${action} cuộc trò chuyện với ${selectedChatUser.name}`, {
+            variant,
+            title: '📌 Ghim cuộc trò chuyện'
+        }, `pin-${selectedChatUser.id}`, 500);
     };
 
     const sortedDirectMessages = sortChatsWithPinned(filteredDirectMessages);
@@ -365,20 +247,8 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
 
     return (
         <>
-            {/* Call End Notification - Global */}
-            {callEndNotificationData && (
-                <CallEndNotification
-                    callEndReason={callEndNotificationData.reason}
-                    callerName={callEndNotificationData.callerName}
-                    callDuration={callEndNotificationData.duration}
-                    callType={callEndNotificationData.callType}
-                    isVisible={showCallEndNotification}
-                    onDismiss={handleDismissCallEndNotification}
-                    isDarkMode={isDarkMode}
-                />
-            )}
 
-            <div className="flex h-screen w-full bg-white dark:bg-gray-900 overflow-hidden">
+            <div className="flex h-screen w-full bg-white dark:bg-gray-900 overflow-hidden relative">
                 {/* Phần danh sách chat bên trái */}
                 <div className={`w-80 border-r transition-colors duration-300 flex-shrink-0 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                     <div className="p-4 border-b">
@@ -387,27 +257,19 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                 Tin Nhắn
                                 {/* Enhanced Call status indicator with call type */}
                                 {isInCall && selectedChatUser && (
-                                    <motion.span
-                                        initial={{ scale: 0 }}
-                                        animate={{ scale: 1 }}
-                                        className={`text-xs text-white px-2 py-1 rounded-full animate-pulse flex items-center gap-1 ${callType === 'audio' ? 'bg-green-500' : 'bg-blue-500'
-                                            }`}
-                                    >
+                                    <span className={`text-xs text-white px-2 py-1 rounded-full animate-pulse flex items-center gap-1 animate-in zoom-in duration-200 ${callType === 'audio' ? 'bg-green-500' : 'bg-blue-500'
+                                        }`}>
                                         <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping"></div>
                                         {callType === 'audio' ? 'Gọi thoại' : 'Gọi video'} với {selectedChatUser.name}
-                                    </motion.span>
+                                    </span>
                                 )}
                                 {callStatus !== 'idle' && !isInCall && selectedChatUser && (
-                                    <motion.span
-                                        initial={{ scale: 0 }}
-                                        animate={{ scale: 1 }}
-                                        className={`text-xs text-white px-2 py-1 rounded-full flex items-center gap-1 ${callStatus === 'calling' ? 'bg-orange-500' :
-                                            callStatus === 'ringing' ? 'bg-blue-500 animate-pulse' :
-                                                callStatus === 'connecting' ? 'bg-yellow-500' :
-                                                    callStatus === 'rejected' ? 'bg-red-500' :
-                                                        'bg-gray-500'
-                                            }`}
-                                    >
+                                    <span className={`text-xs text-white px-2 py-1 rounded-full flex items-center gap-1 animate-in zoom-in duration-200 ${callStatus === 'calling' ? 'bg-orange-500' :
+                                        callStatus === 'ringing' ? 'bg-blue-500 animate-pulse' :
+                                            callStatus === 'connecting' ? 'bg-yellow-500' :
+                                                callStatus === 'rejected' ? 'bg-red-500' :
+                                                    'bg-gray-500'
+                                        }`}>
                                         <div className={`w-1.5 h-1.5 bg-white rounded-full ${callStatus === 'ringing' ? 'animate-ping' :
                                             callStatus === 'calling' ? 'animate-bounce' : ''
                                             }`}></div>
@@ -416,7 +278,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                                 callStatus === 'connecting' ? `Kết nối với ${selectedChatUser.name}` :
                                                     callStatus === 'rejected' ? `${selectedChatUser.name} từ chối` :
                                                         callStatus}
-                                    </motion.span>
+                                    </span>
                                 )}
                             </h2>
                         </div>
@@ -473,59 +335,51 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <AnimatePresence>
-                                    {sortedDirectMessages.map((dm) => (
-                                        <motion.div
-                                            key={dm.id}
-                                            layout
-                                            initial={{ opacity: 0, y: -20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, x: -30 }}
-                                            transition={{ duration: 0.3, ease: "easeInOut" }}
-                                            className="relative group"
-                                        >
-                                            <div className="relative group">
-                                                <ChatItem
-                                                    name={dm.name}
-                                                    message={dm.message}
-                                                    avatar={dm.avatar}
-                                                    active={selectedChatUser?.id === dm.id}
-                                                    isDarkMode={isDarkMode}
-                                                    onClick={() => setSelectedChatId(dm.id)}
-                                                    unreadCount={unreadChats[dm.id] || 0}
-                                                    isPinned={isPinned(dm.id)}
-                                                />
+                                {sortedDirectMessages.map((dm) => (
+                                    <div
+                                        key={dm.id}
+                                        className="relative group animate-in slide-in-from-left duration-200"
+                                    >
+                                        <div className="relative group">
+                                            <ChatItem
+                                                name={dm.name}
+                                                message={dm.message}
+                                                avatar={dm.avatar}
+                                                active={selectedChatUser?.id === dm.id}
+                                                isDarkMode={isDarkMode}
+                                                onClick={() => setSelectedChatId(dm.id)}
+                                                unreadCount={unreadChats[dm.id] || 0}
+                                                isPinned={isPinned(dm.id)}
+                                            />
 
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDeleteContact(dm.id);
-                                                    }}
-                                                    className="absolute top-1 right-1 h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gray-700/80 hover:bg-red-500/80 text-white"
-                                                    title="Xóa liên lạc"
-                                                >
-                                                    <X className="h-3 w-3" />
-                                                </Button>
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteContact(dm.id);
+                                                }}
+                                                className="absolute top-1 right-1 h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gray-700/80 hover:bg-red-500/80 text-white"
+                                                title="Xóa liên lạc"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Phần khung chat chính - điều chỉnh width dựa trên rightPanelView */}
-                <motion.div
+                <div 
                     className="flex flex-col min-w-0 transition-all duration-300"
-                    animate={{
-                        width: rightPanelView !== 'closed'
-                            ? 'calc(100% - 320px - 320px)'
-                            : 'calc(100% - 320px)'
+                    style={{
+                        width: rightPanelView !== 'closed' 
+                            ? 'calc(100% - 320px - 320px)' // left sidebar (320px) + right sidebar (320px)
+                            : 'calc(100% - 320px)' // chỉ left sidebar (320px)
                     }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
                 >
                     {selectedChatUser ? (
                         <>
@@ -542,93 +396,62 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                             />
 
                             {/* Mute Banner */}
-                            <AnimatePresence>
-                                {currentMuteInfo.isMuted && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        transition={{ duration: 0.3 }}
-                                    >
-                                        <MuteBanner
-                                            mutedUntil={formatMutedUntil(currentMuteInfo.mutedUntil)}
-                                            onUnmute={handleToggleMute}
-                                            isDarkMode={isDarkMode}
-                                        />
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+
+                            {currentMuteInfo.isMuted && (
+                                <div className="animate-in slide-in-from-top duration-300">
+                                    <MuteBanner
+                                        mutedUntil={formatMutedUntil(currentMuteInfo.mutedUntil)}
+                                        onUnmute={handleToggleMute}
+                                        isDarkMode={isDarkMode}
+                                    />
+                                </div>
+                            )}
+
 
                             {/* Enhanced Call status banner */}
-                            <AnimatePresence>
-                                {callStatusInfo && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -20 }}
-                                        transition={{ duration: 0.3 }}
-                                        className={`p-4 text-center border-b backdrop-blur-sm ${callStatusInfo.color === 'green' ? (isDarkMode ? 'bg-green-900/50 border-green-700 text-green-200' : 'bg-green-50 border-green-200 text-green-800') :
-                                            callStatusInfo.color === 'yellow' ? (isDarkMode ? 'bg-yellow-900/50 border-yellow-700 text-yellow-200' : 'bg-yellow-50 border-yellow-200 text-yellow-800') :
-                                                callStatusInfo.color === 'blue' ? (isDarkMode ? 'bg-blue-900/50 border-blue-700 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800') :
-                                                    callStatusInfo.color === 'orange' ? (isDarkMode ? 'bg-orange-900/50 border-orange-700 text-orange-200' : 'bg-orange-50 border-orange-200 text-orange-800') :
-                                                        callStatusInfo.color === 'red' ? (isDarkMode ? 'bg-red-900/50 border-red-700 text-red-200' : 'bg-red-50 border-red-200 text-red-800') :
-                                                            (isDarkMode ? 'bg-gray-800/50 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-800')
-                                            }`}
-                                    >
-                                        <div className="flex items-center justify-center gap-3">
-                                            <motion.div
-                                                className={`w-3 h-3 rounded-full ${callStatusInfo.color === 'green' ? 'bg-green-500' :
-                                                    callStatusInfo.color === 'yellow' ? 'bg-yellow-500' :
-                                                        callStatusInfo.color === 'blue' ? 'bg-blue-500' :
-                                                            callStatusInfo.color === 'orange' ? 'bg-orange-500' :
-                                                                callStatusInfo.color === 'red' ? 'bg-red-500' :
-                                                                    'bg-gray-500'
-                                                    }`}
-                                                animate={{
-                                                    scale: callStatusInfo.icon === 'ringing' ? [1, 1.2, 1] : 1,
-                                                    opacity: isInCall ? [1, 0.5, 1] : 1
-                                                }}
-                                                transition={{
-                                                    duration: callStatusInfo.icon === 'ringing' ? 1 : 2,
-                                                    repeat: Infinity,
-                                                    ease: "easeInOut"
-                                                }}
-                                            />
-                                            <span className="font-medium">
-                                                {callStatusInfo.text}
+
+                            {callStatusInfo && (
+                                <div className={`p-4 text-center border-b backdrop-blur-sm animate-in slide-in-from-top duration-200 ${callStatusInfo.color === 'green' ? (isDarkMode ? 'bg-green-900/50 border-green-700 text-green-200' : 'bg-green-50 border-green-200 text-green-800') :
+                                    callStatusInfo.color === 'yellow' ? (isDarkMode ? 'bg-yellow-900/50 border-yellow-700 text-yellow-200' : 'bg-yellow-50 border-yellow-200 text-yellow-800') :
+                                        callStatusInfo.color === 'blue' ? (isDarkMode ? 'bg-blue-900/50 border-blue-700 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800') :
+                                            callStatusInfo.color === 'orange' ? (isDarkMode ? 'bg-orange-900/50 border-orange-700 text-orange-200' : 'bg-orange-50 border-orange-200 text-orange-800') :
+                                                callStatusInfo.color === 'red' ? (isDarkMode ? 'bg-red-900/50 border-red-700 text-red-200' : 'bg-red-50 border-red-200 text-red-800') :
+                                                    (isDarkMode ? 'bg-gray-800/50 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-800')
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-center gap-3">
+                                        <div
+                                            className={`w-3 h-3 rounded-full ${callStatusInfo.color === 'green' ? 'bg-green-500' :
+                                                callStatusInfo.color === 'yellow' ? 'bg-yellow-500' :
+                                                    callStatusInfo.color === 'blue' ? 'bg-blue-500' :
+                                                        callStatusInfo.color === 'orange' ? 'bg-orange-500' :
+                                                            callStatusInfo.color === 'red' ? 'bg-red-500' :
+                                                                'bg-gray-500'
+                                                } ${callStatusInfo.icon === 'ringing' || isInCall ? 'animate-pulse' : ''}`}
+                                        />
+                                        <span className="font-medium">
+                                            {callStatusInfo.text}
+                                        </span>
+                                        {/* Call type indicator */}
+                                        {(callStatus === 'calling' || callStatus === 'connecting' || isInCall) && (
+                                            <span className={`text-xs px-2 py-1 rounded-full ${callType === 'audio'
+                                                ? 'bg-green-500/20 text-green-300'
+                                                : 'bg-blue-500/20 text-blue-300'
+                                                }`}>
+                                                {callType === 'audio' ? '🎤 Thoại' : '📹 Video'}
                                             </span>
-                                            {/* Call type indicator */}
-                                            {(callStatus === 'calling' || callStatus === 'connecting' || isInCall) && (
-                                                <span className={`text-xs px-2 py-1 rounded-full ${callType === 'audio'
-                                                    ? 'bg-green-500/20 text-green-300'
-                                                    : 'bg-blue-500/20 text-blue-300'
-                                                    }`}>
-                                                    {callType === 'audio' ? '🎤 Thoại' : '📹 Video'}
-                                                </span>
-                                            )}
-                                            {(callStatus === 'calling' || callStatus === 'connecting') && (
-                                                <div className="flex gap-1">
-                                                    <motion.div
-                                                        className="w-1 h-1 bg-current rounded-full"
-                                                        animate={{ opacity: [0, 1, 0] }}
-                                                        transition={{ duration: 1, repeat: Infinity, delay: 0 }}
-                                                    />
-                                                    <motion.div
-                                                        className="w-1 h-1 bg-current rounded-full"
-                                                        animate={{ opacity: [0, 1, 0] }}
-                                                        transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
-                                                    />
-                                                    <motion.div
-                                                        className="w-1 h-1 bg-current rounded-full"
-                                                        animate={{ opacity: [0, 1, 0] }}
-                                                        transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                                        )}
+                                        {(callStatus === 'calling' || callStatus === 'connecting') && (
+                                            <div className="flex gap-1">
+                                                <div className="w-1 h-1 bg-current rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+                                                <div className="w-1 h-1 bg-current rounded-full animate-pulse" style={{ animationDelay: '200ms' }} />
+                                                <div className="w-1 h-1 bg-current rounded-full animate-pulse" style={{ animationDelay: '400ms' }} />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
 
                             <ChatMessages
                                 messages={currentMessages}
@@ -643,146 +466,118 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                             />
                         </>
                     ) : (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className={`flex-1 flex items-center justify-center transition-colors duration-300 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                        >
+                        <div className={`flex-1 flex items-center justify-center transition-colors duration-300 animate-in fade-in duration-300 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             <div className="text-center max-w-md">
                                 <div className="text-6xl mb-4">💬</div>
                                 <p className="text-lg mb-2">Chọn một cuộc trò chuyện để bắt đầu</p>
 
                                 {/* Global call status when no chat selected */}
-                                <AnimatePresence>
-                                    {callStatusInfo && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: 20 }}
-                                            className={`mt-4 p-4 rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
-                                                }`}
-                                        >
-                                            <div className="flex items-center justify-center gap-2 mb-2">
-                                                <motion.div
-                                                    className={`w-2 h-2 rounded-full ${callStatusInfo.color === 'green' ? 'bg-green-500' :
-                                                        callStatusInfo.color === 'blue' ? 'bg-blue-500' :
-                                                            callStatusInfo.color === 'yellow' ? 'bg-yellow-500' :
-                                                                callStatusInfo.color === 'orange' ? 'bg-orange-500' :
-                                                                    'bg-red-500'
-                                                        }`}
-                                                    animate={{
-                                                        scale: [1, 1.2, 1],
-                                                        opacity: [1, 0.5, 1]
-                                                    }}
-                                                    transition={{
-                                                        duration: 2,
-                                                        repeat: Infinity,
-                                                        ease: "easeInOut"
-                                                    }}
-                                                />
-                                                <span className="text-sm font-medium">
-                                                    {callStatusInfo.text}
+
+                                {callStatusInfo && (
+                                    <div className={`mt-4 p-4 rounded-lg border animate-in slide-in-from-bottom-1 duration-200 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                                        }`}>
+                                        <div className="flex items-center justify-center gap-2 mb-2">
+                                            <div className={`w-2 h-2 rounded-full animate-pulse ${callStatusInfo.color === 'green' ? 'bg-green-500' :
+                                                callStatusInfo.color === 'blue' ? 'bg-blue-500' :
+                                                    callStatusInfo.color === 'yellow' ? 'bg-yellow-500' :
+                                                        callStatusInfo.color === 'orange' ? 'bg-orange-500' :
+                                                            'bg-red-500'
+                                                }`} />
+                                            <span className="text-sm font-medium">
+                                                {callStatusInfo.text}
+                                            </span>
+                                            {callType && (
+                                                <span className={`text-xs px-1.5 py-0.5 rounded ${callType === 'audio'
+                                                    ? 'bg-green-500/20 text-green-600'
+                                                    : 'bg-blue-500/20 text-blue-600'
+                                                    }`}>
+                                                    {callType === 'audio' ? 'Thoại' : 'Video'}
                                                 </span>
-                                                {callType && (
-                                                    <span className={`text-xs px-1.5 py-0.5 rounded ${callType === 'audio'
-                                                        ? 'bg-green-500/20 text-green-600'
-                                                        : 'bg-blue-500/20 text-blue-600'
-                                                        }`}>
-                                                        {callType === 'audio' ? 'Thoại' : 'Video'}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p className="text-xs opacity-75">
-                                                Chọn cuộc trò chuyện để xem chi tiết cuộc gọi
-                                            </p>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                            )}
+                                        </div>
+                                        <p className="text-xs opacity-75">
+                                            Chọn cuộc trò chuyện để xem chi tiết cuộc gọi
+                                        </p>
+                                    </div>
+                                )}
+
                             </div>
-                        </motion.div>
+                        </div>
                     )}
-                </motion.div>
+                </div>
 
                 {/* Phần chi tiết cuộc trò chuyện - sidebar bên phải */}
-                <AnimatePresence>
-                    {selectedChatUser && rightPanelView === 'details' && (
-                        <motion.div
-                            key="details-panel"
-                            initial={{ width: 0, opacity: 0 }}
-                            animate={{ width: 320, opacity: 1 }}
-                            exit={{ width: 0, opacity: 0 }}
-                            transition={{ duration: 0.3, ease: "easeInOut" }}
-                            className="flex-shrink-0 overflow-hidden"
-                        >
-                            <ConversationDetails
-                                user={selectedChatUser}
-                                messages={currentMessages}
-                                onClose={() => setRightPanelView('closed')}
-                                isDarkMode={isDarkMode}
-                                isMuted={currentMuteInfo.isMuted}
-                                onToggleMute={handleToggleMute}
-                                onViewAllMedia={handleViewAllMedia}
-                                onViewAllFiles={handleViewAllFiles}
-                                isPinned={isPinned(selectedChatUser.id)}
-                                onTogglePin={handleTogglePin}
-                            />
-                        </motion.div>
-                    )}
-                    {selectedChatUser && rightPanelView === 'archive' && (
-                        <motion.div
-                            key="archive-panel"
-                            initial={{ width: 0, opacity: 0 }}
-                            animate={{ width: 320, opacity: 1 }}
-                            exit={{ width: 0, opacity: 0 }}
-                            transition={{ duration: 0.3, ease: "easeInOut" }}
-                            className="flex-shrink-0 overflow-hidden"
-                        >
-                            <ArchiveView
-                                initialTab={archiveInitialTab}
-                                mediaFiles={mediaFiles}
-                                otherFiles={otherFiles}
-                                onClose={handleCloseArchive}
-                                isDarkMode={isDarkMode}
-                            />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                {selectedChatUser && rightPanelView === 'details' && (
+                    <div
+                        key="details-panel"
+                        className="flex-shrink-0 overflow-hidden border-l animate-in slide-in-from-right duration-300"
+                        style={{ 
+                            width: '320px',
+                            borderColor: isDarkMode ? '#374151' : '#e5e7eb'
+                        }}
+                    >
+                        <ConversationDetails
+                            user={selectedChatUser}
+                            messages={currentMessages}
+                            onClose={() => setRightPanelView('closed')}
+                            isDarkMode={isDarkMode}
+                            isMuted={currentMuteInfo.isMuted}
+                            onToggleMute={handleToggleMute}
+                            onViewAllMedia={handleViewAllMedia}
+                            onViewAllFiles={handleViewAllFiles}
+                            isPinned={isPinned(selectedChatUser.id)}
+                            onTogglePin={handleTogglePin}
+                        />
+                    </div>
+                )}
+                {selectedChatUser && rightPanelView === 'archive' && (
+                    <div
+                        key="archive-panel"
+                        className="flex-shrink-0 overflow-hidden border-l animate-in slide-in-from-right duration-300"
+                        style={{ 
+                            width: '320px',
+                            borderColor: isDarkMode ? '#374151' : '#e5e7eb'
+                        }}
+                    >
+                        <ArchiveView
+                            initialTab={archiveInitialTab}
+                            mediaFiles={mediaFiles}
+                            otherFiles={otherFiles}
+                            onClose={handleCloseArchive}
+                            isDarkMode={isDarkMode}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Các modal được quản lý ở đây */}
-            <AnimatePresence>
-                {viewingProfile && (
-                    <UserProfileModal
-                        user={viewingProfile}
-                        onClose={() => setViewingProfile(null)}
-                        onSendMessage={handleMessageFromProfile}
-                        onStartCall={() => handleCallFromProfile(viewingProfile)}
-                        isDarkMode={isDarkMode}
-                    />
-                )}
-            </AnimatePresence>
+            {viewingProfile && (
+                <UserProfileModal
+                    user={viewingProfile}
+                    onClose={() => setViewingProfile(null)}
+                    onSendMessage={handleMessageFromProfile}
+                    onStartCall={() => handleCallFromProfile(viewingProfile)}
+                    isDarkMode={isDarkMode}
+                />
+            )}
 
-            <AnimatePresence>
-                {notification && (
-                    <Notification
-                        message={notification.message}
-                        type={notification.type}
-                        onClose={() => setNotification(null)}
-                    />
-                )}
-            </AnimatePresence>
+            {notification && (
+                <Notification
+                    message={notification.message}
+                    type={notification.type}
+                    onClose={() => setNotification(null)}
+                />
+            )}
 
-            <AnimatePresence>
-                {showConfirmDelete && contactToDelete && (
-                    <ConfirmDelete
-                        isOpen={showConfirmDelete}
-                        onClose={() => setShowConfirmDelete(false)}
-                        onConfirm={confirmDeleteContact}
-                        contactName={directMessages.find((dm) => dm.id === contactToDelete)?.name || ''}
-                        isDarkMode={isDarkMode}
-                    />
-                )}
-            </AnimatePresence>
+            {showConfirmDelete && contactToDelete && (
+                <ConfirmDelete
+                    isOpen={showConfirmDelete}
+                    onClose={() => setShowConfirmDelete(false)}
+                    onConfirm={confirmDeleteContact}
+                    contactName={directMessages.find((dm) => dm.id === contactToDelete)?.name || ''}
+                    isDarkMode={isDarkMode}
+                />
+            )}
 
             <FriendRequestSheet
                 isOpen={isFriendRequestSheetOpen}
@@ -797,26 +592,14 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                 onClose={() => setIsAddContactModalOpen(false)}
                 existingContacts={directMessages}
                 isDarkMode={isDarkMode}
-                onShowToast={showToast}
+                onAddContact={addContact}
+                onStartChat={setSelectedChatId}
             />
 
             <MuteNotificationsModal
                 isOpen={isMuteModalOpen}
                 onClose={() => setIsMuteModalOpen(false)}
                 onConfirm={handleConfirmMute}
-                isDarkMode={isDarkMode}
-            />
-
-            <AnimatePresence>
-                {toast.show && (
-                    <CustomToast message={toast.message} show={toast.show} />
-                )}
-            </AnimatePresence>
-
-            <PinNotification
-                show={pinNotification.show}
-                isPinned={pinNotification.isPinned}
-                userName={pinNotification.userName}
                 isDarkMode={isDarkMode}
             />
         </>

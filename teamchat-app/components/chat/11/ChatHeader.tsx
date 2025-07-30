@@ -2,7 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Phone, Video, Info, ChevronDown } from "lucide-react";
 import { DirectMessage } from "@/app/types";
-import { motion } from "framer-motion";
+// Removed framer-motion - using CSS transitions only
 
 export interface ChatHeaderProps {
     user: DirectMessage;
@@ -32,37 +32,29 @@ export function ChatHeader({
     const canMakeCall = callStatus === 'idle' && !isInCall;
 
     return (
-        <motion.div
-            layout
+        <div
             className={`flex items-center justify-between p-4 border-b transition-all duration-300 backdrop-blur-sm ${isDarkMode
                 ? "bg-gray-800/95 border-gray-700/50"
                 : "bg-white/95 border-gray-200"
                 }`}
         >
             {/* User Info Section */}
-            <motion.button
-                className="flex items-center text-left group"
+            <button
+                className="flex items-center text-left group hover-scale-sm transition-transform"
                 onClick={onViewProfile}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
                 <div className="relative mr-4">
-                    <motion.img
+                    <img
                         src={user.avatar}
                         alt={user.name}
-                        className="w-12 h-12 rounded-full border-2 border-transparent group-hover:border-blue-500/30 transition-all duration-300"
-                        whileHover={{ scale: 1.05 }}
+                        className="w-12 h-12 rounded-full border-2 border-transparent group-hover:border-blue-500/30 transition-all duration-300 hover-scale"
                     />
                     {user.online && (
-                        <motion.div
-                            className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                        <div
+                            className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 animate-in zoom-in duration-200"
                         >
                             <div className="w-full h-full bg-green-400 rounded-full animate-pulse" />
-                        </motion.div>
+                        </div>
                     )}
                 </div>
                 <div>
@@ -81,15 +73,14 @@ export function ChatHeader({
                         </p>
                     </div>
                 </div>
-            </motion.button>
+            </button>
 
             {/* Action Buttons */}
             <div className="flex items-center space-x-2">
                 {/* Audio Call Button */}
-                <motion.div
-                    whileHover={canMakeCall ? { scale: 1.1 } : {}}
-                    whileTap={canMakeCall ? { scale: 0.9 } : {}}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                <div
+                    className={`${canMakeCall ? 'hover-scale transition-transform' : ''}`}
+
                 >
                     <Button
                         variant="ghost"
@@ -116,13 +107,12 @@ export function ChatHeader({
                             </div>
                         ) : null}
                     </Button>
-                </motion.div>
+                </div>
 
                 {/* Video Call Button */}
-                <motion.div
-                    whileHover={canMakeCall ? { scale: 1.1 } : {}}
-                    whileTap={canMakeCall ? { scale: 0.9 } : {}}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                <div
+                    className={`${canMakeCall ? 'hover-scale transition-transform' : ''}`}
+
                 >
                     <Button
                         variant="ghost"
@@ -149,13 +139,12 @@ export function ChatHeader({
                             </div>
                         ) : null}
                     </Button>
-                </motion.div>
+                </div>
 
                 {/* Details Toggle Button */}
-                <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                <div
+                    className="hover-scale transition-transform"
+
                 >
                     <Button
                         variant="ghost"
@@ -172,56 +161,41 @@ export function ChatHeader({
                             }`}
                         title="Thông tin chi tiết"
                     >
-                        <motion.div
-                            animate={{ rotate: isDetailsOpen ? 180 : 0 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                        <div
+                            className={`transition-transform duration-200 ${isDetailsOpen ? 'rotate-180' : ''}`}
                         >
                             <Info className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                        </motion.div>
+                        </div>
 
                         {/* Active indicator */}
                         {isDetailsOpen && (
-                            <motion.div
-                                className="absolute inset-0 rounded-full bg-purple-500/20"
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0, opacity: 0 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                            <div
+                                className="absolute inset-0 rounded-full bg-purple-500/20 animate-in zoom-in duration-200"
                             />
                         )}
 
                         {/* Ripple effect */}
                         <div className="absolute inset-0 rounded-full bg-purple-500/10 scale-0 group-hover:scale-100 transition-transform duration-300" />
                     </Button>
-                </motion.div>
+                </div>
 
                 {/* Arrow indicator for details panel */}
-                <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{
-                        opacity: isDetailsOpen ? 1 : 0,
-                        x: isDetailsOpen ? 0 : -10
-                    }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    className="flex items-center"
+                <div
+                    className={`flex items-center transition-all duration-200 ${isDetailsOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}
                 >
-                    <motion.div
-                        animate={{ rotate: isDetailsOpen ? 90 : 0 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    <div
+                        className={`transition-transform duration-200 ${isDetailsOpen ? 'rotate-90' : ''}`}
                     >
                         <ChevronDown className={`h-4 w-4 ${isDarkMode ? 'text-purple-300' : 'text-purple-600'
                             }`} />
-                    </motion.div>
-                </motion.div>
+                    </div>
+                </div>
             </div>
 
             {/* Call Status Banner */}
             {(callStatus !== 'idle' || isInCall) && (
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="absolute top-full left-0 right-0 z-10 px-4 py-2 text-center text-sm font-medium"
+                <div
+                    className="absolute top-full left-0 right-0 z-10 px-4 py-2 text-center text-sm font-medium animate-in slide-in-from-top duration-200"
                     style={{
                         background: callStatus === 'connected' || isInCall
                             ? (isDarkMode ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.1)')
@@ -240,7 +214,7 @@ export function ChatHeader({
                     }}
                 >
                     <div className="flex items-center justify-center gap-2">
-                        <motion.div
+                        <div
                             className="w-2 h-2 rounded-full"
                             style={{
                                 backgroundColor: callStatus === 'connected' || isInCall
@@ -250,15 +224,6 @@ export function ChatHeader({
                                         : callStatus === 'ringing'
                                             ? '#3b82f6'
                                             : '#ef4444'
-                            }}
-                            animate={{
-                                scale: callStatus === 'ringing' ? [1, 1.2, 1] : 1,
-                                opacity: isInCall ? [1, 0.5, 1] : 1
-                            }}
-                            transition={{
-                                duration: callStatus === 'ringing' ? 1 : 2,
-                                repeat: Infinity,
-                                ease: "easeInOut"
                             }}
                         />
                         <span>
@@ -271,8 +236,8 @@ export function ChatHeader({
                                                     'Cuộc gọi đã kết thúc'}
                         </span>
                     </div>
-                </motion.div>
+                </div>
             )}
-        </motion.div>
+        </div>
     );
 }

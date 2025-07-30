@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+// Removed framer-motion - using CSS transitions only
 import {
     MessageCircle,
     Users,
@@ -14,7 +15,9 @@ import {
     Video,
     Calendar,
     Clock,
-    MoreVertical
+    MoreVertical,
+    Image as ImageIcon,
+    File as FileIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +27,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useChannels, ChannelMessage } from '@/contexts/ChannelContext';
 import { ChannelSidebar } from '@/components/chat/ChannelSidebar';
-import { InviteMemberModal } from '@/components/modals/InviteMemberModal';
+import { InviteMemberModal } from '@/components/modals/hop/InviteMemberModal';
+import { ChannelSettingsMenu } from '@/components/chat/channel/ChannelSettingsMenu';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface Member {
@@ -46,6 +50,8 @@ export default function ChannelPage() {
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [showInviteModal, setShowInviteModal] = useState(false);
+    const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+    const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
 
     useEffect(() => {
         // Load channel data from context
@@ -110,10 +116,33 @@ export default function ChannelPage() {
         });
     };
 
+    const handleUpdateChannel = (updates: Partial<{ name: string; description: string; image: string }>) => {
+        // TODO: Implement channel update logic
+        console.log('Updating channel:', updates);
+        toast({
+            title: "Kênh đã được cập nhật",
+            description: "Thông tin kênh đã được cập nhật thành công"
+        });
+    };
+
+    const handleRemoveMember = (memberId: string) => {
+        // TODO: Implement member removal logic
+        console.log('Removing member:', memberId);
+        toast({
+            title: "Thành viên đã được xóa",
+            description: "Thành viên đã được xóa khỏi kênh"
+        });
+    };
+
+    const handleNavigateToPosts = () => {
+        router.push('/dashboard/posts');
+        setShowSettingsMenu(false);
+    };
+
     if (isLoading) {
         return (
             <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-                <div className="text-center">
+                <div className="text-center animate-in fade-in duration-300">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                     <p className="text-gray-600 dark:text-gray-400">Đang tải kênh...</p>
                 </div>
@@ -135,6 +164,8 @@ export default function ChannelPage() {
             </div>
         );
     }
+
+    // Using CSS animations instead of framer-motion
 
     return (
         <div className="h-screen flex bg-gray-50 dark:bg-gray-900">
@@ -183,10 +214,12 @@ export default function ChannelPage() {
                             >
                                 <UserPlus className="h-5 w-5" />
                             </Button>
-                            <Button variant="ghost" size="icon">
-                                <Users className="h-5 w-5" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowSettingsMenu(true)}
+                                title="Cài đặt kênh"
+                            >
                                 <Settings className="h-5 w-5" />
                             </Button>
                         </div>
@@ -269,7 +302,7 @@ export default function ChannelPage() {
                             return (
                                 <div
                                     key={message.id}
-                                    className={`flex items-end space-x-2 animate-in slide-in-from-bottom-2 duration-300 ${isMyMessage ? 'flex-row-reverse space-x-reverse' : ''
+                                    className={`flex items-end space-x-2 animate-in slide-in-from-bottom-1 duration-200 ${isMyMessage ? 'flex-row-reverse space-x-reverse' : ''
                                         }`}
                                 >
                                     <Avatar className="h-8 w-8 flex-shrink-0">
@@ -304,61 +337,66 @@ export default function ChannelPage() {
                 {/* Message Input */}
                 <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
                     <div className="flex items-center space-x-3">
-                        <Button variant="ghost" size="icon">
-                            <Paperclip className="h-5 w-5" />
+                        {/* Emoji Button */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        >
+                            <Smile className="h-5 w-5" />
                         </Button>
-                        <div className="flex-1">
-                            <Input
+
+                        {/* Input Field */}
+                        <div className="flex-1 relative">
+                            <input
+                                type="text"
+                                placeholder="Nhập tin nhắn của bạn..."
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onKeyPress={handleKeyPress}
-                                placeholder="Nhập tin nhắn..."
-                                className="border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
+                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12 transition-all duration-300 ${'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400'
+                                    }`}
                             />
+
+                            {/* Attachment Menu */}
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <div className="relative">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                        onClick={() => setShowAttachmentMenu(p => !p)}
+                                    >
+                                        <Paperclip className="h-4 w-4" />
+                                    </Button>
+
+                                    {showAttachmentMenu && (
+                                        <div
+                                            onMouseLeave={() => setShowAttachmentMenu(false)}
+                                            className="absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-xl w-48 z-20 bg-white dark:bg-gray-700 border dark:border-gray-600 shadow-lg animate-in slide-in-from-bottom-2 duration-200"
+                                        >
+                                            <div className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md cursor-pointer transition-colors text-green-500">
+                                                <ImageIcon className="h-5 w-5 mr-3" />
+                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Ảnh</span>
+                                            </div>
+                                            <div className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md cursor-pointer transition-colors text-blue-500">
+                                                <FileIcon className="h-5 w-5 mr-3" />
+                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Tệp</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                        <Button variant="ghost" size="icon">
-                            <Smile className="h-5 w-5" />
-                        </Button>
+
+                        {/* Send Button */}
                         <Button
                             onClick={handleSendMessage}
                             disabled={!newMessage.trim()}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4"
                         >
                             <Send className="h-4 w-4" />
                         </Button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Sidebar */}
-            <div className="w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700">
-                <div className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        Thành viên ({channel.members.length})
-                    </h3>
-                    <div className="space-y-3">
-                        {channel.members.map((member: any) => (
-                            <div key={member.id} className="flex items-center space-x-3">
-                                <div className="relative">
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage src={member.avatar} alt={member.name} />
-                                        <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white dark:border-gray-800 ${member.status === 'online' ? 'bg-green-500' :
-                                        member.status === 'away' ? 'bg-yellow-500' : 'bg-gray-400'
-                                        }`}></div>
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {member.name}
-                                    </p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {member.status === 'online' ? 'Đang hoạt động' :
-                                            member.status === 'away' ? 'Vắng mặt' : 'Ngoại tuyến'}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </div>
@@ -369,6 +407,26 @@ export default function ChannelPage() {
                 onClose={() => setShowInviteModal(false)}
                 channelId={channelId}
                 channelName={channel?.name || ''}
+            />
+
+            {/* Channel Settings Menu */}
+            <ChannelSettingsMenu
+                isOpen={showSettingsMenu}
+                onClose={() => setShowSettingsMenu(false)}
+                channel={{
+                    id: channelId,
+                    name: channel?.name || '',
+                    description: channel?.description || '',
+                    image: channel?.image || '',
+                    members: channel?.members?.map((member: any) => ({
+                        ...member,
+                        role: member.role || 'member'
+                    })) || []
+                }}
+                currentUser={currentUser || { id: '', name: '', avatar: '' }}
+                onUpdateChannel={handleUpdateChannel}
+                onRemoveMember={handleRemoveMember}
+                onNavigateToPosts={handleNavigateToPosts}
             />
         </div>
     );

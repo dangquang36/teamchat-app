@@ -6,7 +6,7 @@ import * as z from "zod"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { motion } from "framer-motion"
+// Removed framer-motion - using CSS transitions only
 import { Button } from "@/components/ui/button"
 import { MessageCircle, ArrowLeft, Eye, EyeOff } from "lucide-react"
 import { apiClient } from "@/lib/api"
@@ -96,12 +96,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#6a11cb] to-[#2575fc] flex items-center justify-center p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md"
-      >
+      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md animate-in slide-in-from-bottom-2 duration-300">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <MessageCircle className="h-8 w-8 text-purple-600" />
@@ -255,7 +250,7 @@ export default function RegisterPage() {
             Quay về trang chủ
           </Button>
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

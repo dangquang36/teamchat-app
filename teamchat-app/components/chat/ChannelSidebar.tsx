@@ -6,7 +6,7 @@ import { MessageCircle, Plus, Video, Clock } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useChannels } from '@/contexts/ChannelContext';
-import { CreateChannelModal } from '@/components/modals/CreateChannelModal';
+import { CreateChannelModal } from '@/components/modals/hop/CreateChannelModal';
 
 export function ChannelSidebar() {
     const [isCreateChannelModalOpen, setIsCreateChannelModalOpen] = useState(false);

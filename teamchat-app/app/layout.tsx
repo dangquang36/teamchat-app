@@ -11,9 +11,10 @@ import { ChannelProvider } from "@/contexts/ChannelContext";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { DirectMessage } from './types';
 import { Toaster } from "@/components/ui/toaster";
+import { useDebouncedToast } from "@/hooks/use-debounced-toast";
 import { useChannels } from "@/contexts/ChannelContext";
-import { ChannelInvitationModal } from "@/components/modals/ChannelInvitationModal";
-import { MeetingInvitationModal } from "@/components/modals/MeetingInvitationModal";
+import { ChannelInvitationModal } from "@/components/modals/hop/ChannelInvitationModal";
+import { MeetingInvitationModal } from "@/components/modals/hop/MeetingInvitationModal";
 import { NotificationService } from "@/services/notificationService";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -26,6 +27,7 @@ function AppController({ children }: { children: React.ReactNode }) {
   const currentUser = useCurrentUser();
   const [pendingInvitation, setPendingInvitation] = useState<any>(null);
   const [pendingMeetingInvitation, setPendingMeetingInvitation] = useState<any>(null);
+  const { debouncedToast } = useDebouncedToast();
 
   // Handle meeting invitation accept/decline
   const handleMeetingAccept = async (meetingData: any) => {
@@ -92,18 +94,30 @@ function AppController({ children }: { children: React.ReactNode }) {
 
       switch (status.type) {
         case 'connected':
-          showToast('Cuộc gọi đã kết nối');
+          debouncedToast('Cuộc gọi đã kết nối', {
+            variant: 'success',
+            title: '📞 Cuộc gọi'
+          }, `call-connected`, 500);
           break;
         case 'ended':
-          showToast('Cuộc gọi đã kết thúc');
+          debouncedToast('Cuộc gọi đã kết thúc', {
+            variant: 'default',
+            title: '📞 Cuộc gọi'
+          }, `call-ended`, 500);
           break;
         case 'rejected':
           if (status.message) {
-            showToast(status.message);
+            debouncedToast(status.message, {
+              variant: 'destructive',
+              title: '📞 Cuộc gọi'
+            }, `call-rejected`, 500);
           }
           break;
         case 'error':
-          showToast(status.message || 'Lỗi cuộc gọi');
+          debouncedToast(status.message || 'Lỗi cuộc gọi', {
+            variant: 'destructive',
+            title: '⚠️ Lỗi cuộc gọi'
+          }, `call-error`, 500);
           break;
       }
     };

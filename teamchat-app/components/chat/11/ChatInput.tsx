@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+// Removed framer-motion - using CSS transitions only
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import type { ChatInputProps } from "@/app/types";
 
@@ -143,79 +143,68 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
         <div className={`p-4 border-t transition-all duration-300 relative ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
             }`}>
             {/* File Preview Section */}
-            <AnimatePresence>
-                {selectedFiles.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className={`mb-3 p-3 border rounded-lg max-h-40 overflow-y-auto ${isDarkMode ? 'border-gray-600 bg-gray-750' : 'border-gray-200 bg-gray-50'
-                            }`}
-                    >
-                        <div className="flex flex-wrap gap-3">
-                            <AnimatePresence>
-                                {selectedFiles.map((file, index) => (
-                                    <motion.div
-                                        key={index}
-                                        initial={{ opacity: 0, scale: 0.8 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.8 }}
-                                        className="relative group"
-                                    >
-                                        {file.type.startsWith("image/") ? (
-                                            <div className="relative w-20 h-20">
-                                                <img
-                                                    src={URL.createObjectURL(file)}
-                                                    alt={file.name}
-                                                    className="w-full h-full object-cover rounded-md shadow-md border border-gray-300 dark:border-gray-600"
-                                                />
-                                                <button
-                                                    onClick={() => removeFile(file)}
-                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
-                                                >
-                                                    <X className="h-3 w-3" />
-                                                </button>
-                                                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1 rounded-b-md truncate">
-                                                    {file.name}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className={`relative w-48 p-3 rounded-md border shadow-md ${isDarkMode
-                                                ? 'bg-gray-700 border-gray-600'
-                                                : 'bg-white border-gray-200'
+            {selectedFiles.length > 0 && (
+                <div className={`mb-3 p-3 border rounded-lg max-h-40 overflow-y-auto animate-in slide-in-from-top duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-750' : 'border-gray-200 bg-gray-50'
+                    }`}>
+                    <div className="flex flex-wrap gap-3">
+
+                        {selectedFiles.map((file, index) => (
+                            <div
+                                key={index}
+                                className="relative group animate-in zoom-in duration-200 hover-scale-sm"
+                            >
+                                {file.type.startsWith("image/") ? (
+                                    <div className="relative w-20 h-20">
+                                        <img
+                                            src={URL.createObjectURL(file)}
+                                            alt={file.name}
+                                            className="w-full h-full object-cover rounded-md shadow-md border border-gray-300 dark:border-gray-600"
+                                        />
+                                        <button
+                                            onClick={() => removeFile(file)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1 rounded-b-md truncate">
+                                            {file.name}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className={`relative w-48 p-3 rounded-md border shadow-md ${isDarkMode
+                                        ? 'bg-gray-700 border-gray-600'
+                                        : 'bg-white border-gray-200'
+                                        }`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${isDarkMode ? 'bg-gray-600' : 'bg-gray-100'
                                                 }`}>
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${isDarkMode ? 'bg-gray-600' : 'bg-gray-100'
-                                                        }`}>
-                                                        <FileIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className={`font-medium text-sm truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'
-                                                            }`}>
-                                                            {file.name}
-                                                        </p>
-                                                        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                                                            }`}>
-                                                            {formatFileSize(file.size)}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => removeFile(file)}
-                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
-                                                >
-                                                    <X className="h-3 w-3" />
-                                                </button>
+                                                <FileIcon className={`h-5 w-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
                                             </div>
-                                        )}
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                                            <div className="flex-1 min-w-0">
+                                                <p className={`font-medium text-sm truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'
+                                                    }`}>
+                                                    {file.name}
+                                                </p>
+                                                <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                                                    }`}>
+                                                    {formatFileSize(file.size)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => removeFile(file)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+
+                    </div>
+                </div>
+            )}
 
             <div className="flex items-center space-x-3">
                 <input
@@ -236,26 +225,23 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
 
                 {/* Emoji Picker */}
                 <div ref={emojiPickerRef} className="absolute bottom-full mb-2 z-10">
-                    <AnimatePresence>
-                        {showEmojiPicker && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.8, y: 20 }}
-                                transition={{ duration: 0.2 }}
-                                className="shadow-2xl rounded-lg overflow-hidden"
-                            >
-                                <EmojiPicker
-                                    onEmojiClick={onEmojiClick}
-                                    autoFocusSearch={false}
-                                    height={400}
-                                    width={350}
-                                    theme={isDarkMode ? Theme.DARK : Theme.LIGHT}
-                                    lazyLoadEmojis={true}
-                                />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+
+                    {showEmojiPicker && (
+                        <div
+
+                            className="shadow-2xl rounded-lg overflow-hidden"
+                        >
+                            <EmojiPicker
+                                onEmojiClick={onEmojiClick}
+                                autoFocusSearch={false}
+                                height={400}
+                                width={350}
+                                theme={isDarkMode ? Theme.DARK : Theme.LIGHT}
+                                lazyLoadEmojis={true}
+                            />
+                        </div>
+                    )}
+
                 </div>
 
                 {/* Emoji Button */}
@@ -297,32 +283,29 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                                 <Paperclip className="h-4 w-4" />
                             </Button>
 
-                            <AnimatePresence>
-                                {showAttachmentMenu && (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                                        transition={{ duration: 0.2 }}
-                                        onMouseLeave={() => setShowAttachmentMenu(false)}
-                                        className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-xl w-48 z-20 ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border shadow-lg"
-                                            }`}
-                                    >
-                                        <AttachmentMenuItem
-                                            icon={<ImageIcon className="h-5 w-5" />}
-                                            label="Ảnh"
-                                            onClick={() => imageInputRef.current?.click()}
-                                            color="text-green-500"
-                                        />
-                                        <AttachmentMenuItem
-                                            icon={<FileIcon className="h-5 w-5" />}
-                                            label="Tệp"
-                                            onClick={() => fileInputRef.current?.click()}
-                                            color="text-blue-500"
-                                        />
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+
+                            {showAttachmentMenu && (
+                                <div
+
+                                    onMouseLeave={() => setShowAttachmentMenu(false)}
+                                    className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-xl w-48 z-20 ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border shadow-lg"
+                                        }`}
+                                >
+                                    <AttachmentMenuItem
+                                        icon={<ImageIcon className="h-5 w-5" />}
+                                        label="Ảnh"
+                                        onClick={() => imageInputRef.current?.click()}
+                                        color="text-green-500"
+                                    />
+                                    <AttachmentMenuItem
+                                        icon={<FileIcon className="h-5 w-5" />}
+                                        label="Tệp"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        color="text-blue-500"
+                                    />
+                                </div>
+                            )}
+
                         </div>
                     </div>
                 </div>
@@ -341,9 +324,8 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                 </Button>
 
                 {/* Send Button - Enhanced Animation */}
-                <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                <div
+                    className="hover-scale transition-transform"
                 >
                     <Button
                         onClick={handleSendMessage}
@@ -353,20 +335,13 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                             : "bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 shadow-lg hover:shadow-xl"
                             }`}
                     >
-                        <motion.div
-                            animate={{
-                                rotate: isSending ? 360 : 0,
-                                scale: isSending ? [1, 1.2, 1] : 1
-                            }}
-                            transition={{
-                                duration: isSending ? 0.6 : 0.2,
-                                ease: "easeInOut"
-                            }}
+                        <div
+                            className={`transition-all duration-300 ${isSending ? 'animate-spin scale-110' : ''}`}
                         >
                             <Send className="h-5 w-5 text-white" />
-                        </motion.div>
+                        </div>
                     </Button>
-                </motion.div>
+                </div>
             </div>
         </div>
     );

@@ -1,23 +1,185 @@
+"use client";
+
 import { useState, useRef, useEffect } from "react";
 import { Post } from "@/app/types";
 import { Button } from "@/components/ui/button";
 import { HTMLContentRenderer } from "@/components/ui/HTMLContentRenderer";
-import { Heart, MessageCircle, Globe, Users, Lock, Paperclip, MoreHorizontal, Trash2, X, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { TiptapEditor } from "@/components/editor/TiptapEditor"; // Quan trọng: import TiptapEditor
+import {
+    Heart, MessageCircle, Globe, Users, Lock, Paperclip, MoreHorizontal,
+    Trash2, Edit2, X, ChevronLeft, ChevronRight, Download, MapPin, Image as ImageIcon
+} from "lucide-react";
 
 export const formatTimeAgo = (timestamp: number) => {
-    const now = Date.now()
-    const diff = now - timestamp
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
+    const now = Date.now();
+    const diff = now - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
 
-    if (days > 0) return `${days} ngày trước`
-    if (hours > 0) return `${hours} giờ trước`
-    if (minutes > 0) return `${minutes} phút trước`
-    return "Vừa xong"
+    if (days > 0) return `${days} ngày trước`;
+    if (hours > 0) return `${hours} giờ trước`;
+    if (minutes > 0) return `${minutes} phút trước`;
+    return "Vừa xong";
+}
+function EditPostModal({
+    post,
+    isOpen,
+    onClose,
+    onSubmit,
+    isDarkMode,
+}: {
+    post: Post;
+    isOpen: boolean;
+    onClose: () => void;
+    onSubmit: (updatedData: Partial<Post>) => void;
+    isDarkMode: boolean;
+}) {
+    // State cho tất cả các trường có thể chỉnh sửa
+    const [content, setContent] = useState(post.content);
+    const [tags, setTags] = useState(post.tags?.join(', ') || '');
+    const [location, setLocation] = useState(post.location || '');
+    const [currentImages, setCurrentImages] = useState<string[]>(post.images || []);
+    const modalRef = useRef<HTMLDivElement>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
+
+    // Reset lại state mỗi khi modal được mở cho một bài viết mới
+    useEffect(() => {
+        if (isOpen) {
+            setContent(post.content);
+            setTags(post.tags?.join(', ') || '');
+            setLocation(post.location || '');
+            setCurrentImages(post.images || []);
+        }
+    }, [isOpen, post]);
+
+    if (!isOpen) return null;
+
+    // --- Hàm xử lý ảnh ---
+    const handleRemoveImage = (indexToRemove: number) => {
+        setCurrentImages(currentImages.filter((_, index) => index !== indexToRemove));
+    };
+
+    const handleAddImages = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files) {
+            const files = Array.from(event.target.files);
+            // Với app thực tế, bạn sẽ tải file lên server và nhận lại URL.
+            // Ở đây, ta dùng `URL.createObjectURL` để xem trước local.
+            const newImageUrls = files.map(file => URL.createObjectURL(file));
+            setCurrentImages([...currentImages, ...newImageUrls]);
+        }
+    };
+
+    // --- Hàm xử lý khi bấm "Lưu thay đổi" ---
+    const handleSubmit = () => {
+        const updatedTags = tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+        onSubmit({
+            content,
+            tags: updatedTags,
+            location,
+            images: currentImages
+        });
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60] p-4">
+            <div
+                ref={modalRef}
+                className={`relative rounded-2xl w-full max-w-4xl mx-auto shadow-2xl transition-all duration-300 flex flex-col max-h-[90vh] ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+            >
+                {/* Header */}
+                <div className={`flex items-center justify-between p-5 border-b flex-shrink-0 ${isDarkMode ? "border-gray-700" : "border-gray-600"}`}>
+                    <h3 className={`text-xl font-bold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                        Chỉnh sửa bài viết
+                    </h3>
+                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <X className="h-5 w-5" />
+                    </Button>
+                </div>
+
+                {/* Nội dung form có thể cuộn */}
+                <div className="p-6 space-y-6 overflow-y-auto">
+                    {/* 1. Tích hợp Tiptap Editor */}
+                    <div>
+                        <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>Nội dung</label>
+                        <TiptapEditor
+                            content={content}
+                            onChange={setContent}
+                            isDarkMode={isDarkMode}
+                        />
+                    </div>
+
+                    {/* 2. Phần chỉnh sửa ảnh */}
+                    <div className="space-y-3">
+                        <label className={`block text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>Ảnh</label>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                            {currentImages.map((image, index) => (
+                                <div key={index} className="relative group aspect-square">
+                                    <img src={image} alt={`Preview ${index}`} className="w-full h-full object-cover rounded-lg shadow-md" />
+                                    <button
+                                        onClick={() => handleRemoveImage(index)}
+                                        className="absolute top-1 right-1 bg-black bg-opacity-60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Xóa ảnh"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                onClick={() => imageInputRef.current?.click()}
+                                className={`flex flex-col items-center justify-center aspect-square border-2 border-dashed rounded-lg transition-colors ${isDarkMode ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-700' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'}`}
+                            >
+                                <ImageIcon className={`h-8 w-8 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                                <span className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Thêm ảnh</span>
+                            </button>
+                        </div>
+                        <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            ref={imageInputRef}
+                            onChange={handleAddImages}
+                            className="hidden"
+                        />
+                    </div>
+
+                    {/* 3. Phần Vị trí và Tags */}
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label htmlFor="postLocation" className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>Vị trí</label>
+                            <div className="relative">
+                                <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                                <input
+                                    id="postLocation"
+                                    type="text"
+                                    value={location}
+                                    onChange={(e) => setLocation(e.target.value)}
+                                    placeholder="Ví dụ: Hà Nội, Việt Nam"
+                                    className={`w-full pl-10 pr-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 text-base ${isDarkMode ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "bg-white border-gray-300 text-gray-900 placeholder-gray-500"}`}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className={`flex items-center justify-end p-5 border-t space-x-3 flex-shrink-0 ${isDarkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-gray-50"}`}>
+                    <Button variant="ghost" onClick={onClose} className="rounded-full px-5 py-2.5">
+                        Hủy
+                    </Button>
+                    <Button
+                        onClick={handleSubmit}
+                        className="bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-full px-6 py-2.5 transition-all duration-200 shadow-md hover:shadow-lg"
+                    >
+                        Lưu thay đổi
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
 }
 
-// Image Gallery Modal Component
 function ImageGalleryModal({
     images,
     isOpen,
@@ -32,6 +194,12 @@ function ImageGalleryModal({
     initialIndex?: number;
 }) {
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
+
+    useEffect(() => {
+        if (isOpen) {
+            setCurrentIndex(initialIndex);
+        }
+    }, [isOpen, initialIndex])
 
     if (!isOpen || !images || images.length === 0) return null;
 
@@ -58,7 +226,6 @@ function ImageGalleryModal({
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[60] p-4">
-            {/* Header */}
             <div className="absolute top-0 left-0 right-0 z-10 p-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
@@ -68,7 +235,6 @@ function ImageGalleryModal({
                             </span>
                         </div>
                     </div>
-
                     <div className="flex items-center space-x-2">
                         <Button
                             variant="ghost"
@@ -79,13 +245,13 @@ function ImageGalleryModal({
                         >
                             <Download className="h-5 w-5" />
                         </Button>
+                        <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/20 rounded-full" title="Đóng">
+                            <X className="h-6 w-6" />
+                        </Button>
                     </div>
                 </div>
             </div>
-
-            {/* Main Image */}
             <div className="relative flex items-center justify-center w-full h-full">
-                {/* Navigation Buttons */}
                 {images.length > 1 && (
                     <>
                         <Button
@@ -107,8 +273,6 @@ function ImageGalleryModal({
                         </Button>
                     </>
                 )}
-
-                {/* Current Image */}
                 <div className="relative max-w-full max-h-full flex items-center justify-center">
                     <img
                         src={images[currentIndex]}
@@ -118,8 +282,6 @@ function ImageGalleryModal({
                     />
                 </div>
             </div>
-
-            {/* Thumbnail Strip */}
             {images.length > 1 && (
                 <div className="absolute bottom-0 left-0 right-0 p-4">
                     <div className="flex justify-center">
@@ -144,8 +306,6 @@ function ImageGalleryModal({
                     </div>
                 </div>
             )}
-
-            {/* Keyboard Navigation */}
             <div
                 className="absolute inset-0 outline-none"
                 tabIndex={0}
@@ -167,12 +327,12 @@ function ImageGalleryModal({
     );
 }
 
-// Dropdown Menu Component
 function PostDropdownMenu({
     post,
     isOpen,
     onClose,
     onDelete,
+    onEdit,
     onChangeVisibility,
     isDarkMode
 }: {
@@ -180,23 +340,26 @@ function PostDropdownMenu({
     isOpen: boolean;
     onClose: () => void;
     onDelete: () => void;
+    onEdit: () => void;
     onChangeVisibility: (visibility: "public" | "friends" | "private") => void;
     isDarkMode: boolean;
 }) {
     if (!isOpen) return null;
 
-    const handleDeleteClick = () => {
-        onDelete();
-        onClose();
-    };
-
     return (
         <div className={`absolute top-10 right-0 w-64 rounded-lg shadow-lg border z-50 ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
             }`}>
-            {/* Actions */}
             <div className="p-2">
                 <button
-                    onClick={handleDeleteClick}
+                    onClick={() => { onEdit(); onClose(); }}
+                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${isDarkMode ? "hover:bg-gray-700 text-gray-300 hover:text-white" : "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+                        }`}
+                >
+                    <Edit2 className="h-4 w-4" />
+                    <span>Chỉnh sửa bài viết</span>
+                </button>
+                <button
+                    onClick={() => { onDelete(); onClose(); }}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${isDarkMode ? "hover:bg-red-900 text-red-400 hover:text-red-300" : "hover:bg-red-50 text-red-600 hover:text-red-700"
                         }`}
                 >
@@ -215,6 +378,7 @@ export function PostCard({
     onShare,
     onComment,
     onDelete,
+    onUpdate,
     onChangeVisibility,
     isDarkMode,
 }: {
@@ -224,15 +388,16 @@ export function PostCard({
     onShare: () => void;
     onComment: () => void;
     onDelete?: () => void;
+    onUpdate?: (updatedData: Partial<Post>) => void;
     onChangeVisibility?: (visibility: "public" | "friends" | "private") => void;
     isDarkMode: boolean;
 }) {
     const [showDropdown, setShowDropdown] = useState(false);
     const [showImageGallery, setShowImageGallery] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Close dropdown when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -254,21 +419,22 @@ export function PostCard({
         }
     };
 
-    // Hàm kiểm tra xem content có phải là HTML hay không
     const isHtmlContent = (content: string) => {
         return content.includes('<') && content.includes('>')
     }
 
-    // Hàm xử lý khi click vào overlay "+X"
     const handleShowAllImages = () => {
         setSelectedImageIndex(0);
         setShowImageGallery(true);
     };
 
-    // Hàm xử lý khi click vào một ảnh cụ thể
     const handleImageClick = (index: number) => {
         setSelectedImageIndex(index);
         setShowImageGallery(true);
+    };
+
+    const handleUpdateSubmit = (updatedData: Partial<Post>) => {
+        onUpdate?.(updatedData);
     };
 
     return (
@@ -276,7 +442,6 @@ export function PostCard({
             <div
                 className={`rounded-2xl border p-6 transition-all duration-300 shadow-lg hover:shadow-xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
             >
-                {/* Post Header */}
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-4">
                         <img
@@ -314,7 +479,6 @@ export function PostCard({
                         </div>
                     </div>
 
-                    {/* Dropdown Menu */}
                     <div className="relative" ref={dropdownRef}>
                         <Button
                             variant="ghost"
@@ -324,19 +488,18 @@ export function PostCard({
                         >
                             <MoreHorizontal className="h-5 w-5" />
                         </Button>
-
                         <PostDropdownMenu
                             post={post}
                             isOpen={showDropdown}
                             onClose={() => setShowDropdown(false)}
                             onDelete={() => onDelete?.()}
+                            onEdit={() => setIsEditModalOpen(true)}
                             onChangeVisibility={(visibility) => onChangeVisibility?.(visibility)}
                             isDarkMode={isDarkMode}
                         />
                     </div>
                 </div>
 
-                {/* Post Content */}
                 <div className="mb-5">
                     {isHtmlContent(post.content) ? (
                         <HTMLContentRenderer
@@ -347,8 +510,6 @@ export function PostCard({
                     ) : (
                         <p className={`text-base leading-relaxed font-normal ${isDarkMode ? "text-gray-200" : "text-gray-800"}`}>{post.content}</p>
                     )}
-
-                    {/* Tags */}
                     {post.tags && post.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-4">
                             {post.tags.map((tag) => (
@@ -360,19 +521,15 @@ export function PostCard({
                     )}
                 </div>
 
-                {/* Post Media - KHUNG CỐ ĐỊNH */}
                 {(post.images || post.video) && (
                     <div className="mb-5">
-                        {/* Khung cố định với tỷ lệ 16:9 */}
                         <div className="w-full aspect-video bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden shadow-md">
                             {(() => {
-                                // Tính tổng số media (ảnh + video)
                                 const hasImages = post.images && post.images.length > 0;
                                 const hasVideo = post.video;
                                 const imageCount = hasImages ? post.images!.length : 0;
                                 const totalMedia = imageCount + (hasVideo ? 1 : 0);
 
-                                // Nếu chỉ có video
                                 if (hasVideo && !hasImages) {
                                     return (
                                         <video
@@ -382,13 +539,10 @@ export function PostCard({
                                         />
                                     );
                                 }
-
-                                // Nếu chỉ có ảnh
                                 if (hasImages && !hasVideo) {
                                     return (
                                         <div className="w-full h-full relative">
                                             {imageCount === 1 ? (
-                                                // 1 ảnh - hiển thị full khung
                                                 <img
                                                     src={post.images![0] || "/placeholder.svg"}
                                                     alt="Post image"
@@ -396,7 +550,6 @@ export function PostCard({
                                                     onClick={() => handleImageClick(0)}
                                                 />
                                             ) : imageCount === 2 ? (
-                                                // 2 ảnh - chia đôi khung
                                                 <div className="flex w-full h-full">
                                                     <div className="w-1/2 h-full border-r border-gray-200 dark:border-gray-700">
                                                         <img
@@ -416,7 +569,6 @@ export function PostCard({
                                                     </div>
                                                 </div>
                                             ) : imageCount === 3 ? (
-                                                // 3 ảnh - 1 lớn bên trái, 2 nhỏ bên phải
                                                 <div className="flex w-full h-full">
                                                     <div className="w-2/3 h-full border-r border-gray-200 dark:border-gray-700">
                                                         <img
@@ -446,7 +598,6 @@ export function PostCard({
                                                     </div>
                                                 </div>
                                             ) : (
-                                                // 4+ ảnh - 2x2 grid
                                                 <div className="grid grid-cols-2 grid-rows-2 w-full h-full gap-px">
                                                     {post.images?.slice(0, 4).map((image, index) => (
                                                         <div
@@ -473,11 +624,8 @@ export function PostCard({
                                         </div>
                                     );
                                 }
-
-                                // Nếu có cả ảnh và video - sắp xếp trong grid
                                 if (hasImages && hasVideo) {
                                     if (totalMedia === 2) {
-                                        // 1 ảnh + 1 video = chia đôi
                                         return (
                                             <div className="flex w-full h-full">
                                                 <div className="w-1/2 h-full border-r border-gray-200 dark:border-gray-700">
@@ -502,7 +650,6 @@ export function PostCard({
                                         );
                                     }
                                 }
-
                                 return null;
                             })()}
                         </div>
@@ -529,7 +676,6 @@ export function PostCard({
                     </div>
                 )}
 
-                {/* Post Stats */}
                 <div
                     className={`flex items-center justify-between py-3 border-t border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
                 >
@@ -539,7 +685,6 @@ export function PostCard({
                     </div>
                 </div>
 
-                {/* Post Actions */}
                 <div className="flex items-center justify-between pt-4">
                     <div className="flex items-center space-x-2">
                         <Button
@@ -564,7 +709,6 @@ export function PostCard({
                 </div>
             </div>
 
-            {/* Image Gallery Modal */}
             {post.images && (
                 <ImageGalleryModal
                     images={post.images}
@@ -574,6 +718,14 @@ export function PostCard({
                     initialIndex={selectedImageIndex}
                 />
             )}
+
+            <EditPostModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSubmit={handleUpdateSubmit}
+                post={post}
+                isDarkMode={isDarkMode}
+            />
         </>
     )
 }

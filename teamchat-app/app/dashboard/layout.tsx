@@ -109,17 +109,6 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
                         <MessageCircle className="h-4 w-4 text-white" />
                     </div>
                 </div>
-
-                {/* Connection Status Indicator */}
-                <div className="flex items-center space-x-1">
-                    <div className={`w-2 h-2 rounded-full ${getConnectionColor()}`}></div>
-                    {isInCall && (
-                        <div className="text-white text-xs animate-pulse">
-                            {callStatus}
-                        </div>
-                    )}
-                </div>
-
                 {/* Navigation Icons */}
                 <nav className="flex flex-col space-y-4">
                     <SidebarIcon

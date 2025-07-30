@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { X, Link, Copy, Check } from "lucide-react";
+import { X, Link, Copy, Check, MessageCircle } from "lucide-react";
 import { Button } from '@/components/ui/button';
+import { useChannels } from '@/contexts/ChannelContext';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useSocketContext } from '@/contexts/SocketContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface MeetingModalProps {
     isOpen: boolean;
@@ -17,6 +21,13 @@ export function MeetingModal({ isOpen, onClose, onStartCall }: MeetingModalProps
     const [isCreating, setIsCreating] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
     const [showLinkGenerated, setShowLinkGenerated] = useState(false);
+    const [showChannelNotification, setShowChannelNotification] = useState(false);
+    const [selectedChannelId, setSelectedChannelId] = useState("");
+
+    const { channels } = useChannels();
+    const currentUser = useCurrentUser();
+    const { socket } = useSocketContext();
+    const { toast } = useToast();
 
     if (!isOpen) return null;
 
@@ -85,6 +96,46 @@ export function MeetingModal({ isOpen, onClose, onStartCall }: MeetingModalProps
         const roomName = generateRoomName(customRoomName, meetingTitle);
         onStartCall?.(meetingTitle, roomName);
         setIsCreating(false);
+    };
+
+    const handleNotifyChannel = async () => {
+        if (!selectedChannelId || !currentUser) return;
+
+        const channel = channels.find(c => c.id === selectedChannelId);
+        if (!channel) return;
+
+        const roomName = generateRoomName(customRoomName, meetingTitle);
+        const meetingData = {
+            title: meetingTitle,
+            roomName: roomName,
+            createdBy: currentUser.name,
+            createdById: currentUser.id,
+            channelId: selectedChannelId,
+            channelName: channel.name,
+            createdAt: new Date()
+        };
+
+        // Send notification to all channel members via Socket.io
+        if (socket) {
+            socket.emit('notifyChannelMeeting', {
+                channelId: selectedChannelId,
+                meetingData
+            });
+        }
+
+        toast({
+            title: "Thông báo đã gửi",
+            description: `Đã thông báo cuộc họp đến kênh "${channel.name}". Đang tham gia...`,
+        });
+
+        // Auto-join meeting for creator
+        const joinUrl = `/dashboard/meeting/${roomName}?title=${encodeURIComponent(meetingTitle)}`;
+        window.open(joinUrl, '_blank');
+
+        // Close modal and reset state
+        setShowChannelNotification(false);
+        setSelectedChannelId("");
+        onClose(); // Close the meeting modal
     };
 
     const handleClose = () => {
@@ -158,10 +209,23 @@ export function MeetingModal({ isOpen, onClose, onStartCall }: MeetingModalProps
                             onClick={handleStartDirectCall}
                             disabled={isCreating || !meetingTitle.trim()}
                             variant="outline"
-                            className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed py-3 rounded-lg font-medium transition-all duration-200"
+                            className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed py-3 rounded-lg font-medium transition-all duration-200 mb-4"
                         >
                             {isCreating ? "Đang bắt đầu..." : "Bắt đầu họp ngay"}
                         </Button>
+
+                        {/* Notify Channel Button */}
+                        {channels.length > 0 && (
+                            <Button
+                                onClick={() => setShowChannelNotification(true)}
+                                disabled={isCreating || !meetingTitle.trim()}
+                                variant="outline"
+                                className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white py-3 rounded-lg font-medium transition-all duration-200"
+                            >
+                                <MessageCircle className="h-4 w-4 mr-2" />
+                                Thông báo đến kênh
+                            </Button>
+                        )}
                     </>
                 ) : (
                     <>
@@ -213,6 +277,71 @@ export function MeetingModal({ isOpen, onClose, onStartCall }: MeetingModalProps
                             </Button>
                         </div>
                     </>
+                )}
+
+                {/* Channel Notification Modal */}
+                {showChannelNotification && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md relative">
+                            <button
+                                onClick={() => setShowChannelNotification(false)}
+                                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+
+                            <div className="mb-6">
+                                <h3 className="text-lg font-semibold text-white mb-2">
+                                    Chọn kênh để thông báo
+                                </h3>
+                                <p className="text-gray-300 text-sm">
+                                    Thông báo cuộc họp đến thành viên kênh
+                                </p>
+                            </div>
+
+                            <div className="space-y-3 mb-6">
+                                {channels.map((channel) => (
+                                    <button
+                                        key={channel.id}
+                                        onClick={() => setSelectedChannelId(channel.id)}
+                                        className={`w-full p-3 rounded-lg border transition-colors ${selectedChannelId === channel.id
+                                            ? 'border-blue-500 bg-blue-600/20 text-white'
+                                            : 'border-gray-600 text-gray-300 hover:border-gray-500 hover:bg-gray-700'
+                                            }`}
+                                    >
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                                                <MessageCircle className="h-4 w-4" />
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="font-medium">{channel.name}</p>
+                                                <p className="text-xs text-gray-400">
+                                                    {channel.members.length} thành viên
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="flex gap-3">
+                                <Button
+                                    onClick={handleNotifyChannel}
+                                    disabled={!selectedChannelId}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-all duration-200"
+                                >
+                                    Gửi thông báo
+                                </Button>
+                                <Button
+                                    onClick={() => setShowChannelNotification(false)}
+                                    variant="outline"
+                                    className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white py-3 rounded-lg font-medium transition-all duration-200"
+                                >
+                                    Hủy
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

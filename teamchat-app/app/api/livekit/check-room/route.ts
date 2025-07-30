@@ -25,15 +25,9 @@ export async function POST(request: NextRequest) {
             // Kiểm tra xem room có tồn tại và active không
             const rooms = await roomService.listRooms([roomName]);
 
-            let roomExists = false;
-            let participantCount = 0;
-            let roomInfo = null;
-
             if (rooms.length > 0) {
                 const room = rooms[0];
-                roomExists = true;
-                participantCount = room.numParticipants;
-                roomInfo = {
+                const roomInfo = {
                     name: room.name,
                     participantCount: room.numParticipants,
                     creationTime: room.creationTime,
@@ -41,31 +35,47 @@ export async function POST(request: NextRequest) {
                 };
 
                 console.log('✅ Room found:', roomInfo);
+
+                // Chỉ cho phép join nếu có ít nhất 1 người trong phòng
+                // Hoặc phòng vừa được tạo (trong vòng 1 phút)
+                const now = Date.now();
+                const roomCreatedTime = Number(room.creationTime) / 1000000; // Convert nanoseconds to milliseconds
+                const timeSinceCreation = now - roomCreatedTime;
+                const oneMinute = 60 * 1000;
+
+                const canJoin = room.numParticipants > 0 || timeSinceCreation < oneMinute;
+
+                return NextResponse.json({
+                    exists: true,
+                    roomInfo,
+                    canJoin,
+                    message: room.numParticipants > 0
+                        ? `Phòng đang có ${room.numParticipants} người tham gia`
+                        : canJoin
+                            ? 'Phòng vừa được tạo, có thể tham gia'
+                            : 'Phòng chưa có ai tham gia'
+                });
+
             } else {
-                // Nếu room chưa tồn tại, LiveKit sẽ tự động tạo khi có participant đầu tiên join
-                console.log('📝 Room does not exist yet, will be created on first join');
-                roomExists = true; // Cho phép join vì LiveKit sẽ tự tạo
+                // Room không tồn tại
+                console.log('❌ Room not found');
+
+                return NextResponse.json({
+                    exists: false,
+                    roomInfo: null,
+                    canJoin: false,
+                    message: 'Phòng họp không tồn tại'
+                });
             }
 
-            return NextResponse.json({
-                exists: roomExists,
-                roomInfo,
-                canJoin: true,
-                message: roomExists && participantCount > 0
-                    ? `Phòng đang có ${participantCount} người tham gia`
-                    : 'Phòng họp sẵn sàng để tham gia'
-            });
-
         } catch (roomError) {
-            // Nếu API trả về lỗi, có thể room chưa tồn tại
-            // Nhưng với LiveKit, room sẽ được tạo tự động khi có người join
-            console.log('⚠️ Room check failed, but allowing join (auto-create):', roomError);
+            console.log('❌ Room check failed:', roomError);
 
             return NextResponse.json({
                 exists: false,
                 roomInfo: null,
-                canJoin: true,
-                message: 'Phòng họp sẽ được tạo khi bạn tham gia'
+                canJoin: false,
+                message: 'Phòng họp không tồn tại hoặc chưa được khởi tạo'
             });
         }
 

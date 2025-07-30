@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import {
     LocalParticipant,
     RemoteParticipant,
@@ -47,6 +47,8 @@ export default function ParticipantVideo({
 }: ParticipantVideoProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
+    const currentVideoTrackRef = useRef<VideoTrack | null>(null);
+    const currentAudioTrackRef = useRef<AudioTrack | null>(null);
 
     // State cho các trạng thái từ SDK
     const [hasCamera, setHasCamera] = useState(false);
@@ -54,55 +56,135 @@ export default function ParticipantVideo({
     const [isAudioMutedBySDK, setIsAudioMutedBySDK] = useState(true);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isPinned, setIsPinned] = useState(false);
+    const [videoReady, setVideoReady] = useState(false);
 
     // Quyết định trạng thái cuối cùng để hiển thị trên UI
     // Đối với user local: dùng props từ MeetingInterface
     // Đối với user remote: dùng state được cập nhật từ SDK
     const finalMicState = isLocal ? isMicEnabled : !isAudioMutedBySDK;
-    const finalDisplaySource = isScreenSharing || (isLocal ? isCameraEnabled : hasCamera);
+    const finalCameraState = isLocal ? isCameraEnabled : hasCamera;
+    const finalDisplaySource = isScreenSharing || finalCameraState;
 
-    useEffect(() => {
+    // Cleanup function cho video track
+    const cleanupVideoTrack = useCallback(() => {
+        if (currentVideoTrackRef.current && videoRef.current) {
+            try {
+                currentVideoTrackRef.current.detach(videoRef.current);
+            } catch (error) {
+                console.warn('Error detaching video track:', error);
+            }
+        }
+        currentVideoTrackRef.current = null;
+        setVideoReady(false);
+    }, []);
+
+    // Cleanup function cho audio track
+    const cleanupAudioTrack = useCallback(() => {
+        if (currentAudioTrackRef.current && audioRef.current) {
+            try {
+                currentAudioTrackRef.current.detach(audioRef.current);
+            } catch (error) {
+                console.warn('Error detaching audio track:', error);
+            }
+        }
+        currentAudioTrackRef.current = null;
+    }, []);
+
+    // Attach video track với retry mechanism
+    const attachVideoTrack = useCallback((videoTrack: VideoTrack) => {
+        if (!videoRef.current) return;
+
+        // Cleanup previous track first
+        cleanupVideoTrack();
+
+        try {
+            // Small delay to ensure cleanup is complete
+            setTimeout(() => {
+                if (videoRef.current && videoTrack) {
+                    videoTrack.attach(videoRef.current);
+                    currentVideoTrackRef.current = videoTrack;
+                    setVideoReady(true);
+
+                    // Ensure video plays
+                    const videoElement = videoRef.current;
+                    videoElement.play().catch(e => {
+                        console.warn('Auto-play failed:', e);
+                    });
+                }
+            }, 50);
+        } catch (error) {
+            console.error('Error attaching video track:', error);
+            setVideoReady(false);
+        }
+    }, [cleanupVideoTrack]);
+
+    // Attach audio track
+    const attachAudioTrack = useCallback((audioTrack: AudioTrack) => {
+        if (!audioRef.current || isLocal) return;
+
+        // Cleanup previous track first
+        cleanupAudioTrack();
+
+        try {
+            setTimeout(() => {
+                if (audioRef.current && audioTrack) {
+                    audioTrack.attach(audioRef.current);
+                    currentAudioTrackRef.current = audioTrack;
+                }
+            }, 50);
+        } catch (error) {
+            console.error('Error attaching audio track:', error);
+        }
+    }, [cleanupAudioTrack, isLocal]);
+
+    // Update tracks function với improved logic
+    const updateTracks = useCallback(() => {
         if (!participant) return;
 
-        const updateTracks = () => {
-            const cameraPub = participant.getTrackPublication(Track.Source.Camera);
-            const screenSharePub = participant.getTrackPublication(Track.Source.ScreenShare);
-            const micPub = participant.getTrackPublication(Track.Source.Microphone);
+        const cameraPub = participant.getTrackPublication(Track.Source.Camera);
+        const screenSharePub = participant.getTrackPublication(Track.Source.ScreenShare);
+        const micPub = participant.getTrackPublication(Track.Source.Microphone);
 
-            // Xác định luồng video để hiển thị (ưu tiên màn hình)
-            const screenShareTrack = screenSharePub?.isSubscribed ? screenSharePub.track : null;
-            const cameraTrack = cameraPub?.isSubscribed ? cameraPub.track : null;
-            const videoTrack = screenShareTrack || cameraTrack;
+        // Xác định luồng video để hiển thị (ưu tiên màn hình)
+        const screenShareTrack = screenSharePub?.isSubscribed ? screenSharePub.track as VideoTrack : null;
+        const cameraTrack = cameraPub?.isSubscribed ? cameraPub.track as VideoTrack : null;
+        const preferredVideoTrack = screenShareTrack || cameraTrack;
 
-            // Cập nhật state từ SDK
-            setIsScreenSharing(!!screenShareTrack);
-            setHasCamera(!!cameraTrack);
+        // Cập nhật state từ SDK
+        const newIsScreenSharing = !!screenShareTrack;
+        const newHasCamera = !!cameraTrack;
 
-            // Gán luồng video vào thẻ <video>
-            if (videoRef.current) {
-                if (videoTrack) {
-                    videoTrack.attach(videoRef.current);
-                } else {
-                    // Dọn dẹp video cũ nếu không có luồng nào
-                    const attachedElements = videoRef.current.srcObject instanceof MediaStream
-                        ? (videoRef.current.srcObject as MediaStream).getTracks()
-                        : [];
-                    attachedElements.forEach(track => track.stop());
-                    videoRef.current.srcObject = null;
-                }
+        setIsScreenSharing(newIsScreenSharing);
+        setHasCamera(newHasCamera);
+
+        // Chỉ attach video track khi có thay đổi thực sự
+        if (preferredVideoTrack !== currentVideoTrackRef.current) {
+            if (preferredVideoTrack) {
+                attachVideoTrack(preferredVideoTrack);
+            } else {
+                cleanupVideoTrack();
             }
+        }
 
-            // Xử lý audio cho người dùng remote
-            if (!isLocal) {
-                setIsAudioMutedBySDK(micPub?.isMuted ?? true);
-                if (micPub?.isSubscribed && micPub.track) {
-                    const audioTrack = micPub.track as AudioTrack;
-                    if (audioRef.current) {
-                        audioTrack.attach(audioRef.current);
-                    }
+        // Xử lý audio cho người dùng remote
+        if (!isLocal) {
+            const newIsAudioMuted = micPub?.isMuted ?? true;
+            setIsAudioMutedBySDK(newIsAudioMuted);
+
+            if (micPub?.isSubscribed && micPub.track) {
+                const audioTrack = micPub.track as AudioTrack;
+                if (audioTrack !== currentAudioTrackRef.current) {
+                    attachAudioTrack(audioTrack);
                 }
+            } else {
+                cleanupAudioTrack();
             }
-        };
+        }
+    }, [participant, attachVideoTrack, attachAudioTrack, cleanupVideoTrack, cleanupAudioTrack, isLocal]);
+
+    // Effect để xử lý participant events
+    useEffect(() => {
+        if (!participant) return;
 
         const handleSpeakingChange = (speaking: boolean) => setIsSpeaking(speaking);
 
@@ -123,7 +205,23 @@ export default function ParticipantVideo({
             participant.off(ParticipantEvent.TrackUnmuted, updateTracks);
             participant.off(ParticipantEvent.IsSpeakingChanged, handleSpeakingChange);
         };
-    }, [participant, isLocal]);
+    }, [participant, updateTracks]);
+
+    // Effect để xử lý local participant state changes
+    useEffect(() => {
+        if (isLocal && participant) {
+            // Đối với local participant, cập nhật tracks khi state thay đổi
+            updateTracks();
+        }
+    }, [isLocal, isCameraEnabled, participant, updateTracks]);
+
+    // Cleanup khi component unmount
+    useEffect(() => {
+        return () => {
+            cleanupVideoTrack();
+            cleanupAudioTrack();
+        };
+    }, [cleanupVideoTrack, cleanupAudioTrack]);
 
     const getParticipantInitials = (name: string) => {
         return name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2);
@@ -141,14 +239,22 @@ export default function ParticipantVideo({
                         muted={isLocal}
                         playsInline
                         className={`w-full h-full bg-black transition-opacity duration-300
-                            ${finalDisplaySource ? 'opacity-100' : 'opacity-0'}
+                            ${finalDisplaySource && videoReady ? 'opacity-100' : 'opacity-0'}
                             ${isScreenSharing ? 'object-contain' : 'object-cover'}`
                         }
+                        onLoadedData={() => {
+                            // Ensure video starts playing when loaded
+                            if (videoRef.current) {
+                                videoRef.current.play().catch(e => {
+                                    console.warn('Video play failed:', e);
+                                });
+                            }
+                        }}
                     />
 
                     {!isLocal && <audio ref={audioRef} autoPlay playsInline className="hidden" />}
 
-                    {!finalDisplaySource && (
+                    {(!finalDisplaySource || !videoReady) && (
                         <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-black flex items-center justify-center">
                             <Avatar className="w-16 h-16 md:w-24 md:h-24 border-4 border-gray-700">
                                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-lg md:text-2xl font-bold">
@@ -215,11 +321,11 @@ export default function ParticipantVideo({
                                 </Tooltip>
                                 <Tooltip>
                                     <TooltipTrigger>
-                                        <div className={`p-1 md:p-1.5 rounded-full ${!finalDisplaySource ? 'bg-red-500/80' : 'bg-green-500/80'}`}>
-                                            {!finalDisplaySource ? <VideoOff className="h-2 w-2 md:h-3 md:w-3 text-white" /> : <Video className="h-2 w-2 md:h-3 md:w-3 text-white" />}
+                                        <div className={`p-1 md:p-1.5 rounded-full ${!finalCameraState ? 'bg-red-500/80' : 'bg-green-500/80'}`}>
+                                            {!finalCameraState ? <VideoOff className="h-2 w-2 md:h-3 md:w-3 text-white" /> : <Video className="h-2 w-2 md:h-3 md:w-3 text-white" />}
                                         </div>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>{!finalDisplaySource ? 'Camera đã tắt' : 'Camera đang bật'}</p></TooltipContent>
+                                    <TooltipContent><p>{!finalCameraState ? 'Camera đã tắt' : 'Camera đang bật'}</p></TooltipContent>
                                 </Tooltip>
                             </div>
                         </div>

@@ -65,7 +65,7 @@ export default function MeetingInterface({
     useEffect(() => {
         const interval = setInterval(() => {
             setMeetingDuration(Math.floor((Date.now() - startTime.current) / 1000));
-        }, 1000);
+        },);
         return () => clearInterval(interval);
     }, []);
 
@@ -82,19 +82,38 @@ export default function MeetingInterface({
 
     useEffect(() => {
         if (!room) return;
+
         const onConnected = () => {
             setLocalParticipant(room.localParticipant);
             setRemoteParticipants(Array.from(room.remoteParticipants.values()));
-            setIsMicEnabled(room.localParticipant.isMicrophoneEnabled);
-            setIsCameraEnabled(room.localParticipant.isCameraEnabled);
-            setIsScreenSharing(room.localParticipant.isScreenShareEnabled);
+
+            // Đồng bộ state với trạng thái thực tế của room
+            const actualMicState = room.localParticipant.isMicrophoneEnabled;
+            const actualCameraState = room.localParticipant.isCameraEnabled;
+            const actualScreenShareState = room.localParticipant.isScreenShareEnabled;
+
+            setIsMicEnabled(actualMicState);
+            setIsCameraEnabled(actualCameraState);
+            setIsScreenSharing(actualScreenShareState);
         };
+
         const onParticipantConnected = (participant: RemoteParticipant) => setRemoteParticipants(prev => [...prev, participant]);
         const onParticipantDisconnected = (participant: RemoteParticipant) => setRemoteParticipants(prev => prev.filter(p => p.sid !== participant.sid));
+
         const onTrackUpdated = () => {
             setRemoteParticipants(Array.from(room.remoteParticipants.values()));
-            if (room.localParticipant) setIsScreenSharing(room.localParticipant.isScreenShareEnabled);
+            if (room.localParticipant) {
+                // Đồng bộ state với trạng thái thực tế
+                const actualScreenShareState = room.localParticipant.isScreenShareEnabled;
+                const actualCameraState = room.localParticipant.isCameraEnabled;
+                const actualMicState = room.localParticipant.isMicrophoneEnabled;
+
+                setIsScreenSharing(actualScreenShareState);
+                setIsCameraEnabled(actualCameraState);
+                setIsMicEnabled(actualMicState);
+            }
         };
+
         const onLocalTrackPublished = (publication: any) => { if (publication.source === Track.Source.ScreenShare) setIsScreenSharing(true); };
         const onLocalTrackUnpublished = (publication: any) => { if (publication.source === Track.Source.ScreenShare) setIsScreenSharing(false); };
 
@@ -131,10 +150,41 @@ export default function MeetingInterface({
 
     const toggleCamera = async () => {
         if (!localParticipant) return;
-        const newCameraState = !isCameraEnabled;
-        await localParticipant.setCameraEnabled(newCameraState);
-        setIsCameraEnabled(newCameraState);
-        toast({ title: newCameraState ? "Đã bật camera" : "Đã tắt camera" });
+
+        try {
+            const newCameraState = !isCameraEnabled;
+
+            // Cập nhật state trước để UI phản hồi ngay lập tức
+            setIsCameraEnabled(newCameraState);
+
+            // Thực hiện thay đổi camera với timeout để tránh treo
+            const cameraPromise = localParticipant.setCameraEnabled(newCameraState);
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Camera timeout')), 5000)
+            );
+
+            await Promise.race([cameraPromise, timeoutPromise]);
+
+            // Verify camera state sau khi thay đổi
+            const actualCameraState = localParticipant.isCameraEnabled;
+            if (actualCameraState !== newCameraState) {
+                setIsCameraEnabled(actualCameraState);
+            }
+
+            toast({
+                title: newCameraState ? "Đã bật camera" : "Đã tắt camera",
+                description: actualCameraState !== newCameraState ? "Camera có thể cần thời gian để khởi động" : undefined
+            });
+        } catch (error) {
+            console.error("Lỗi khi thay đổi camera:", error);
+            // Revert state nếu có lỗi
+            setIsCameraEnabled(localParticipant.isCameraEnabled);
+            toast({
+                title: "Lỗi khi thay đổi camera",
+                variant: "destructive",
+                description: "Vui lòng thử lại sau"
+            });
+        }
     };
 
     const toggleScreenShare = async () => {
@@ -198,9 +248,9 @@ export default function MeetingInterface({
     return (
         <div
             ref={meetingContainerRef}
-            className="h-screen w-screen bg-slate-900 flex flex-col fixed inset-0 overflow-hidden"
-            style={{ height: '100vh', width: '100vw' }}
+            className="h-screen w-full bg-slate-900 flex flex-col overflow-hidden"
         >
+            {/* Header */}
             <header className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700 px-6 py-3 z-20 flex-shrink-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
@@ -238,7 +288,9 @@ export default function MeetingInterface({
                 </div>
             </header>
 
+            {/* Main Content */}
             <main className="flex-1 flex relative overflow-hidden min-h-0">
+                {/* Video Area */}
                 <div className={`flex-1 h-full transition-all duration-300 ease-in-out overflow-hidden ${showChat || showParticipants ? 'mr-[320px]' : 'mr-0'}`}>
                     {screenShareParticipant ? (
                         // GIAO DIỆN KHI CHIA SẺ MÀN HÌNH
@@ -305,6 +357,7 @@ export default function MeetingInterface({
                     )}
                 </div>
 
+                {/* Sidebar (Chat/Participants) */}
                 <aside className={`absolute right-0 top-0 bottom-0 w-80 bg-slate-800 border-l border-slate-700 transition-transform duration-300 ease-in-out overflow-hidden ${showChat || showParticipants ? 'translate-x-0' : 'translate-x-full'}`}>
                     {showChat && (
                         <MeetingChat
@@ -326,6 +379,7 @@ export default function MeetingInterface({
                 </aside>
             </main>
 
+            {/* Footer Controls */}
             <footer className="relative z-20 flex-shrink-0">
                 <MeetingControls
                     isMicEnabled={isMicEnabled}

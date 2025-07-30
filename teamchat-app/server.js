@@ -469,6 +469,78 @@ nextApp.prepare().then(() => {
                 });
             }
         });
+
+        // Channel invitation events
+        socket.on('sendChannelInvitation', ({ recipientId, payload }) => {
+            console.log(`🔔 Sending channel invitation to ${recipientId}:`, payload);
+            const recipientSocketId = userSocketMap[recipientId];
+            if (recipientSocketId) {
+                io.to(recipientSocketId).emit('channelInvitationReceived', payload);
+                console.log(`✅ Channel invitation sent successfully to ${recipientId} (socket: ${recipientSocketId})`);
+            } else {
+                console.log(`❌ Recipient ${recipientId} not found or not connected`);
+            }
+        });
+
+        socket.on('acceptChannelInvitation', ({ inviterId, payload }) => {
+            console.log(`✅ Channel invitation accepted by ${payload.inviteeName} for channel ${payload.channelId}`);
+
+            // Notify inviter
+            const inviterSocketId = userSocketMap[inviterId];
+            if (inviterSocketId) {
+                io.to(inviterSocketId).emit('channelInvitationAccepted', payload);
+                console.log(`📤 Notified inviter ${inviterId}`);
+            }
+
+            // Broadcast to all users in the channel (for real-time member updates)
+            io.emit('channelMemberJoined', {
+                channelId: payload.channelId,
+                newMember: {
+                    id: payload.inviteeId,
+                    name: payload.inviteeName,
+                    avatar: payload.inviteeAvatar,
+                    status: 'online',
+                    joinedAt: new Date()
+                }
+            });
+            console.log(`📢 Broadcast member joined to all users in channel ${payload.channelId}`);
+        });
+
+        socket.on('declineChannelInvitation', ({ inviterId, payload }) => {
+            const inviterSocketId = userSocketMap[inviterId];
+            if (inviterSocketId) {
+                io.to(inviterSocketId).emit('channelInvitationDeclined', payload);
+                console.log(`❌ Channel invitation declined by ${payload.inviteeName}`);
+            }
+        });
+
+        // Meeting notification to channel members
+        socket.on('notifyChannelMeeting', ({ channelId, meetingData }) => {
+            console.log(`📢 Meeting notification sent to channel ${channelId}`);
+            // Broadcast to all connected users (in a real app, you'd get channel members from database)
+            io.emit('meetingNotificationReceived', {
+                ...meetingData,
+                channelId
+            });
+        });
+
+        // Channel message events
+        socket.on('sendChannelMessage', ({ channelId, message, senderId }) => {
+            console.log(`💬 Channel message sent to ${channelId} by ${senderId}`);
+            console.log(`📤 Broadcasting to all users EXCEPT sender ${senderId}`);
+
+            // Broadcast to all channel members EXCEPT the sender
+            socket.broadcast.emit('channelMessageReceived', { channelId, message });
+            console.log(`✅ Message broadcasted to channel ${channelId}`);
+        });
+
+        // Test connection event
+        socket.on('testConnection', ({ userId }) => {
+            console.log(`🧪 Test connection for user ${userId}, socket ${socket.id}`);
+            const socketId = userSocketMap[userId];
+            console.log(`📋 User ${userId} mapped to socket ${socketId}`);
+            console.log(`📊 Current userSocketMap:`, userSocketMap);
+        });
     });
 
     app.all('*', (req, res) => {

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Link, Users, Clock } from "lucide-react";
+import { Loader2, Link, Users, Clock, AlertCircle } from "lucide-react";
 
 interface JoinMeetingModalProps {
     isOpen: boolean;
@@ -30,10 +30,9 @@ export function JoinMeetingModal({ isOpen, onClose, onJoinRoom }: JoinMeetingMod
         setError("");
 
         try {
-            // Validate room ID format (optional)
             const cleanRoomId = roomId.trim();
 
-            // Check if room exists by trying to create a token
+            // Kiểm tra xem phòng có tồn tại và active không
             const response = await fetch('/api/livekit/check-room', {
                 method: 'POST',
                 headers: {
@@ -47,7 +46,21 @@ export function JoinMeetingModal({ isOpen, onClose, onJoinRoom }: JoinMeetingMod
                 throw new Error(errorData.error || 'Không thể kiểm tra phòng họp');
             }
 
-            // Join the room
+            const roomData = await response.json();
+
+            // Kiểm tra xem phòng có tồn tại và có người tham gia không
+            if (!roomData.exists) {
+                setError(`Phòng họp "${cleanRoomId}" không tồn tại. Vui lòng kiểm tra lại ID hoặc liên hệ người tạo cuộc họp.`);
+                return;
+            }
+
+            // Nếu phòng tồn tại nhưng chưa có ai tham gia
+            if (roomData.roomInfo && roomData.roomInfo.participantCount === 0) {
+                setError(`Phòng họp "${cleanRoomId}" chưa có ai tham gia. Vui lòng đợi người tạo cuộc họp bắt đầu trước.`);
+                return;
+            }
+
+            // Nếu tất cả điều kiện đều OK, tham gia phòng
             onJoinRoom(cleanRoomId);
             onClose();
             setRoomId("");
@@ -96,23 +109,26 @@ export function JoinMeetingModal({ isOpen, onClose, onJoinRoom }: JoinMeetingMod
                             className={error ? "border-red-500 focus:border-red-500" : ""}
                         />
                         {error && (
-                            <p className="text-sm text-red-500 mt-1">{error}</p>
+                            <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                            </div>
                         )}
                     </div>
 
                     {/* Info section */}
                     <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                         <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-                            Thông tin tham gia
+                            Lưu ý khi tham gia
                         </h4>
                         <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
                             <div className="flex items-center gap-2">
                                 <Users className="h-4 w-4" />
-                                <span>Bạn sẽ tham gia với tư cách người dùng hiện tại</span>
+                                <span>Phòng họp phải được tạo bởi người khác trước</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Clock className="h-4 w-4" />
-                                <span>Cuộc họp sẽ bắt đầu ngay khi tham gia</span>
+                                <span>ID phòng phải chính xác 100%</span>
                             </div>
                         </div>
                     </div>
@@ -135,7 +151,7 @@ export function JoinMeetingModal({ isOpen, onClose, onJoinRoom }: JoinMeetingMod
                             {isJoining ? (
                                 <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Đang tham gia...
+                                    Đang kiểm tra...
                                 </>
                             ) : (
                                 <>
@@ -150,7 +166,7 @@ export function JoinMeetingModal({ isOpen, onClose, onJoinRoom }: JoinMeetingMod
                 {/* Additional help */}
                 <div className="pt-4 border-t">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                        💡 <strong>Mẹo:</strong> ID cuộc họp thường có dạng "hop-tên-cuộc-họp-abc123" hoặc được chia sẻ bởi người tạo cuộc họp.
+                        💡 <strong>Mẹo:</strong> Chỉ có thể tham gia vào phòng đã được tạo và đang hoạt động. Hãy chắc chắn bạn có ID chính xác từ người tổ chức.
                     </p>
                 </div>
             </DialogContent>

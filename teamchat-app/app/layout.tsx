@@ -1,14 +1,20 @@
 "use client";
 
 import "./globals.css";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Inter } from "next/font/google";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ChatProvider, useChatContext } from "@/contexts/ChatContext";
 import { SocketProvider, useSocketContext } from "@/contexts/SocketContext";
+import { ChannelProvider } from "@/contexts/ChannelContext";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { DirectMessage } from './types';
+import { Toaster } from "@/components/ui/toaster";
+import { useChannels } from "@/contexts/ChannelContext";
+import { ChannelInvitationModal } from "@/components/modals/ChannelInvitationModal";
+import { MeetingInvitationModal } from "@/components/modals/MeetingInvitationModal";
+import { NotificationService } from "@/services/notificationService";
 
 const inter = Inter({ subsets: ["latin"] });
 const queryClient = new QueryClient();
@@ -16,7 +22,21 @@ const queryClient = new QueryClient();
 function AppController({ children }: { children: React.ReactNode }) {
   const { socket, isConnected } = useSocketContext();
   const { receiveNewMessage, addContact, showToast } = useChatContext();
+  const { getChannelInvitations } = useChannels();
   const currentUser = useCurrentUser();
+  const [pendingInvitation, setPendingInvitation] = useState<any>(null);
+  const [pendingMeetingInvitation, setPendingMeetingInvitation] = useState<any>(null);
+
+  // Handle meeting invitation accept/decline
+  const handleMeetingAccept = async (meetingData: any) => {
+    // Navigate to meeting room
+    window.open(`/meeting/${meetingData.roomName}`, '_blank');
+  };
+
+  const handleMeetingDecline = async (meetingData: any) => {
+    // Just close the modal, no action needed
+    console.log('Meeting declined:', meetingData);
+  };
 
   useEffect(() => {
     if (!socket || !currentUser) return;
@@ -88,6 +108,20 @@ function AppController({ children }: { children: React.ReactNode }) {
       }
     };
 
+    // Handle channel invitation received - DISABLED: Only use notification bell
+    const handleChannelInvitationReceived = (invitation: any) => {
+      console.log('📨 Channel invitation received from server - forwarding to notification bell only:', invitation);
+      // setPendingInvitation(invitation); // DISABLED: Don't show single invitation modal
+      // showToast(`${invitation.inviterName} đã mời bạn tham gia kênh "${invitation.channelName}"`);
+    };
+
+    // Handle meeting notification received
+    const handleMeetingNotificationReceived = (meetingData: any) => {
+      console.log('Meeting notification received:', meetingData);
+      setPendingMeetingInvitation(meetingData);
+      showToast(`${meetingData.creatorName} đã tạo cuộc họp "${meetingData.title}" trong kênh "${meetingData.channelName}"`);
+    };
+
     // Đăng ký các event listeners hiện tại
     socket.on('newMessage', handleNewMessage);
     socket.on('friendRequestAccepted', handleFriendRequestAccepted);
@@ -97,6 +131,12 @@ function AppController({ children }: { children: React.ReactNode }) {
     // Đăng ký call event listeners
     socket.on('incomingCallNotification', handleIncomingCallNotification);
     socket.on('callStatusChange', handleCallStatusChange);
+
+    // Đăng ký channel invitation events
+    socket.on('channelInvitationReceived', handleChannelInvitationReceived);
+
+    // Đăng ký meeting notification events
+    socket.on('meetingNotificationReceived', handleMeetingNotificationReceived);
 
     // Cleanup khi component unmount
     return () => {
@@ -108,29 +148,78 @@ function AppController({ children }: { children: React.ReactNode }) {
       // Cleanup call events
       socket.off('incomingCallNotification', handleIncomingCallNotification);
       socket.off('callStatusChange', handleCallStatusChange);
+
+      // Cleanup channel invitation events
+      socket.off('channelInvitationReceived', handleChannelInvitationReceived);
+
+      // Cleanup meeting notification events
+      socket.off('meetingNotificationReceived', handleMeetingNotificationReceived);
     };
   }, [socket, currentUser, receiveNewMessage, addContact, showToast]);
 
   // Đăng ký user với socket khi kết nối
   useEffect(() => {
     if (socket && currentUser && isConnected) {
-      console.log('Registering user with socket:', currentUser.id);
-
-      socket.emit('userOnline', {
+      console.log('Registering user with socket:', {
         userId: currentUser.id,
-        userInfo: {
-          name: currentUser.name,
-          avatar: currentUser.avatar,
-          email: currentUser.email
-        }
+        userName: currentUser.name,
+        socketId: socket.id,
+        isConnected
       });
 
-      // Emit join event for call functionality
-      socket.emit('join', currentUser.id);
+      // Register user with socket using service
+      const registrationResult = NotificationService.registerUserWithSocket(socket, currentUser.id, {
+        name: currentUser.name,
+        avatar: currentUser.avatar,
+        email: currentUser.email
+      });
+
+      if (registrationResult.success) {
+        console.log('User registered with socket successfully');
+
+        // Test socket connection
+        setTimeout(() => {
+          console.log('Testing socket connection for user:', currentUser.id);
+          NotificationService.testSocketConnection(socket, currentUser.id);
+        }, 1000);
+      } else {
+        console.error('Failed to register user with socket:', registrationResult.error);
+      }
+    } else {
+      console.log('Cannot register user with socket:', {
+        hasSocket: !!socket,
+        hasCurrentUser: !!currentUser,
+        isConnected,
+        currentUserId: currentUser?.id
+      });
     }
   }, [socket, currentUser, isConnected]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+
+      {/* Channel Invitation Modal - DISABLED: Only use notification bell */}
+      {/* {pendingInvitation && (
+        <ChannelInvitationModal
+          isOpen={!!pendingInvitation}
+          onClose={() => setPendingInvitation(null)}
+          invitation={pendingInvitation}
+        />
+      )} */}
+
+      {/* Meeting Invitation Modal - DISABLED: Only use channel chat notifications */}
+      {/* {pendingMeetingInvitation && (
+        <MeetingInvitationModal
+          isOpen={!!pendingMeetingInvitation}
+          onClose={() => setPendingMeetingInvitation(null)}
+          meetingData={pendingMeetingInvitation}
+          onAccept={handleMeetingAccept}
+          onDecline={handleMeetingDecline}
+        />
+      )} */}
+    </>
+  );
 }
 
 export default function RootLayout({
@@ -145,9 +234,12 @@ export default function RootLayout({
           <ThemeProvider>
             <SocketProvider>
               <ChatProvider>
-                <AppController>
-                  {children}
-                </AppController>
+                <ChannelProvider>
+                  <AppController>
+                    {children}
+                  </AppController>
+                  <Toaster />
+                </ChannelProvider>
               </ChatProvider>
             </SocketProvider>
           </ThemeProvider>

@@ -15,7 +15,18 @@ export class InvitationService {
     private static getStoredInvitations(): ChannelInvitation[] {
         try {
             const stored = localStorage.getItem(this.STORAGE_KEY);
-            return stored ? JSON.parse(stored) : [];
+            if (!stored) return [];
+
+            const invitations = JSON.parse(stored);
+
+            // Clean up invitations that don't have channelImage field (legacy data)
+            const cleanedInvitations = invitations.map((inv: any) => ({
+                ...inv,
+                // Ensure channelImage field exists (even if undefined)
+                channelImage: inv.channelImage
+            }));
+
+            return cleanedInvitations;
         } catch (error) {
             console.error('Error reading invitations from localStorage:', error);
             return [];
@@ -39,12 +50,15 @@ export class InvitationService {
     static async createInvitation(invitation: Omit<ChannelInvitation, 'id' | 'createdAt'>): Promise<InvitationServiceResponse> {
         try {
             console.log('🔔 Creating invitation:', invitation);
+            console.log('🖼️ Creating invitation with channelImage:', invitation.channelImage);
 
             const newInvitation: ChannelInvitation = {
                 ...invitation,
                 id: `inv_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
                 createdAt: new Date()
             };
+
+            console.log('🎯 New invitation created with channelImage:', newInvitation.channelImage);
 
             // Lấy invitations hiện tại
             const currentInvitations = this.getStoredInvitations();
@@ -191,6 +205,18 @@ export class InvitationService {
     }
 
     /**
+     * Clear all invitations (for debugging)
+     */
+    static clearAllInvitations(): void {
+        try {
+            localStorage.removeItem(this.STORAGE_KEY);
+            console.log('🧹 All invitations cleared from localStorage');
+        } catch (error) {
+            console.error('Error clearing invitations:', error);
+        }
+    }
+
+    /**
      * Xóa invitation
      */
     static async deleteInvitation(invitationId: string): Promise<InvitationServiceResponse> {
@@ -215,4 +241,9 @@ export class InvitationService {
             };
         }
     }
+}
+
+// Expose for debugging
+if (typeof window !== 'undefined') {
+    (window as any).clearInvitations = InvitationService.clearAllInvitations;
 } 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 // Removed framer-motion - using CSS transitions only
 import {
@@ -17,8 +17,11 @@ import {
     Clock,
     MoreVertical,
     Image as ImageIcon,
-    File as FileIcon
+    File as FileIcon,
+    Mic,
+    BarChart3
 } from 'lucide-react';
+import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -26,10 +29,20 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useChannels, ChannelMessage } from '@/contexts/ChannelContext';
+import { useSocketContext } from '@/contexts/SocketContext';
+import { io as socketIO } from 'socket.io-client';
 import { ChannelSidebar } from '@/components/chat/ChannelSidebar';
 import { InviteMemberModal } from '@/components/modals/hop/InviteMemberModal';
 import { ChannelSettingsMenu } from '@/components/chat/channel/ChannelSettingsMenu';
+import { CreatePollModal } from '@/components/chat/poll/CreatePollModal';
+import { PollResultsModal } from '@/components/chat/poll/PollResultsModal';
+import { PollMessage } from '@/components/chat/poll/PollMessage';
+import { Poll } from '@/app/types';
+import { NotificationService } from '@/services/notificationService';
+import { PollService } from '@/services/pollService';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useTheme } from '@/contexts/ThemeContext';
+import { usePostNotificationListener } from '@/hooks/usePostNotificationListener';
 
 interface Member {
     id: string;
@@ -39,19 +52,37 @@ interface Member {
 }
 
 export default function ChannelPage() {
+    const [message, setMessage] = useState("");
     const params = useParams();
     const router = useRouter();
     const channelId = params.channelId as string;
     const { toast } = useToast();
-    const { getChannel, addMessageToChannel, channels } = useChannels();
+    const { getChannel, addMessageToChannel, updateChannel, channels } = useChannels();
+    const { socket, isConnected } = useSocketContext();
     const currentUser = useCurrentUser();
+    const { isDarkMode } = useTheme();
+
+    // Listen for post notifications
+    usePostNotificationListener();
 
     const [channel, setChannel] = useState<any>(null);
-    const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
     const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [isListening, setIsListening] = useState(false);
+    const [showCreatePollModal, setShowCreatePollModal] = useState(false);
+    const [showPollResultsModal, setShowPollResultsModal] = useState(false);
+    const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
+
+    const emojiPickerRef = useRef<HTMLDivElement>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const recognitionRef = useRef<any>(null);
 
     useEffect(() => {
         // Load channel data from context
@@ -70,35 +101,180 @@ export default function ChannelPage() {
         }
     }, [channelId, getChannel, router, toast]);
 
+    const toggleListening = () => {
+        if (isListening) {
+            recognitionRef.current?.stop();
+        } else {
+            recognitionRef.current?.start();
+        }
+        setIsListening(!isListening);
+    };
+
     // Update channel data when channels change (for real-time updates)
     useEffect(() => {
         const channelData = getChannel(channelId);
         if (channelData) {
             setChannel(channelData);
-            console.log('Channel data updated:', channelData);
         }
     }, [channels, channelId, getChannel]);
 
-    const handleSendMessage = () => {
-        if (!newMessage.trim() || !channel || !currentUser) return;
+    // Auto-scroll to bottom when new messages arrive
+    useEffect(() => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [channel?.messages]);
 
-        // Add message to channel via context (this will also broadcast via Socket.io)
-        addMessageToChannel(channelId, {
-            content: newMessage.trim(),
-            sender: {
-                id: currentUser.id,
-                name: currentUser.name,
-                avatar: currentUser.avatar || '/placeholder-user.jpg'
-            },
-            type: 'text'
+    // Debug socket context on mount
+    useEffect(() => {
+        console.log('📊 Channel Page: Socket context debug');
+        console.log('🔗 Socket from useSocketContext:', {
+            exists: !!socket,
+            id: socket?.id,
+            connected: socket?.connected,
+            isConnected: isConnected
+        });
+        console.log('👤 Current user from hook:', {
+            id: currentUser?.id,
+            name: currentUser?.name
         });
 
-        setNewMessage('');
-        // Remove toast to make chat more seamless
-        // toast({
-        //     title: "Tin nhắn đã được gửi",
-        //     description: "Tin nhắn của bạn đã được gửi thành công"
-        // });
+        // Try to access socket directly from window if available
+        if (typeof window !== 'undefined') {
+            console.log('🌐 Window object check:', {
+                hasSocket: !!(window as any).socket
+            });
+        }
+    }, [socket, isConnected, currentUser]);
+
+    // Handle click outside emoji picker
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+                setShowEmojiPicker(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            handleSendMessage();
+        }
+    };
+
+    const onEmojiClick = (emojiData: EmojiClickData) => {
+        try {
+            setMessage((prev) => prev + emojiData.emoji);
+            setShowEmojiPicker(false);
+            console.log('✅ Emoji added:', emojiData.emoji);
+        } catch (error) {
+            console.error('❌ Error adding emoji:', error);
+        }
+    };
+
+    const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (files && files.length > 0) {
+            const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+            setSelectedFiles(prev => [...prev, ...imageFiles]);
+            setShowAttachmentMenu(false);
+        }
+        event.target.value = '';
+    };
+
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (files && files.length > 0) {
+            setSelectedFiles(prev => [...prev, ...Array.from(files)]);
+            setShowAttachmentMenu(false);
+        }
+        event.target.value = '';
+    };
+
+    const removeFile = (indexToRemove: number) => {
+        setSelectedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+    };
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const handleSendMessage = async () => {
+        if ((!message.trim() && selectedFiles.length === 0) || !channel || !currentUser) return;
+
+        // Clean avatar - only use if it's a real image URL
+        const cleanAvatar = currentUser.avatar && currentUser.avatar.trim() !== ''
+            ? currentUser.avatar
+            : undefined;
+
+        console.log('📝 Sending message with avatar and files:', {
+            userId: currentUser.id,
+            userName: currentUser.name,
+            avatar: cleanAvatar,
+            filesCount: selectedFiles.length
+        });
+
+        // Handle file uploads
+        if (selectedFiles.length > 0) {
+            for (const file of selectedFiles) {
+                try {
+                    // Convert file to base64 for simple storage (in production, use proper file upload service)
+                    const fileContent = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.readAsDataURL(file);
+                    });
+
+                    const fileType = file.type.startsWith('image/') ? 'image' : 'file';
+
+                    addMessageToChannel(channelId, {
+                        content: fileType === 'image' ? `📷 ${file.name}` : `📎 ${file.name}`,
+                        sender: {
+                            id: currentUser.id,
+                            name: currentUser.name,
+                            avatar: cleanAvatar
+                        },
+                        type: fileType as 'image' | 'file',
+                        fileData: {
+                            name: file.name,
+                            size: file.size,
+                            type: file.type,
+                            content: fileContent
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error uploading file:', error);
+                    toast({
+                        title: "Lỗi upload file",
+                        description: `Không thể upload ${file.name}`,
+                        variant: "destructive"
+                    });
+                }
+            }
+        }
+
+        // Send text message if exists
+        if (message.trim()) {
+            addMessageToChannel(channelId, {
+                content: message.trim(),
+                sender: {
+                    id: currentUser.id,
+                    name: currentUser.name,
+                    avatar: cleanAvatar
+                },
+                type: 'text'
+            });
+        }
+
+        setMessage('');
+        setSelectedFiles([]);
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -116,13 +292,41 @@ export default function ChannelPage() {
         });
     };
 
+    const AttachmentMenuItem = ({
+        icon,
+        label,
+        onClick,
+        color = "text-cyan-500"
+    }: {
+        icon: React.ReactNode;
+        label: string;
+        onClick: () => void;
+        color?: string;
+    }) => (
+        <button
+            onClick={onClick}
+            className={`w-full flex items-center gap-3 p-3 rounded-md text-sm transition-all duration-200 ${isDarkMode
+                ? "text-gray-300 hover:bg-gray-600 hover:text-white"
+                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                }`}
+        >
+            <span className={color}>{icon}</span>
+            {label}
+        </button>
+    );
+
     const handleUpdateChannel = (updates: Partial<{ name: string; description: string; image: string }>) => {
-        // TODO: Implement channel update logic
-        console.log('Updating channel:', updates);
-        toast({
-            title: "Kênh đã được cập nhật",
-            description: "Thông tin kênh đã được cập nhật thành công"
-        });
+        console.log('🔄 handleUpdateChannel called');
+        console.log('📊 Updates:', updates);
+        console.log('📊 Channel ID:', channelId);
+
+        if (!channel || !currentUser) {
+            console.error('❌ Missing channel or currentUser');
+            return;
+        }
+
+        // Update channel using ChannelContext (includes real-time sync & unified notifications)
+        updateChannel(channelId, updates);
     };
 
     const handleRemoveMember = (memberId: string) => {
@@ -137,6 +341,140 @@ export default function ChannelPage() {
     const handleNavigateToPosts = () => {
         router.push('/dashboard/posts');
         setShowSettingsMenu(false);
+    };
+
+    const handleCreatePoll = ({ question, options }: { question: string; options: string[] }) => {
+        setShowCreatePollModal(true);
+    };
+
+    const handleCreatePollSubmit = (pollData: Omit<Poll, "id" | "createdAt" | "totalVoters">) => {
+        if (!currentUser || !channel) return;
+
+        console.log(`📊 Creating new poll with PollService`);
+
+        // Create poll using PollService
+        const poll = PollService.createPoll(pollData, {
+            id: currentUser.id,
+            name: currentUser.name,
+            avatar: currentUser.avatar
+        });
+
+        const pollMessage = {
+            content: `📊 ${poll.question}`,
+            sender: {
+                id: currentUser.id,
+                name: currentUser.name,
+                avatar: currentUser.avatar
+            },
+            type: 'poll' as const,
+            poll: poll as any
+        };
+
+        console.log(`📤 Broadcasting poll message to channel ${channelId}:`, {
+            pollId: poll.id,
+            question: poll.question,
+            optionsCount: poll.options.length
+        });
+
+        addMessageToChannel(channelId, pollMessage);
+        setShowCreatePollModal(false);
+
+        toast({
+            title: "Thành công",
+            description: `Đã tạo cuộc bình chọn: "${poll.question}"`,
+        });
+    };
+
+    const handleVote = async (pollId: string, optionId: string) => {
+        if (!currentUser || !channel || !socket) return;
+
+        console.log(`🗳️ Starting vote process: User ${currentUser.name} voting on poll ${pollId}, option ${optionId}`);
+
+        try {
+            // Find the poll message
+            const pollMessageResult = PollService.findPollMessage(channel.messages, pollId);
+            if (!pollMessageResult) {
+                console.error(`❌ Poll message not found for poll ${pollId}`);
+                return;
+            }
+
+            const { message: pollMessage, index: messageIndex } = pollMessageResult;
+            const messageId = pollMessage.id;
+
+            console.log(`📊 Found poll message:`, {
+                messageId,
+                pollQuestion: pollMessage.poll.question,
+                pollId
+            });
+
+            // Validate poll and option
+            if (!PollService.validatePoll(pollMessage.poll) ||
+                !PollService.validatePollOption(pollMessage.poll, optionId)) {
+                return;
+            }
+
+            // Process the vote
+            const { updatedPoll, action, optionText } = PollService.processVote(
+                pollMessage.poll,
+                optionId,
+                {
+                    id: currentUser.id,
+                    name: currentUser.name,
+                    avatar: currentUser.avatar
+                }
+            );
+
+            // Update local state immediately for better UX
+            const updatedMessages = PollService.updatePollInMessages(
+                channel.messages,
+                pollId,
+                updatedPoll
+            );
+            setChannel({ ...channel, messages: updatedMessages });
+
+            // Send poll update to other clients via PollSyncManager
+            const updateSuccess = await PollService.sendPollUpdate(
+                socket,
+                channelId,
+                messageId,
+                updatedPoll,
+                {
+                    id: currentUser.id,
+                    name: currentUser.name,
+                    avatar: currentUser.avatar
+                },
+                action,
+                optionText
+            );
+
+            if (updateSuccess) {
+                console.log(`✅ Poll vote processed successfully`);
+                toast({
+                    title: action === 'added' ? "Đã bình chọn" : "Đã bỏ bình chọn",
+                    description: `${action === 'added' ? 'Đã vote' : 'Đã bỏ vote'} cho "${optionText}"`,
+                });
+            } else {
+                console.error(`❌ Failed to sync poll update`);
+                toast({
+                    title: "Lỗi",
+                    description: "Không thể đồng bộ bình chọn. Vui lòng thử lại.",
+                    variant: "destructive"
+                });
+            }
+
+        } catch (error) {
+            console.error(`❌ Error processing vote:`, error);
+            toast({
+                title: "Lỗi",
+                description: "Có lỗi xảy ra khi bình chọn. Vui lòng thử lại.",
+                variant: "destructive"
+            });
+        }
+    };
+
+    const handleViewResults = (poll: Poll) => {
+        setSelectedPoll(poll);
+        setShowPollResultsModal(true);
     };
 
     if (isLoading) {
@@ -168,28 +506,32 @@ export default function ChannelPage() {
     // Using CSS animations instead of framer-motion
 
     return (
-        <div className="h-screen flex bg-gray-50 dark:bg-gray-900">
+        <div className={`h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
             {/* Channel Sidebar */}
             <ChannelSidebar />
 
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col">
                 {/* Header */}
-                <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-6 py-4 shadow-sm`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => router.push('/dashboard/channels')}
-                                className="mr-2"
+                                className={`mr-2 ${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
                             >
                                 <ArrowLeft className="h-5 w-5" />
                             </Button>
                             <div className="flex items-center space-x-3">
                                 <Avatar className="h-10 w-10">
-                                    <AvatarImage src={channel.image} alt={channel.name} />
-                                    <AvatarFallback>{channel.name.charAt(0)}</AvatarFallback>
+                                    {channel.image && (
+                                        <AvatarImage src={channel.image} alt={channel.name} />
+                                    )}
+                                    <AvatarFallback className={`${isDarkMode ? 'bg-gray-600 text-white' : 'bg-gray-200 text-gray-900'}`}>
+                                        {channel.name.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
                                 </Avatar>
                                 <div>
                                     <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -200,7 +542,7 @@ export default function ChannelPage() {
                                     </p>
                                 </div>
                             </div>
-                            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                            <Badge variant="secondary" className={`${isDarkMode ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-gray-100 text-gray-700 border-gray-200'} border`}>
                                 Hoạt động
                             </Badge>
                         </div>
@@ -211,6 +553,7 @@ export default function ChannelPage() {
                                 size="icon"
                                 onClick={() => setShowInviteModal(true)}
                                 title="Mời thành viên"
+                                className={`${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
                             >
                                 <UserPlus className="h-5 w-5" />
                             </Button>
@@ -219,15 +562,17 @@ export default function ChannelPage() {
                                 size="icon"
                                 onClick={() => setShowSettingsMenu(true)}
                                 title="Cài đặt kênh"
+                                className={`${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
                             >
                                 <Settings className="h-5 w-5" />
                             </Button>
+
                         </div>
                     </div>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-3">
+                <div className={`flex-1 overflow-y-auto p-6 space-y-3 scrollbar-hide ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
                     {channel.messages.length === 0 ? (
                         <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
                             <div className="text-center">
@@ -298,6 +643,105 @@ export default function ChannelPage() {
                                 );
                             }
 
+                            // Poll message rendering
+                            if (message.type === 'poll' && message.poll) {
+                                return (
+                                    <div
+                                        key={message.id}
+                                        className={`flex items-start space-x-2 animate-in slide-in-from-bottom-1 duration-200 ${isMyMessage ? 'flex-row-reverse space-x-reverse' : ''
+                                            }`}
+                                    >
+                                        <Avatar className="h-8 w-8 flex-shrink-0 mt-1">
+                                            {message.sender.avatar && message.sender.avatar.trim() !== '' && (
+                                                <AvatarImage
+                                                    src={message.sender.avatar}
+                                                    alt={message.sender.name}
+                                                    onError={(e) => {
+                                                        console.log('🖼️ Avatar failed to load:', message.sender.avatar);
+                                                        e.currentTarget.style.display = 'none';
+                                                    }}
+                                                />
+                                            )}
+                                            <AvatarFallback className="text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                                                {message.sender.name.charAt(0).toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className={`flex flex-col ${isMyMessage ? 'items-end' : 'items-start'} max-w-[80%]`}>
+                                            <div className={`text-xs text-gray-500 dark:text-gray-400 mb-2 ${isMyMessage ? 'text-right' : ''
+                                                }`}>
+                                                <span className="font-medium">
+                                                    {isMyMessage ? 'Bạn' : message.sender.name}
+                                                </span>
+                                                <span className="ml-2">
+                                                    {formatTime(message.timestamp)}
+                                                </span>
+                                            </div>
+                                            <PollMessage
+                                                poll={message.poll as any}
+                                                currentUserId={currentUser?.id || ''}
+                                                onVote={handleVote}
+                                                onViewResults={handleViewResults as any}
+                                                isDarkMode={isDarkMode}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // Post notification message rendering
+                            if (message.type === 'post_notification' && message.postData) {
+                                return (
+                                    <div key={message.id} className="flex items-center justify-center my-4">
+                                        <div
+                                            className="bg-gradient-to-r from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 max-w-md w-full border border-green-200 dark:border-green-800 cursor-pointer hover:shadow-lg transition-all duration-200"
+                                            onClick={() => router.push(`/dashboard/posts/${message.postData?.postId}`)}
+                                        >
+                                            <div className="flex items-center space-x-3 mb-3">
+                                                <div className="flex-shrink-0">
+                                                    <Avatar className="h-10 w-10">
+                                                        {message.postData.authorAvatar && (
+                                                            <AvatarImage
+                                                                src={message.postData.authorAvatar}
+                                                                alt={message.postData.authorName}
+                                                            />
+                                                        )}
+                                                        <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+                                                            {message.postData.authorName.charAt(0).toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                                                        📝 Bài đăng mới
+                                                    </h4>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                        {message.postData.authorName} đã đăng bài
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <h5 className="font-medium text-gray-900 dark:text-white text-sm">
+                                                    {message.postData.title}
+                                                </h5>
+                                                <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                                                    {message.postData.excerpt}
+                                                </p>
+                                            </div>
+
+                                            <div className="mt-3 flex items-center justify-between">
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {formatTime(new Date(message.postData.createdAt))}
+                                                </span>
+                                                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                                    Bấm để xem bài →
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
                             // Regular text message rendering
                             return (
                                 <div
@@ -306,10 +750,21 @@ export default function ChannelPage() {
                                         }`}
                                 >
                                     <Avatar className="h-8 w-8 flex-shrink-0">
-                                        <AvatarImage src={message.sender.avatar} alt={message.sender.name} />
-                                        <AvatarFallback className="text-xs">{message.sender.name.charAt(0)}</AvatarFallback>
+                                        {message.sender.avatar && message.sender.avatar.trim() !== '' && (
+                                            <AvatarImage
+                                                src={message.sender.avatar}
+                                                alt={message.sender.name}
+                                                onError={(e) => {
+                                                    console.log('🖼️ Avatar failed to load:', message.sender.avatar);
+                                                    e.currentTarget.style.display = 'none';
+                                                }}
+                                            />
+                                        )}
+                                        <AvatarFallback className="text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                                            {message.sender.name.charAt(0).toUpperCase()}
+                                        </AvatarFallback>
                                     </Avatar>
-                                    <div className={`flex flex-col ${isMyMessage ? 'items-end' : 'items-start'} max-w-xs`}>
+                                    <div className={`flex flex-col ${isMyMessage ? 'items-end' : 'items-start'} max-w-[70%]`}>
                                         <div className={`text-xs text-gray-500 dark:text-gray-400 mb-1 ${isMyMessage ? 'text-right' : ''
                                             }`}>
                                             <span className="font-medium">
@@ -319,42 +774,153 @@ export default function ChannelPage() {
                                                 {formatTime(message.timestamp)}
                                             </span>
                                         </div>
-                                        <div className={`p-3 rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md ${isMyMessage
-                                            ? 'bg-blue-500 text-white rounded-br-md'
-                                            : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-bl-md'
+                                        <div className={`rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md animate-in zoom-in duration-200 ${isMyMessage
+                                            ? isDarkMode
+                                                ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-br-md'
+                                                : 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-br-md'
+                                            : isDarkMode
+                                                ? 'bg-gray-800 text-white border border-gray-700 hover:border-gray-600 rounded-bl-md'
+                                                : 'bg-white text-gray-800 border border-gray-200 hover:border-gray-300 rounded-bl-md'
                                             }`}>
-                                            <p className="text-sm leading-relaxed break-words">
-                                                {message.content}
-                                            </p>
+                                            {message.type === 'image' && message.fileData ? (
+                                                <div className="overflow-hidden">
+                                                    <img
+                                                        src={message.fileData.content}
+                                                        alt={message.fileData.name}
+                                                        className="max-w-xs max-h-60 cursor-pointer hover:opacity-90 transition-opacity block rounded-lg object-cover"
+                                                        onClick={() => window.open(message.fileData?.content, '_blank')}
+                                                    />
+                                                    <p className="text-xs mt-1 opacity-75 px-2 pb-1">{message.fileData.name}</p>
+                                                </div>
+                                            ) : message.type === 'file' && message.fileData ? (
+                                                <div className="p-3 flex items-center space-x-3 w-64">
+                                                    <FileIcon className={`w-8 h-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium truncate">{message.fileData.name}</p>
+                                                        <p className="text-xs opacity-75">{formatFileSize(message.fileData.size)}</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            const link = document.createElement('a');
+                                                            link.href = message.fileData?.content || '';
+                                                            link.download = message.fileData?.name || 'file';
+                                                            link.click();
+                                                        }}
+                                                        className={`text-xs px-2 py-1 rounded ${isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}`}
+                                                    >
+                                                        Tải xuống
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="p-3 max-w-md">
+                                                    <p className="text-sm leading-relaxed break-words">
+                                                        {message.content}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             );
                         })
                     )}
+                    {/* Auto-scroll target */}
+                    <div ref={messagesEndRef} />
                 </div>
 
                 {/* Message Input */}
-                <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
-                    <div className="flex items-center space-x-3">
-                        {/* Emoji Button */}
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                        >
-                            <Smile className="h-5 w-5" />
-                        </Button>
+                <div className={`border-t p-4 shadow-lg ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                    {/* File Preview */}
+                    {selectedFiles.length > 0 && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                            {selectedFiles.map((file, index) => (
+                                <div key={index} className={`relative rounded-lg p-2 flex items-center space-x-2 max-w-xs border shadow-sm ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'}`}>
+                                    {file.type.startsWith('image/') ? (
+                                        <img
+                                            src={URL.createObjectURL(file)}
+                                            alt={file.name}
+                                            className="w-10 h-10 rounded object-cover"
+                                        />
+                                    ) : (
+                                        <FileIcon className={`w-8 h-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{file.name}</p>
+                                        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{formatFileSize(file.size)}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => removeFile(index)}
+                                        className={`text-red-500 hover:text-red-700 p-1 rounded-full ${isDarkMode ? 'hover:bg-red-900' : 'hover:bg-red-100'}`}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Hidden file inputs */}
+                    <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageSelect}
+                        className="hidden"
+                    />
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        onChange={handleFileSelect}
+                        className="hidden"
+                    />
+
+                    <div className="flex items-end space-x-3 relative">
+
+                        {/* Emoji Picker */}
+                        <div ref={emojiPickerRef} className="relative">
+                            {showEmojiPicker && (
+                                <div className="absolute bottom-full mb-2 z-50 shadow-2xl rounded-lg overflow-hidden">
+                                    <EmojiPicker
+                                        onEmojiClick={onEmojiClick}
+                                        autoFocusSearch={false}
+                                        height={400}
+                                        width={350}
+                                        theme={Theme.AUTO}
+                                        lazyLoadEmojis={true}
+                                        previewConfig={{
+                                            showPreview: false
+                                        }}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Emoji Button */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                className={`transition-colors ${isDarkMode ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'}`}
+                            >
+                                <Smile className="h-5 w-5" />
+                            </Button>
+                        </div>
+
+
 
                         {/* Input Field */}
                         <div className="flex-1 relative">
                             <input
+                                ref={inputRef}
                                 type="text"
                                 placeholder="Nhập tin nhắn của bạn..."
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12 transition-all duration-300 ${'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400'
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 pr-12 transition-all duration-300 ${isDarkMode
+                                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-gray-500 focus:border-gray-500"
+                                    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-400"
                                     }`}
                             />
 
@@ -364,38 +930,65 @@ export default function ChannelPage() {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                        className={`transition-colors duration-200 ${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"
+                                            }`}
                                         onClick={() => setShowAttachmentMenu(p => !p)}
                                     >
                                         <Paperclip className="h-4 w-4" />
                                     </Button>
 
+
                                     {showAttachmentMenu && (
                                         <div
+
                                             onMouseLeave={() => setShowAttachmentMenu(false)}
-                                            className="absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-xl w-48 z-20 bg-white dark:bg-gray-700 border dark:border-gray-600 shadow-lg animate-in slide-in-from-bottom-2 duration-200"
+                                            className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-xl w-48 z-20 ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border shadow-lg"
+                                                }`}
                                         >
-                                            <div className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md cursor-pointer transition-colors text-green-500">
-                                                <ImageIcon className="h-5 w-5 mr-3" />
-                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Ảnh</span>
-                                            </div>
-                                            <div className="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md cursor-pointer transition-colors text-blue-500">
-                                                <FileIcon className="h-5 w-5 mr-3" />
-                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Tệp</span>
-                                            </div>
+                                            <AttachmentMenuItem
+                                                icon={<ImageIcon className="h-5 w-5" />}
+                                                label="Ảnh"
+                                                onClick={() => imageInputRef.current?.click()}
+                                                color={isDarkMode ? "text-gray-400" : "text-gray-600"}
+                                            />
+                                            <AttachmentMenuItem
+                                                icon={<FileIcon className="h-5 w-5" />}
+                                                label="Tệp"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                color={isDarkMode ? "text-gray-400" : "text-gray-600"}
+                                            />
+                                            <AttachmentMenuItem
+                                                icon={<BarChart3 className="h-5 w-5" />}
+                                                label="Bình luận"
+                                                onClick={() => setShowCreatePollModal(true)}
+                                                color="text-purple-500"
+                                            />
                                         </div>
                                     )}
+
                                 </div>
                             </div>
                         </div>
 
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={toggleListening}
+                            className={`transition-all duration-200 ${isListening
+                                ? "text-red-500 bg-red-50 dark:bg-red-900/20"
+                                : (isDarkMode ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100")
+                                }`}
+                        >
+                            <Mic className="h-5 w-5" />
+                        </Button>
+
                         {/* Send Button */}
                         <Button
                             onClick={handleSendMessage}
-                            disabled={!newMessage.trim()}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4"
+                            disabled={!message.trim() && selectedFiles.length === 0}
+                            className={`w-12 h-12 rounded-full text-white shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center ${(!message.trim() && selectedFiles.length === 0) ? 'bg-gray-400 cursor-not-allowed' : isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'}`}
                         >
-                            <Send className="h-4 w-4" />
+                            <Send className="h-5 w-5" />
                         </Button>
                     </div>
                 </div>
@@ -423,11 +1016,30 @@ export default function ChannelPage() {
                         role: member.role || 'member'
                     })) || []
                 }}
-                currentUser={currentUser || { id: '', name: '', avatar: '' }}
+                currentUser={currentUser || { id: '', name: '' }}
                 onUpdateChannel={handleUpdateChannel}
                 onRemoveMember={handleRemoveMember}
                 onNavigateToPosts={handleNavigateToPosts}
             />
+
+            {/* Create Poll Modal */}
+            <CreatePollModal
+                isOpen={showCreatePollModal}
+                onClose={() => setShowCreatePollModal(false)}
+                onCreatePoll={handleCreatePollSubmit as any}
+                isDarkMode={isDarkMode}
+                currentUser={currentUser || { id: '', name: '' }}
+            />
+
+            {/* Poll Results Modal */}
+            {selectedPoll && (
+                <PollResultsModal
+                    isOpen={showPollResultsModal}
+                    onClose={() => setShowPollResultsModal(false)}
+                    poll={selectedPoll as any}
+                    isDarkMode={isDarkMode}
+                />
+            )}
         </div>
     );
 } 

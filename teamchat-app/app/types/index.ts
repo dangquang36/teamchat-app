@@ -87,17 +87,22 @@ export interface Post {
         title?: string
         verified?: boolean
     }
+    title: string // Added title field
     content: string
+    plainTextContent?: string // Added for search functionality
     images?: string[]
     video?: string
     timestamp: number
+    createdAt: string // Added ISO date string
+    updatedAt: string // Added ISO date string
     likes: number
     comments: number
     shares: number
-    bookmarks: number
+    bookmarks?: number
     isLiked: boolean
     isBookmarked: boolean
-    visibility: "public" | "friends" | "private"
+    visibility: "public" | "friends" | "private" | "channels" // Added channels visibility
+    sharedChannels?: string[] // Added for channel-specific sharing
     tags?: string[]
     location?: string
     attachments?: { type: "file"; name: string; url: string }[]

@@ -248,9 +248,9 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
     return (
         <>
 
-            <div className="flex h-screen w-full bg-white dark:bg-gray-900 overflow-hidden relative">
+            <div className="flex h-screen w-full bg-gradient-to-br from-purple-50 to-blue-50 dark:bg-gray-900 overflow-hidden relative">
                 {/* Phần danh sách chat bên trái */}
-                <div className={`w-80 border-r transition-colors duration-300 flex-shrink-0 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <div className={`w-80 border-r transition-colors duration-300 flex-shrink-0 ${isDarkMode ? 'bg-gray-800 border-gray-700 backdrop-blur-none' : 'bg-white/90 backdrop-blur-sm border-purple-100'}`}>
                     <div className="p-4 border-b">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className={`text-lg font-semibold flex items-center gap-2 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -287,9 +287,9 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                             <input
                                 type="text"
                                 placeholder="Tìm kiếm người dùng hoặc email..."
-                                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-300 ${isDarkMode
-                                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 ${isDarkMode
+                                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 backdrop-blur-none'
+                                    : 'bg-white/90 backdrop-blur-sm border-purple-200 text-gray-900 placeholder-gray-500'
                                     }`}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -373,10 +373,10 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                 </div>
 
                 {/* Phần khung chat chính - điều chỉnh width dựa trên rightPanelView */}
-                <div 
+                <div
                     className="flex flex-col min-w-0 transition-all duration-300"
                     style={{
-                        width: rightPanelView !== 'closed' 
+                        width: rightPanelView !== 'closed'
                             ? 'calc(100% - 320px - 320px)' // left sidebar (320px) + right sidebar (320px)
                             : 'calc(100% - 320px)' // chỉ left sidebar (320px)
                     }}
@@ -411,12 +411,12 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                             {/* Enhanced Call status banner */}
 
                             {callStatusInfo && (
-                                <div className={`p-4 text-center border-b backdrop-blur-sm animate-in slide-in-from-top duration-200 ${callStatusInfo.color === 'green' ? (isDarkMode ? 'bg-green-900/50 border-green-700 text-green-200' : 'bg-green-50 border-green-200 text-green-800') :
-                                    callStatusInfo.color === 'yellow' ? (isDarkMode ? 'bg-yellow-900/50 border-yellow-700 text-yellow-200' : 'bg-yellow-50 border-yellow-200 text-yellow-800') :
-                                        callStatusInfo.color === 'blue' ? (isDarkMode ? 'bg-blue-900/50 border-blue-700 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800') :
-                                            callStatusInfo.color === 'orange' ? (isDarkMode ? 'bg-orange-900/50 border-orange-700 text-orange-200' : 'bg-orange-50 border-orange-200 text-orange-800') :
-                                                callStatusInfo.color === 'red' ? (isDarkMode ? 'bg-red-900/50 border-red-700 text-red-200' : 'bg-red-50 border-red-200 text-red-800') :
-                                                    (isDarkMode ? 'bg-gray-800/50 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-800')
+                                <div className={`p-4 text-center border-b ${isDarkMode ? 'backdrop-blur-none' : 'backdrop-blur-sm'} animate-in slide-in-from-top duration-200 ${callStatusInfo.color === 'green' ? (isDarkMode ? 'bg-green-900 border-green-700 text-green-200' : 'bg-green-50 border-green-200 text-green-800') :
+                                    callStatusInfo.color === 'yellow' ? (isDarkMode ? 'bg-yellow-900 border-yellow-700 text-yellow-200' : 'bg-yellow-50 border-yellow-200 text-yellow-800') :
+                                        callStatusInfo.color === 'blue' ? (isDarkMode ? 'bg-blue-900 border-blue-700 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800') :
+                                            callStatusInfo.color === 'orange' ? (isDarkMode ? 'bg-orange-900 border-orange-700 text-orange-200' : 'bg-orange-50 border-orange-200 text-orange-800') :
+                                                callStatusInfo.color === 'red' ? (isDarkMode ? 'bg-red-900 border-red-700 text-red-200' : 'bg-red-50 border-red-200 text-red-800') :
+                                                    (isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-800')
                                     }`}
                                 >
                                     <div className="flex items-center justify-center gap-3">
@@ -511,7 +511,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                     <div
                         key="details-panel"
                         className="flex-shrink-0 overflow-hidden border-l animate-in slide-in-from-right duration-300"
-                        style={{ 
+                        style={{
                             width: '320px',
                             borderColor: isDarkMode ? '#374151' : '#e5e7eb'
                         }}
@@ -534,7 +534,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                     <div
                         key="archive-panel"
                         className="flex-shrink-0 overflow-hidden border-l animate-in slide-in-from-right duration-300"
-                        style={{ 
+                        style={{
                             width: '320px',
                             borderColor: isDarkMode ? '#374151' : '#e5e7eb'
                         }}

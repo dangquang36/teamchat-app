@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon } from "lucide-react";
+import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon, BarChart3 } from "lucide-react";
 // Removed framer-motion - using CSS transitions only
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import type { ChatInputProps } from "@/app/types";
@@ -22,7 +22,7 @@ const formatFileSize = (bytes: number, decimals = 2) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
-export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps) {
+export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: ChatInputProps) {
     const [message, setMessage] = useState("");
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [isListening, setIsListening] = useState(false);
@@ -302,6 +302,12 @@ export function ChatInput({ onSendMessage, isDarkMode = false }: ChatInputProps)
                                         label="Tệp"
                                         onClick={() => fileInputRef.current?.click()}
                                         color="text-blue-500"
+                                    />
+                                    <AttachmentMenuItem
+                                        icon={<BarChart3 className="h-5 w-5" />}
+                                        label="Bình luận"
+                                        onClick={() => onCreatePoll && onCreatePoll({ question: '', options: ['', ''] })}
+                                        color="text-purple-500"
                                     />
                                 </div>
                             )}

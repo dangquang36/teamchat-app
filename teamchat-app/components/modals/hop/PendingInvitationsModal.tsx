@@ -25,12 +25,24 @@ export function PendingInvitationsModal({ isOpen, onClose }: PendingInvitationsM
     const handleAccept = async (invitation: any) => {
         setIsLoading(true);
         try {
+            // Chỉ truyền avatar nếu nó có giá trị thật và không phải string rỗng
+            const userAvatar = currentUser?.avatar && currentUser.avatar.trim() !== ''
+                ? currentUser.avatar
+                : undefined;
+
+            console.log('🔍 Current user data for invitation accept:', {
+                id: currentUser?.id,
+                name: currentUser?.name,
+                avatar: userAvatar,
+                originalAvatar: currentUser?.avatar
+            });
+
             const result = await acceptChannelInvitation(
                 invitation.id,
                 invitation.channelId,
                 currentUser?.id || '',
                 currentUser?.name || '',
-                currentUser?.avatar
+                userAvatar
             );
 
             if (result.success) {

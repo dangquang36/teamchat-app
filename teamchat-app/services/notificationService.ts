@@ -140,4 +140,66 @@ export class NotificationService {
             };
         }
     }
+
+    /**
+     * Gửi poll vote notification
+     */
+    static sendPollVoteNotification(
+        socket: any,
+        channelId: string,
+        pollId: string,
+        optionId: string,
+        voter: { id: string; name: string; avatar?: string },
+        pollQuestion: string,
+        optionText: string
+    ): NotificationServiceResponse {
+        console.log('📊 Sending poll vote notification for channel:', channelId);
+        console.log('🗳️ Vote data:', { pollId, optionId, voter, pollQuestion, optionText });
+
+        return this.sendSocketNotification(socket, 'pollVoted', {
+            channelId,
+            pollId,
+            optionId,
+            voter,
+            pollQuestion,
+            optionText,
+            timestamp: new Date()
+        });
+    }
+
+    /**
+     * Gửi poll update (real-time sync poll data)
+     */
+    static sendPollUpdate(
+        socket: any,
+        channelId: string,
+        messageId: string,
+        updatedPoll: any
+    ): NotificationServiceResponse {
+        console.log('📊 [NotificationService] Sending poll update for channel:', channelId);
+        console.log('🔄 Poll ID being sent:', updatedPoll.id);
+        console.log('🔄 Poll question:', updatedPoll.question);
+        console.log('🔄 Total voters:', updatedPoll.totalVoters);
+        console.log('📡 Socket connected:', socket?.connected);
+        console.log('📡 Socket ID:', socket?.id);
+
+        const payload = {
+            channelId,
+            messageId,
+            updatedPoll,
+            timestamp: new Date()
+        };
+
+        console.log('📤 Full payload being sent:', payload);
+
+        const result = this.sendSocketNotification(socket, 'pollUpdated', payload);
+
+        if (result.success) {
+            console.log('✅ Poll update sent successfully for poll:', updatedPoll.id);
+        } else {
+            console.error('❌ Failed to send poll update:', result.error);
+        }
+
+        return result;
+    }
 } 

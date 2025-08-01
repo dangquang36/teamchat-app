@@ -112,7 +112,7 @@ export function ChannelsSection({ onCreatePost }: ChannelsSectionProps) {
 
     return (
         <>
-            <div className="h-full flex bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-slate-900 overflow-y-auto">
+            <div className="h-full flex bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-slate-900 overflow-y-auto">
                 {/* Channel Sidebar - Show if there are channels */}
                 {channels.length > 0 && <ChannelSidebar />}
 

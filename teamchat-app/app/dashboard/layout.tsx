@@ -7,6 +7,9 @@ import { SidebarIcon } from "@/components/common/SidebarIcon";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useSocketContext } from "@/contexts/SocketContext";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useToast } from "@/hooks/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PostNotificationToast } from "@/components/modals/Pos/PostNotificationToast";
 
 // Giao diện người dùng của Dashboard
 function LayoutUI({ children }: { children: React.ReactNode }) {
@@ -16,6 +19,7 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
     const { isDarkMode, toggleDarkMode } = useTheme();
     const { isConnected, isInCall, callStatus } = useSocketContext();
     const currentUser = useCurrentUser();
+    const { toast } = useToast();
 
     useEffect(() => {
         const userToken = localStorage.getItem("userToken");
@@ -51,6 +55,46 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
             window.removeEventListener('userDataUpdated', loadUserData);
         };
     }, []);
+
+    // Global toast system for channel updates
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            (window as any).showChannelUpdateToast = (updateInfo: {
+                title: string;
+                description: string;
+                updatedBy: { id: string; name: string; avatar?: string };
+            }) => {
+                toast({
+                    title: updateInfo.title,
+                    description: updateInfo.description,
+                    duration: 4000,
+                    className: "bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-100",
+                });
+            };
+
+            // Fallback event listener for channel updates
+            const handleChannelUpdateNotification = (event: any) => {
+                try {
+                    toast({
+                        title: event.detail.title,
+                        description: event.detail.description,
+                        duration: 4000,
+                        className: "bg-green-50 border-green-200 text-green-900 dark:bg-green-950 dark:border-green-800 dark:text-green-100",
+                    });
+                } catch (error) {
+                    console.error('Error displaying notification:', error);
+                }
+            };
+
+            document.addEventListener('showChannelUpdateNotification', handleChannelUpdateNotification);
+
+            // Cleanup
+            return () => {
+                delete (window as any).showChannelUpdateToast;
+                document.removeEventListener('showChannelUpdateNotification', handleChannelUpdateNotification);
+            };
+        }
+    }, [toast]);
 
     const handleNavigation = (route: string) => {
         setCurrentPath(route);
@@ -189,6 +233,9 @@ function LayoutUI({ children }: { children: React.ReactNode }) {
             <div className="flex-1 overflow-hidden">
                 {children}
             </div>
+
+            {/* Post Notification Toast */}
+            <PostNotificationToast />
         </div>
     );
 }

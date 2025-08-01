@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Plus, Search } from "lucide-react";
 import { usePosts } from "@/hooks/usePosts";
@@ -8,8 +9,13 @@ import { Post } from "@/app/types";
 import { PostCard } from "./PostCard";
 import { CreatePostModal } from "./CreatePostModal";
 import { CommentsModal } from "./CommentsModal";
+import { useSocket } from "@/contexts/SocketContext";
+import { usePostNotifications } from "@/services/postNotificationService";
+import { usePostNotificationListener } from "@/hooks/usePostNotificationListener";
+import { useSocketDebug } from "@/hooks/useSocketDebug";
 
 export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
+  const router = useRouter();
   const {
     filteredPosts,
     comments,
@@ -24,6 +30,15 @@ export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
     deletePost,
     updatePost,
   } = usePosts();
+
+  const { socket } = useSocket();
+  const { sendPostNotification } = usePostNotifications();
+
+  // Listen for post notifications
+  usePostNotificationListener();
+
+  // Debug socket events
+  useSocketDebug();
 
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -117,7 +132,7 @@ export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
                 : "bg-gray-100 hover:bg-gray-200 text-gray-500"
                 }`}
             >
-              Bạn đang nghĩ gì?
+              Tạo bài viết mới với Tiptap Editor...
             </button>
           </div>
         </div>
@@ -159,8 +174,41 @@ export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
         isOpen={showCreatePost}
         onClose={() => setShowCreatePost(false)}
         onSubmit={(newPost: Post) => {
+          console.log('🎯 PostsSection: Received new post for submission:', newPost.title);
+          console.log('📝 Post details:', {
+            id: newPost.id,
+            title: newPost.title,
+            visibility: newPost.visibility,
+            sharedChannels: newPost.sharedChannels,
+            author: newPost.author.name
+          });
+          console.log('🔌 Socket status:', {
+            connected: socket?.connected,
+            id: socket?.id
+          });
+
+          // Thêm bài đăng vào danh sách TRƯỚC KHI gửi thông báo
           addPost(newPost);
+
+          // Gửi thông báo nếu cần
+          try {
+            console.log('📢 Attempting to send post notification...');
+            const notificationResult = sendPostNotification(socket, newPost);
+            console.log('📢 Notification result:', notificationResult);
+
+            if (!notificationResult.success) {
+              console.error('❌ Failed to send post notification:', notificationResult.error);
+            } else {
+              console.log('✅ Post notification sent successfully', notificationResult.data);
+            }
+          } catch (error) {
+            console.error('💥 Error sending post notification:', error);
+          }
+
           setShowCreatePost(false);
+
+          // Show success message
+          console.log('✅ Post created successfully:', newPost.title);
         }}
         isDarkMode={isDarkMode}
       />

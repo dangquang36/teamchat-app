@@ -43,6 +43,7 @@ export function useRealTimeUpdates() {
 
         const handleChannelInvitationReceived = async (invitation: ChannelInvitation) => {
             console.log('🔔 Received channel invitation:', invitation);
+            console.log('🖼️ Received invitation channelImage:', invitation.channelImage);
 
             // Only process if it's for the current user
             if (invitation.inviteeId === currentUser.id) {
@@ -83,6 +84,7 @@ export function useRealTimeUpdates() {
                 const saveResult = await InvitationService.createInvitation({
                     channelId: invitation.channelId,
                     channelName: invitation.channelName,
+                    channelImage: invitation.channelImage, // ✅ Include channel image
                     inviterId: invitation.inviterId,
                     inviterName: invitation.inviterName,
                     inviterAvatar: invitation.inviterAvatar,
@@ -93,6 +95,7 @@ export function useRealTimeUpdates() {
 
                 if (saveResult.success) {
                     console.log('✅ Invitation saved to recipient localStorage:', saveResult.data);
+                    console.log('🖼️ Saved invitation channelImage:', saveResult.data.channelImage);
 
                     // Update local state with the saved invitation (which has proper ID)
                     setPendingInvitations(prev => {

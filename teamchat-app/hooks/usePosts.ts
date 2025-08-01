@@ -1,9 +1,22 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Post, Comment } from "@/app/types"
 import { mockPosts, mockComments } from "@/data/mockData"
 
 export const usePosts = () => {
-    const [posts, setPosts] = useState<Post[]>(mockPosts)
+    const [posts, setPosts] = useState<Post[]>(() => {
+        // Load from localStorage if available
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('teamchat-posts');
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    console.error('Error loading posts from localStorage:', e);
+                }
+            }
+        }
+        return mockPosts;
+    })
     const [comments, setComments] = useState<Comment[]>(mockComments)
     const [searchQuery, setSearchQuery] = useState("")
 
@@ -36,8 +49,20 @@ export const usePosts = () => {
         console.log("Chia sẻ bài viết:", postId);
     }
 
+    // Save posts to localStorage whenever posts change
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('teamchat-posts', JSON.stringify(posts));
+        }
+    }, [posts]);
+
     const addPost = (newPost: Post) => {
-        setPosts((prev) => [newPost, ...prev])
+        console.log('📝 Adding new post:', newPost.title);
+        setPosts((prev) => {
+            const updated = [newPost, ...prev];
+            console.log('📝 Updated posts count:', updated.length);
+            return updated;
+        });
     }
 
     // DELETE POST FUNCTION - ADDED

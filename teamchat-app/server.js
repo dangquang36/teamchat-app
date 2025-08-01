@@ -484,6 +484,7 @@ nextApp.prepare().then(() => {
 
         socket.on('acceptChannelInvitation', ({ inviterId, payload }) => {
             console.log(`✅ Channel invitation accepted by ${payload.inviteeName} for channel ${payload.channelId}`);
+            console.log('📋 Server received payload:', payload);
 
             // Notify inviter
             const inviterSocketId = userSocketMap[inviterId];
@@ -492,15 +493,23 @@ nextApp.prepare().then(() => {
                 console.log(`📤 Notified inviter ${inviterId}`);
             }
 
+            const newMemberData = {
+                id: payload.inviteeId,
+                name: payload.inviteeName,
+                avatar: payload.inviteeAvatar,
+                status: 'online',
+                joinedAt: new Date()
+            };
+
+            console.log('👤 Broadcasting new member data:', newMemberData);
+
             // Broadcast to all users in the channel (for real-time member updates)
             io.emit('channelMemberJoined', {
                 channelId: payload.channelId,
-                newMember: {
-                    id: payload.inviteeId,
-                    name: payload.inviteeName,
-                    avatar: payload.inviteeAvatar,
-                    status: 'online',
-                    joinedAt: new Date()
+                newMember: newMemberData,
+                channelData: {
+                    name: payload.channelName,
+                    image: payload.channelImage // Include channel image for sync
                 }
             });
             console.log(`📢 Broadcast member joined to all users in channel ${payload.channelId}`);
@@ -511,6 +520,53 @@ nextApp.prepare().then(() => {
             if (inviterSocketId) {
                 io.to(inviterSocketId).emit('channelInvitationDeclined', payload);
                 console.log(`❌ Channel invitation declined by ${payload.inviteeName}`);
+            }
+        });
+
+
+
+        // Test simple event handler
+        socket.on('testSimple', (data, callback) => {
+            console.log('🧪 SERVER: Received testSimple event:', data);
+            if (callback && typeof callback === 'function') {
+                callback({ success: true, message: 'Simple test worked!' });
+                console.log('🧪 SERVER: Sent simple test response');
+            }
+        });
+
+        // Handle channel info updates
+        socket.on('updateChannelInfo', (payload, callback) => {
+            console.log('🔄 SERVER: Channel update received!');
+            console.log('📊 SERVER: Payload:', JSON.stringify(payload, null, 2));
+            console.log(`📊 SERVER: Channel ID: ${payload?.channelId}`);
+            console.log(`📊 SERVER: Updated by: ${payload?.updatedBy?.name}`);
+            console.log(`📊 SERVER: Updates:`, payload?.updates);
+
+            const broadcastPayload = {
+                channelId: payload.channelId,
+                updates: payload.updates,
+                updatedBy: payload.updatedBy
+            };
+
+            console.log('📢 SERVER: Broadcasting to all clients...');
+            // Broadcast to all users (they will filter by channelId)
+            io.emit('channelInfoUpdated', broadcastPayload);
+            console.log(`📢 SERVER: Broadcast complete to ${io.engine.clientsCount} clients`);
+
+            // Send acknowledgment back to client
+            if (callback && typeof callback === 'function') {
+                callback({ success: true, message: 'Channel update broadcasted successfully' });
+                console.log('📝 SERVER: Sent acknowledgment to client');
+            } else {
+                console.log('📝 SERVER: No callback provided');
+            }
+        });
+
+        // Debug: Log all events received by this socket
+        socket.onAny((eventName, ...args) => {
+            console.log(`🎯 SERVER: Socket ${socket.id} received event: "${eventName}"`);
+            if (eventName === 'updateChannelInfo') {
+                console.log(`🎯 SERVER: updateChannelInfo args:`, args);
             }
         });
 
@@ -527,11 +583,83 @@ nextApp.prepare().then(() => {
         // Channel message events
         socket.on('sendChannelMessage', ({ channelId, message, senderId }) => {
             console.log(`💬 Channel message sent to ${channelId} by ${senderId}`);
+            console.log(`📎 Message type: ${message.type}`);
+            console.log(`📁 Has file data: ${!!message.fileData}`);
+
+            if (message.fileData) {
+                console.log(`📋 File info: ${message.fileData.name} (${message.fileData.size} bytes)`);
+            }
+
+            // Special handling for poll messages
+            if (message.type === 'poll' && message.poll) {
+                console.log(`📊 Poll message details:`, {
+                    pollId: message.poll.id,
+                    question: message.poll.question,
+                    options: message.poll.options.map(opt => ({ id: opt.id, text: opt.text })),
+                    creator: message.poll.createdByName
+                });
+            }
+
             console.log(`📤 Broadcasting to all users EXCEPT sender ${senderId}`);
 
             // Broadcast to all channel members EXCEPT the sender
             socket.broadcast.emit('channelMessageReceived', { channelId, message });
             console.log(`✅ Message broadcasted to channel ${channelId}`);
+        });
+
+        // Poll vote notification events
+        socket.on('pollVoted', (payload) => {
+            console.log(`🗳️ [Server] Poll vote notification for channel ${payload.channelId}`);
+            console.log(`👤 [Server] Voter: ${payload.voter.name} ${payload.action || 'voted'} for "${payload.optionText}"`);
+            console.log(`📊 [Server] Poll: "${payload.pollQuestion}"`);
+
+            // Validate payload
+            if (!payload.channelId || !payload.voter || !payload.pollQuestion) {
+                console.error(`❌ [Server] Invalid poll vote payload:`, payload);
+                return;
+            }
+
+            console.log(`📤 [Server] Broadcasting vote notification to all users EXCEPT voter ${payload.voter.id}`);
+
+            // Broadcast vote notification to all channel members EXCEPT the voter
+            socket.broadcast.emit('pollVoted', {
+                ...payload,
+                timestamp: new Date(),
+                serverProcessedAt: Date.now()
+            });
+            console.log(`✅ [Server] Poll vote notification broadcasted to channel ${payload.channelId}`);
+        });
+
+        // Poll data update events  
+        socket.on('pollUpdated', (payload) => {
+            console.log(`📊 [Server] Poll data update for channel ${payload.channelId}`);
+            console.log(`🔄 [Server] Poll ID: ${payload.updatedPoll.id}`);
+            console.log(`📈 [Server] Total voters: ${payload.updatedPoll.totalVoters}`);
+            console.log(`🔗 [Server] Message ID: ${payload.messageId}`);
+            console.log(`⏰ [Server] Timestamp: ${payload.timestamp}`);
+
+            // Validate payload
+            if (!payload.channelId || !payload.messageId || !payload.updatedPoll || !payload.updatedPoll.id) {
+                console.error(`❌ [Server] Invalid poll update payload:`, payload);
+                return;
+            }
+
+            console.log(`📤 [Server] Broadcasting poll update to all users EXCEPT sender`);
+
+            // Enhanced payload with server metadata
+            const enhancedPayload = {
+                ...payload,
+                serverProcessedAt: Date.now(),
+                timestamp: payload.timestamp || new Date()
+            };
+
+            // Broadcast poll data update to all channel members EXCEPT the sender
+            socket.broadcast.emit('pollUpdated', enhancedPayload);
+            console.log(`✅ [Server] Poll data update broadcasted to channel ${payload.channelId}`);
+            console.log(`📋 [Server] Poll options summary:`, payload.updatedPoll.options.map(opt => ({
+                text: opt.text,
+                votes: opt.votes.length
+            })));
         });
 
         // Test connection event
@@ -541,6 +669,35 @@ nextApp.prepare().then(() => {
             console.log(`📋 User ${userId} mapped to socket ${socketId}`);
             console.log(`📊 Current userSocketMap:`, userSocketMap);
         });
+
+        // Post notification events
+        socket.on('postNotificationToChannel', ({ channelId, notification }) => {
+            console.log(`📢 Post notification sent to channel ${channelId}`);
+            console.log(`📝 Post: "${notification.title}" by ${notification.authorName}`);
+
+            // Broadcast to all channel members
+            io.emit('postNotificationReceived', {
+                channelId,
+                notification,
+                timestamp: new Date().toISOString()
+            });
+
+            console.log(`✅ Post notification broadcasted to channel ${channelId}`);
+        });
+
+        // Public post notification events
+        socket.on('publicPostNotification', ({ notification }) => {
+            console.log(`🌍 Public post notification: "${notification.title}" by ${notification.authorName}`);
+
+            // Broadcast to all connected users
+            socket.broadcast.emit('publicPostNotificationReceived', {
+                notification,
+                timestamp: new Date().toISOString()
+            });
+
+            console.log(`✅ Public post notification broadcasted to all users`);
+        });
+
     });
 
     app.all('*', (req, res) => {

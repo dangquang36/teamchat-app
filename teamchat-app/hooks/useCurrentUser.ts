@@ -11,7 +11,18 @@ export const useCurrentUser = () => {
             const userJson = localStorage.getItem('currentUser');
             if (userJson) {
                 try {
-                    setCurrentUser(JSON.parse(userJson));
+                    const userData = JSON.parse(userJson);
+
+                    // Clean up hard-coded avatar if it exists
+                    if (userData.avatar === '/placeholder-user.jpg' ||
+                        userData.avatar === '/placeholder.jpg' ||
+                        userData.avatar === '/default-avatar.jpg') {
+                        console.log('🧹 Cleaning up hard-coded avatar from localStorage');
+                        userData.avatar = undefined;
+                        localStorage.setItem('currentUser', JSON.stringify(userData));
+                    }
+
+                    setCurrentUser(userData);
                 } catch (error) {
                     console.error("Failed to parse current user from localStorage", error);
                     setCurrentUser(null);

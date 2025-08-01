@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Post } from "@/app/types";
 import { Button } from "@/components/ui/button";
 import { HTMLContentRenderer } from "@/components/ui/HTMLContentRenderer";
@@ -392,6 +393,7 @@ export function PostCard({
     onChangeVisibility?: (visibility: "public" | "friends" | "private") => void;
     isDarkMode: boolean;
 }) {
+    const router = useRouter();
     const [showDropdown, setShowDropdown] = useState(false);
     const [showImageGallery, setShowImageGallery] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -419,6 +421,15 @@ export function PostCard({
         }
     };
 
+    const handleCardClick = (e: React.MouseEvent) => {
+        // Don't navigate if clicking on interactive elements
+        const target = e.target as HTMLElement;
+        if (target.closest('button') || target.closest('[role="button"]') || target.closest('a')) {
+            return;
+        }
+        router.push(`/dashboard/posts/${post.id}`);
+    };
+
     const isHtmlContent = (content: string) => {
         return content.includes('<') && content.includes('>')
     }
@@ -440,7 +451,8 @@ export function PostCard({
     return (
         <>
             <div
-                className={`rounded-2xl border p-6 transition-all duration-300 shadow-lg hover:shadow-xl ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+                className={`rounded-2xl border p-6 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}
+                onClick={handleCardClick}
             >
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-4">

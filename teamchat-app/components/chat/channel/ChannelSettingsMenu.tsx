@@ -92,12 +92,12 @@ export function ChannelSettingsMenu({
     const { toast } = useToast();
 
     const handleSave = () => {
+        console.log('💾 Saving channel settings...');
+
         onUpdateChannel(editForm);
         setIsEditing(false);
-        toast({
-            title: "Đã cập nhật kênh",
-            description: "Thông tin kênh đã được cập nhật thành công"
-        });
+
+        // Toast notification will be handled by ChannelContext for consistency
     };
 
     const handleCancel = () => {
@@ -383,7 +383,12 @@ export function ChannelSettingsMenu({
                                                         <div className="flex items-center space-x-3">
                                                             <div className="relative">
                                                                 <Avatar className="w-10 h-10">
-                                                                    <AvatarImage src={member.avatar} alt={member.name} />
+                                                                    {member.avatar && (
+                                                                        <AvatarImage
+                                                                            src={member.avatar}
+                                                                            alt={member.name}
+                                                                        />
+                                                                    )}
                                                                     <AvatarFallback className="bg-blue-600 text-white">
                                                                         {member.name.charAt(0).toUpperCase()}
                                                                     </AvatarFallback>

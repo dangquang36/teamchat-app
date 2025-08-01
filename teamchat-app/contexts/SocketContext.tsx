@@ -67,6 +67,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     // Socket initialization
     useEffect(() => {
+        console.log('🔧 SocketContext useEffect triggered, currentUser:', currentUser?.id, currentUser?.name);
+
         if (currentUser?.id) {
             console.log('🔌 Initializing socket for user:', currentUser.name, currentUser.id);
 
@@ -76,6 +78,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 console.log('✅ Socket connected:', newSocket.id);
                 setIsConnected(true);
                 newSocket.emit('join', currentUser.id);
+
+                // Test emit immediately after connection
+                console.log('🧪 Testing socket emit right after connection...');
+                newSocket.emit('testConnection', { userId: currentUser.id });
             });
 
             newSocket.on('disconnect', () => {
@@ -88,6 +94,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 setIsConnected(false);
             });
 
+            console.log('🔧 Setting socket in context:', !!newSocket);
             setSocket(newSocket);
 
             return () => {
@@ -96,6 +103,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 setSocket(null);
                 setIsConnected(false);
             };
+        } else {
+            console.log('⚠️ No currentUser.id, not initializing socket');
         }
     }, [currentUser?.id]);
 

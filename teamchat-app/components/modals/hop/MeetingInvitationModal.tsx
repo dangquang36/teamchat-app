@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Video, Users, Clock, Check, X, Loader2 } from 'lucide-react';
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface MeetingData {
     id: string;
@@ -35,6 +36,7 @@ export function MeetingInvitationModal({
 }: MeetingInvitationModalProps) {
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
+    const { isDarkMode } = useTheme();
 
     if (!isOpen || !meetingData) return null;
 
@@ -136,13 +138,13 @@ export function MeetingInvitationModal({
                                 </span>
                             </div>
                             <div className="flex items-center space-x-2">
-                                <Users className="h-4 w-4 text-gray-500" />
+                                <Users className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                                 <span className="text-sm text-gray-600 dark:text-gray-400">
                                     Kênh: {meetingData.channelName}
                                 </span>
                             </div>
                             <div className="flex items-center space-x-2">
-                                <Clock className="h-4 w-4 text-gray-500" />
+                                <Clock className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                                 <span className="text-sm text-gray-600 dark:text-gray-400">
                                     Tạo lúc: {formatTime(meetingData.createdAt)}
                                 </span>

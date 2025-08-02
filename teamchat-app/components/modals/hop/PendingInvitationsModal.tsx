@@ -8,6 +8,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useToast } from '@/components/ui/use-toast';
 import { useRealTimeUpdates } from '@/hooks/useRealTimeUpdates';
 import { useRouter } from 'next/navigation';
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface PendingInvitationsModalProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ export function PendingInvitationsModal({ isOpen, onClose }: PendingInvitationsM
     const { toast } = useToast();
     const { pendingInvitations, isLoading: isFetching, refreshInvitations } = useRealTimeUpdates();
     const router = useRouter();
+    const { isDarkMode } = useTheme();
 
     const handleAccept = async (invitation: any) => {
         setIsLoading(true);
@@ -118,7 +120,7 @@ export function PendingInvitationsModal({ isOpen, onClose }: PendingInvitationsM
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
-                        <X className="h-5 w-5 text-gray-500" />
+                        <X className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                     </button>
                 </div>
 

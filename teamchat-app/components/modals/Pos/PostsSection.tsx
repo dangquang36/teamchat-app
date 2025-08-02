@@ -11,7 +11,6 @@ import { CreatePostModal } from "./CreatePostModal";
 import { CommentsModal } from "./CommentsModal";
 import { useSocket } from "@/contexts/SocketContext";
 import { usePostNotifications } from "@/services/postNotificationService";
-import { usePostNotificationListener } from "@/hooks/usePostNotificationListener";
 import { useSocketDebug } from "@/hooks/useSocketDebug";
 
 export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
@@ -33,9 +32,6 @@ export function PostsSection({ isDarkMode = false }: { isDarkMode?: boolean }) {
 
   const { socket } = useSocket();
   const { sendPostNotification } = usePostNotifications();
-
-  // Listen for post notifications
-  usePostNotificationListener();
 
   // Debug socket events
   useSocketDebug();

@@ -165,7 +165,7 @@ export default function MeetingChat({
                                                 <span className={`font-medium text-sm ${getParticipantColor(message.participantId)}`}>
                                                     {message.participantName}
                                                 </span>
-                                                <span className="text-gray-500 text-xs">
+                                                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                                     {formatTime(message.timestamp)}
                                                 </span>
                                                 {message.participantName === 'Bạn' && (

@@ -17,8 +17,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const root = window.document.documentElement;
 
-        // Xóa class cũ để tránh bị trùng lặp
-        root.classList.remove(isDarkMode ? 'light' : 'dark');
+        // Xóa tất cả class cũ để tránh bị trùng lặp
+        root.classList.remove('dark', 'light');
 
         // Thêm class mới tương ứng
         root.classList.add(isDarkMode ? 'dark' : 'light');

@@ -42,7 +42,12 @@ import { NotificationService } from '@/services/notificationService';
 import { PollService } from '@/services/pollService';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useTheme } from '@/contexts/ThemeContext';
-import { usePostNotificationListener } from '@/hooks/usePostNotificationListener';
+import { useChannelPostNotificationListener } from '@/hooks/useChannelPostNotificationListener';
+
+import { EmojiReactionButton, EmojiReactionsDisplay } from '@/components/chat/EmojiReactionPicker';
+import { MessageReplyActions } from '@/components/chat/MessageReplyActions';
+import { ReplyInputPreview } from '@/components/chat/ReplyInputPreview';
+import { MessageReplyDisplay } from '@/components/chat/MessageReplyDisplay';
 
 interface Member {
     id: string;
@@ -51,32 +56,80 @@ interface Member {
     status: 'online' | 'offline' | 'away';
 }
 
+// ======================== HELPER COMPONENTS ========================
+interface AttachmentMenuItemProps {
+    icon: React.ReactNode;
+    label: string;
+    onClick: () => void;
+    color?: string;
+}
+
+const AttachmentMenuItem = ({ icon, label, onClick, color = "text-cyan-500" }: AttachmentMenuItemProps) => {
+    const { isDarkMode } = useTheme();
+
+    return (
+        <button
+            onClick={onClick}
+            className={`w-full flex items-center gap-3 p-3 rounded-md text-sm transition-all duration-200 ${isDarkMode
+                ? "text-gray-300 hover:bg-gray-600 hover:text-white"
+                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                }`}
+        >
+            <span className={color}>{icon}</span>
+            {label}
+        </button>
+    );
+};
+
+// ======================== MAIN COMPONENT ========================
 export default function ChannelPage() {
-    const [message, setMessage] = useState("");
+    // ======================== HOOKS & CONTEXT ========================
     const params = useParams();
     const router = useRouter();
     const channelId = params.channelId as string;
     const { toast } = useToast();
-    const { getChannel, addMessageToChannel, updateChannel, channels } = useChannels();
+    const { getChannel, addMessageToChannel, updateChannel, channels, addEmojiReaction } = useChannels();
     const { socket, isConnected } = useSocketContext();
     const currentUser = useCurrentUser();
     const { isDarkMode } = useTheme();
 
-    // Listen for post notifications
-    usePostNotificationListener();
+    // Listen for post notifications in channel
+    useChannelPostNotificationListener();
 
+    // ======================== STATE MANAGEMENT ========================
     const [channel, setChannel] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [message, setMessage] = useState("");
+
+    // UI State
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
     const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-    const [isListening, setIsListening] = useState(false);
     const [showCreatePollModal, setShowCreatePollModal] = useState(false);
     const [showPollResultsModal, setShowPollResultsModal] = useState(false);
+
+    // File & Media State
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [isListening, setIsListening] = useState(false);
+
+    // Poll State
     const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
 
+    // Emoji Reactions State
+    const [emojiPickerMessageId, setEmojiPickerMessageId] = useState<number | null>(null);
+    const [hideTimeout, setHideTimeout] = useState<NodeJS.Timeout | null>(null);
+
+    // Reply State
+    const [replyTo, setReplyTo] = useState<{
+        id: string;
+        from: string;
+        text?: string;
+        content?: string;
+        type?: 'text' | 'poll' | 'file' | 'image' | 'meeting' | 'post_notification';
+    } | null>(null);
+
+    // ======================== REFS ========================
     const emojiPickerRef = useRef<HTMLDivElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +137,24 @@ export default function ChannelPage() {
     const inputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<any>(null);
 
+    // ======================== UTILITY FUNCTIONS ========================
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const formatTime = (date: Date | string) => {
+        const dateObj = typeof date === 'string' ? new Date(date) : date;
+        return dateObj.toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    // ======================== EFFECTS ========================
     useEffect(() => {
         // Load channel data from context
         const channelData = getChannel(channelId);
@@ -100,15 +171,6 @@ export default function ChannelPage() {
             router.push('/dashboard/channels');
         }
     }, [channelId, getChannel, router, toast]);
-
-    const toggleListening = () => {
-        if (isListening) {
-            recognitionRef.current?.stop();
-        } else {
-            recognitionRef.current?.start();
-        }
-        setIsListening(!isListening);
-    };
 
     // Update channel data when channels change (for real-time updates)
     useEffect(() => {
@@ -158,6 +220,16 @@ export default function ChannelPage() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (hideTimeout) {
+                clearTimeout(hideTimeout);
+            }
+        };
+    }, [hideTimeout]);
+
+    // ======================== EVENT HANDLERS ========================
     const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
@@ -175,6 +247,16 @@ export default function ChannelPage() {
         }
     };
 
+    const toggleListening = () => {
+        if (isListening) {
+            recognitionRef.current?.stop();
+        } else {
+            recognitionRef.current?.start();
+        }
+        setIsListening(!isListening);
+    };
+
+    // ======================== FILE HANDLING ========================
     const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (files && files.length > 0) {
@@ -198,14 +280,78 @@ export default function ChannelPage() {
         setSelectedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
     };
 
-    const formatFileSize = (bytes: number): string => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    // ======================== EMOJI REACTIONS ========================
+    const handleEmojiReaction = (messageId: number, emoji: string) => {
+        if (currentUser) {
+            addEmojiReaction(channelId, messageId, emoji, currentUser.id);
+        }
+        setEmojiPickerMessageId(null);
     };
 
+    const handleReactionClick = (messageId: number, emoji: string) => {
+        if (currentUser) {
+            addEmojiReaction(channelId, messageId, emoji, currentUser.id);
+        }
+    };
+
+    const handleEmojiPickerToggle = (messageId: number) => {
+        setEmojiPickerMessageId(emojiPickerMessageId === messageId ? null : messageId);
+    };
+
+    const handleEmojiButtonMouseEnter = (messageId: number) => {
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            setHideTimeout(null);
+        }
+        setEmojiPickerMessageId(messageId);
+    };
+
+    const handleEmojiButtonMouseLeave = () => {
+        const timeout = setTimeout(() => {
+            setEmojiPickerMessageId(null);
+        }, 200); // 200ms delay
+        setHideTimeout(timeout);
+    };
+
+    // Reply Handlers
+    const handleReplyToMessage = (message: any) => {
+        setReplyTo({
+            id: message.id,
+            from: message.sender.name,
+            text: message.content,
+            content: message.content,
+            type: message.type || 'text'
+        });
+
+        // Focus on input
+        if (inputRef.current) {
+            inputRef.current.focus();
+        }
+
+        toast({
+            title: "Trả lời tin nhắn",
+            description: `Đang trả lời tin nhắn của ${message.sender.name}`,
+        });
+    };
+
+    const handleCancelReply = () => {
+        setReplyTo(null);
+    };
+
+    const handleCopyMessage = (message: any) => {
+        const textToCopy = message.content || message.text || '';
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            toast({
+                title: "Đã sao chép",
+                description: "Tin nhắn đã được sao chép vào clipboard",
+            });
+        });
+    };
+
+
+
+
+    // ======================== MESSAGE HANDLING ========================
     const handleSendMessage = async () => {
         if ((!message.trim() && selectedFiles.length === 0) || !channel || !currentUser) return;
 
@@ -247,7 +393,13 @@ export default function ChannelPage() {
                             size: file.size,
                             type: file.type,
                             content: fileContent
-                        }
+                        },
+                        replyTo: replyTo ? {
+                            id: replyTo.id,
+                            from: replyTo.from,
+                            content: replyTo.text,
+                            type: replyTo.type
+                        } : undefined
                     });
                 } catch (error) {
                     console.error('Error uploading file:', error);
@@ -269,52 +421,22 @@ export default function ChannelPage() {
                     name: currentUser.name,
                     avatar: cleanAvatar
                 },
-                type: 'text'
+                type: 'text',
+                replyTo: replyTo ? {
+                    id: replyTo.id,
+                    from: replyTo.from,
+                    content: replyTo.text,
+                    type: replyTo.type
+                } : undefined
             });
         }
 
         setMessage('');
         setSelectedFiles([]);
+        setReplyTo(null); // Clear reply after sending
     };
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
-        }
-    };
-
-    const formatTime = (date: Date | string) => {
-        const dateObj = typeof date === 'string' ? new Date(date) : date;
-        return dateObj.toLocaleTimeString('vi-VN', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
-    const AttachmentMenuItem = ({
-        icon,
-        label,
-        onClick,
-        color = "text-cyan-500"
-    }: {
-        icon: React.ReactNode;
-        label: string;
-        onClick: () => void;
-        color?: string;
-    }) => (
-        <button
-            onClick={onClick}
-            className={`w-full flex items-center gap-3 p-3 rounded-md text-sm transition-all duration-200 ${isDarkMode
-                ? "text-gray-300 hover:bg-gray-600 hover:text-white"
-                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                }`}
-        >
-            <span className={color}>{icon}</span>
-            {label}
-        </button>
-    );
-
+    // ======================== CHANNEL MANAGEMENT ========================
     const handleUpdateChannel = (updates: Partial<{ name: string; description: string; image: string }>) => {
         console.log('🔄 handleUpdateChannel called');
         console.log('📊 Updates:', updates);
@@ -343,6 +465,7 @@ export default function ChannelPage() {
         setShowSettingsMenu(false);
     };
 
+    // ======================== POLL HANDLING ========================
     const handleCreatePoll = ({ question, options }: { question: string; options: string[] }) => {
         setShowCreatePollModal(true);
     };
@@ -477,6 +600,7 @@ export default function ChannelPage() {
         setShowPollResultsModal(true);
     };
 
+    // ======================== LOADING & ERROR STATES ========================
     if (isLoading) {
         return (
             <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -503,8 +627,295 @@ export default function ChannelPage() {
         );
     }
 
-    // Using CSS animations instead of framer-motion
+    // ======================== RENDER MESSAGE COMPONENT ========================
+    const renderMessage = (message: any) => {
+        const isMyMessage = currentUser && message.sender.id === currentUser.id;
 
+        // Meeting message rendering
+        if (message.type === 'meeting') {
+            return (
+                <div key={message.id} className="flex items-center justify-center my-4">
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 max-w-md w-full border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-center space-x-3 mb-3">
+                            <div className="flex-shrink-0">
+                                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                                    <Video className="h-5 w-5 text-white" />
+                                </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                                    Cuộc họp mới
+                                </h4>
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                    {message.content}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 mb-3">
+                            <div className="flex items-center space-x-2 mb-2">
+                                <Calendar className="h-4 w-4 text-gray-400" />
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {message.meetingData?.title}
+                                </span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Clock className="h-4 w-4 text-gray-400" />
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    {formatTime(message.timestamp)} - Bởi {message.sender.name}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex space-x-2">
+                            <Button
+                                onClick={() => {
+                                    if (message.meetingData?.joinUrl) {
+                                        window.open(message.meetingData.joinUrl, '_blank');
+                                    }
+                                }}
+                                className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
+                                size="sm"
+                            >
+                                <Video className="h-4 w-4 mr-2" />
+                                Tham gia
+                            </Button>
+                            <Button variant="outline" size="sm" className="px-3">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Poll message rendering
+        if (message.type === 'poll' && message.poll) {
+            return (
+                <div
+                    key={message.id}
+                    className={`flex items-start space-x-2 animate-in slide-in-from-bottom-1 duration-200 ${isMyMessage ? 'flex-row-reverse space-x-reverse' : ''
+                        }`}
+                >
+                    <Avatar className="h-8 w-8 flex-shrink-0 mt-1">
+                        {message.sender.avatar && message.sender.avatar.trim() !== '' && (
+                            <AvatarImage
+                                src={message.sender.avatar}
+                                alt={message.sender.name}
+                                onError={(e) => {
+                                    console.log('🖼️ Avatar failed to load:', message.sender.avatar);
+                                    e.currentTarget.style.display = 'none';
+                                }}
+                            />
+                        )}
+                        <AvatarFallback className="text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                            {message.sender.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className={`flex flex-col ${isMyMessage ? 'items-end' : 'items-start'} max-w-[80%]`}>
+                        <div className={`text-xs text-gray-500 dark:text-gray-400 mb-2 ${isMyMessage ? 'text-right' : ''
+                            }`}>
+                            <span className="font-medium">
+                                {isMyMessage ? 'Bạn' : message.sender.name}
+                            </span>
+                            <span className="ml-2">
+                                {formatTime(message.timestamp)}
+                            </span>
+                        </div>
+                        <PollMessage
+                            poll={message.poll as any}
+                            currentUserId={currentUser?.id || ''}
+                            onVote={handleVote}
+                            onViewResults={handleViewResults as any}
+                            isDarkMode={isDarkMode}
+                        />
+                    </div>
+                </div>
+            );
+        }
+
+        // Post notification message rendering
+        if (message.type === 'post_notification' && message.postData) {
+            return (
+                <div key={message.id} className="flex items-center justify-center my-4">
+                    <div
+                        className="bg-gradient-to-r from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 max-w-md w-full border border-green-200 dark:border-green-800 cursor-pointer hover:shadow-lg transition-all duration-200"
+                        onClick={() => router.push(`/dashboard/posts/${message.postData?.postId}`)}
+                    >
+                        <div className="flex items-center space-x-3 mb-3">
+                            <div className="flex-shrink-0">
+                                <Avatar className="h-10 w-10">
+                                    {message.postData.authorAvatar && (
+                                        <AvatarImage
+                                            src={message.postData.authorAvatar}
+                                            alt={message.postData.authorName}
+                                        />
+                                    )}
+                                    <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+                                        {message.postData.authorName.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                                    📝 Bài đăng mới
+                                </h4>
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                    {message.postData.authorName} đã đăng bài
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h5 className="font-medium text-gray-900 dark:text-white text-sm">
+                                {message.postData.title}
+                            </h5>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                                {message.postData.excerpt}
+                            </p>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {formatTime(new Date(message.postData.createdAt))}
+                            </span>
+                            <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                Bấm để xem bài →
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Regular text message rendering
+        return (
+            <div
+                key={message.id}
+                className={`group flex items-end space-x-2 animate-in slide-in-from-bottom-1 duration-200 ${isMyMessage ? 'flex-row-reverse space-x-reverse' : ''
+                    }`}
+            >
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                    {message.sender.avatar && message.sender.avatar.trim() !== '' && (
+                        <AvatarImage
+                            src={message.sender.avatar}
+                            alt={message.sender.name}
+                            onError={(e) => {
+                                console.log('🖼️ Avatar failed to load:', message.sender.avatar);
+                                e.currentTarget.style.display = 'none';
+                            }}
+                        />
+                    )}
+                    <AvatarFallback className="text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                        {message.sender.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                </Avatar>
+                <div className={`flex flex-col ${isMyMessage ? 'items-end' : 'items-start'} max-w-[70%] relative`}>
+                    <div className={`text-xs text-gray-500 dark:text-gray-400 mb-1 ${isMyMessage ? 'text-right' : ''
+                        }`}>
+                        <span className="font-medium">
+                            {isMyMessage ? 'Bạn' : message.sender.name}
+                        </span>
+                        <span className="ml-2">
+                            {formatTime(message.timestamp)}
+                        </span>
+                    </div>
+                    <div className="relative">
+                        <div className={`rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md animate-in zoom-in duration-200 relative ${isMyMessage
+                            ? isDarkMode
+                                ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-br-md'
+                                : 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-br-md'
+                            : isDarkMode
+                                ? 'bg-gray-800 text-white border border-gray-700 hover:border-gray-600 rounded-bl-md'
+                                : 'bg-white text-gray-800 border border-gray-200 hover:border-gray-300 rounded-bl-md'
+                            }`}>
+                            {message.type === 'image' && message.fileData ? (
+                                <div className="overflow-hidden">
+                                    <img
+                                        src={message.fileData.content}
+                                        alt={message.fileData.name}
+                                        className="max-w-xs max-h-60 cursor-pointer hover:opacity-90 transition-opacity block rounded-lg object-cover"
+                                        onClick={() => window.open(message.fileData?.content, '_blank')}
+                                    />
+                                    <p className="text-xs mt-1 opacity-75 px-2 pb-1">{message.fileData.name}</p>
+                                </div>
+                            ) : message.type === 'file' && message.fileData ? (
+                                <div className="p-3 flex items-center space-x-3 w-64">
+                                    <FileIcon className={`w-8 h-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate">{message.fileData.name}</p>
+                                        <p className="text-xs opacity-75">{formatFileSize(message.fileData.size)}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const link = document.createElement('a');
+                                            link.href = message.fileData?.content || '';
+                                            link.download = message.fileData?.name || 'file';
+                                            link.click();
+                                        }}
+                                        className={`text-xs px-2 py-1 rounded ${isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
+                                            }`}
+                                    >
+                                        Tải xuống
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="p-3 max-w-md">
+                                    {/* Reply Display */}
+                                    {message.replyTo && (
+                                        <MessageReplyDisplay
+                                            replyTo={message.replyTo}
+                                            isDarkMode={isDarkMode}
+                                            isMyMessage={Boolean(isMyMessage)}
+                                        />
+                                    )}
+                                    <p className="text-sm leading-relaxed break-words">
+                                        {message.content}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Emoji Reaction Button - ở góc dưới bên phải */}
+                            <div className={`absolute -bottom-2 ${isMyMessage ? '-left-2' : '-right-2'}`}>
+                                <EmojiReactionButton
+                                    onEmojiPickerToggle={() => handleEmojiPickerToggle(message.id)}
+                                    isPickerVisible={!!(emojiPickerMessageId === message.id)}
+                                    onReactionSelect={(emoji) => handleEmojiReaction(message.id, emoji)}
+                                    isDarkMode={isDarkMode}
+                                    isMyMessage={Boolean(isMyMessage)}
+                                    onMouseEnter={() => handleEmojiButtonMouseEnter(message.id)}
+                                    onMouseLeave={handleEmojiButtonMouseLeave}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Hiển thị reactions hiện có */}
+                        {message.reactions && message.reactions.length > 0 && (
+                            <EmojiReactionsDisplay
+                                reactions={message.reactions}
+                                currentUserId={currentUser?.id || ''}
+                                onReactionClick={(emoji) => handleReactionClick(message.id, emoji)}
+                                isDarkMode={isDarkMode}
+                            />
+                        )}
+
+                        {/* Message Reply Actions */}
+                        <MessageReplyActions
+                            isCurrentUser={Boolean(isMyMessage)}
+                            isDarkMode={isDarkMode}
+                            onReply={() => handleReplyToMessage(message)}
+                            onCopy={() => handleCopyMessage(message)}
+                            showLike={true}
+                            showCopy={true}
+                            showDelete={Boolean(isMyMessage)}
+                        />
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // ======================== MAIN RENDER ========================
     return (
         <div className={`h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
             {/* Channel Sidebar */}
@@ -566,7 +977,6 @@ export default function ChannelPage() {
                             >
                                 <Settings className="h-5 w-5" />
                             </Button>
-
                         </div>
                     </div>
                 </div>
@@ -574,255 +984,15 @@ export default function ChannelPage() {
                 {/* Messages */}
                 <div className={`flex-1 overflow-y-auto p-6 space-y-3 scrollbar-hide ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
                     {channel.messages.length === 0 ? (
-                        <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                        <div className={`flex items-center justify-center h-full ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             <div className="text-center">
-                                <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                <p className="text-lg font-medium mb-2">Chưa có tin nhắn nào</p>
-                                <p className="text-sm">Hãy gửi tin nhắn đầu tiên để bắt đầu cuộc trò chuyện!</p>
+                                <MessageCircle className={`h-12 w-12 mx-auto mb-4 opacity-50 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                                <p className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Chưa có tin nhắn nào</p>
+                                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Hãy gửi tin nhắn đầu tiên để bắt đầu cuộc trò chuyện!</p>
                             </div>
                         </div>
                     ) : (
-                        channel.messages.map((message: any) => {
-                            const isMyMessage = currentUser && message.sender.id === currentUser.id;
-
-                            // Meeting message rendering
-                            if (message.type === 'meeting') {
-                                return (
-                                    <div key={message.id} className="flex items-center justify-center my-4">
-                                        <div className="bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 max-w-md w-full border border-blue-200 dark:border-blue-800">
-                                            <div className="flex items-center space-x-3 mb-3">
-                                                <div className="flex-shrink-0">
-                                                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                                                        <Video className="h-5 w-5 text-white" />
-                                                    </div>
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                                                        Cuộc họp mới
-                                                    </h4>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                        {message.content}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="bg-white dark:bg-gray-800 rounded-lg p-3 mb-3">
-                                                <div className="flex items-center space-x-2 mb-2">
-                                                    <Calendar className="h-4 w-4 text-gray-400" />
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                                        {message.meetingData?.title}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <Clock className="h-4 w-4 text-gray-400" />
-                                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                        {formatTime(message.timestamp)} - Bởi {message.sender.name}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex space-x-2">
-                                                <Button
-                                                    onClick={() => {
-                                                        if (message.meetingData?.joinUrl) {
-                                                            window.open(message.meetingData.joinUrl, '_blank');
-                                                        }
-                                                    }}
-                                                    className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
-                                                    size="sm"
-                                                >
-                                                    <Video className="h-4 w-4 mr-2" />
-                                                    Tham gia
-                                                </Button>
-                                                <Button variant="outline" size="sm" className="px-3">
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            }
-
-                            // Poll message rendering
-                            if (message.type === 'poll' && message.poll) {
-                                return (
-                                    <div
-                                        key={message.id}
-                                        className={`flex items-start space-x-2 animate-in slide-in-from-bottom-1 duration-200 ${isMyMessage ? 'flex-row-reverse space-x-reverse' : ''
-                                            }`}
-                                    >
-                                        <Avatar className="h-8 w-8 flex-shrink-0 mt-1">
-                                            {message.sender.avatar && message.sender.avatar.trim() !== '' && (
-                                                <AvatarImage
-                                                    src={message.sender.avatar}
-                                                    alt={message.sender.name}
-                                                    onError={(e) => {
-                                                        console.log('🖼️ Avatar failed to load:', message.sender.avatar);
-                                                        e.currentTarget.style.display = 'none';
-                                                    }}
-                                                />
-                                            )}
-                                            <AvatarFallback className="text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white">
-                                                {message.sender.name.charAt(0).toUpperCase()}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className={`flex flex-col ${isMyMessage ? 'items-end' : 'items-start'} max-w-[80%]`}>
-                                            <div className={`text-xs text-gray-500 dark:text-gray-400 mb-2 ${isMyMessage ? 'text-right' : ''
-                                                }`}>
-                                                <span className="font-medium">
-                                                    {isMyMessage ? 'Bạn' : message.sender.name}
-                                                </span>
-                                                <span className="ml-2">
-                                                    {formatTime(message.timestamp)}
-                                                </span>
-                                            </div>
-                                            <PollMessage
-                                                poll={message.poll as any}
-                                                currentUserId={currentUser?.id || ''}
-                                                onVote={handleVote}
-                                                onViewResults={handleViewResults as any}
-                                                isDarkMode={isDarkMode}
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            }
-
-                            // Post notification message rendering
-                            if (message.type === 'post_notification' && message.postData) {
-                                return (
-                                    <div key={message.id} className="flex items-center justify-center my-4">
-                                        <div
-                                            className="bg-gradient-to-r from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 max-w-md w-full border border-green-200 dark:border-green-800 cursor-pointer hover:shadow-lg transition-all duration-200"
-                                            onClick={() => router.push(`/dashboard/posts/${message.postData?.postId}`)}
-                                        >
-                                            <div className="flex items-center space-x-3 mb-3">
-                                                <div className="flex-shrink-0">
-                                                    <Avatar className="h-10 w-10">
-                                                        {message.postData.authorAvatar && (
-                                                            <AvatarImage
-                                                                src={message.postData.authorAvatar}
-                                                                alt={message.postData.authorName}
-                                                            />
-                                                        )}
-                                                        <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
-                                                            {message.postData.authorName.charAt(0).toUpperCase()}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                                                        📝 Bài đăng mới
-                                                    </h4>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                        {message.postData.authorName} đã đăng bài
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <h5 className="font-medium text-gray-900 dark:text-white text-sm">
-                                                    {message.postData.title}
-                                                </h5>
-                                                <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                                                    {message.postData.excerpt}
-                                                </p>
-                                            </div>
-
-                                            <div className="mt-3 flex items-center justify-between">
-                                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                    {formatTime(new Date(message.postData.createdAt))}
-                                                </span>
-                                                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                                                    Bấm để xem bài →
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            }
-
-                            // Regular text message rendering
-                            return (
-                                <div
-                                    key={message.id}
-                                    className={`flex items-end space-x-2 animate-in slide-in-from-bottom-1 duration-200 ${isMyMessage ? 'flex-row-reverse space-x-reverse' : ''
-                                        }`}
-                                >
-                                    <Avatar className="h-8 w-8 flex-shrink-0">
-                                        {message.sender.avatar && message.sender.avatar.trim() !== '' && (
-                                            <AvatarImage
-                                                src={message.sender.avatar}
-                                                alt={message.sender.name}
-                                                onError={(e) => {
-                                                    console.log('🖼️ Avatar failed to load:', message.sender.avatar);
-                                                    e.currentTarget.style.display = 'none';
-                                                }}
-                                            />
-                                        )}
-                                        <AvatarFallback className="text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white">
-                                            {message.sender.name.charAt(0).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className={`flex flex-col ${isMyMessage ? 'items-end' : 'items-start'} max-w-[70%]`}>
-                                        <div className={`text-xs text-gray-500 dark:text-gray-400 mb-1 ${isMyMessage ? 'text-right' : ''
-                                            }`}>
-                                            <span className="font-medium">
-                                                {isMyMessage ? 'Bạn' : message.sender.name}
-                                            </span>
-                                            <span className="ml-2">
-                                                {formatTime(message.timestamp)}
-                                            </span>
-                                        </div>
-                                        <div className={`rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md animate-in zoom-in duration-200 ${isMyMessage
-                                            ? isDarkMode
-                                                ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-br-md'
-                                                : 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white rounded-br-md'
-                                            : isDarkMode
-                                                ? 'bg-gray-800 text-white border border-gray-700 hover:border-gray-600 rounded-bl-md'
-                                                : 'bg-white text-gray-800 border border-gray-200 hover:border-gray-300 rounded-bl-md'
-                                            }`}>
-                                            {message.type === 'image' && message.fileData ? (
-                                                <div className="overflow-hidden">
-                                                    <img
-                                                        src={message.fileData.content}
-                                                        alt={message.fileData.name}
-                                                        className="max-w-xs max-h-60 cursor-pointer hover:opacity-90 transition-opacity block rounded-lg object-cover"
-                                                        onClick={() => window.open(message.fileData?.content, '_blank')}
-                                                    />
-                                                    <p className="text-xs mt-1 opacity-75 px-2 pb-1">{message.fileData.name}</p>
-                                                </div>
-                                            ) : message.type === 'file' && message.fileData ? (
-                                                <div className="p-3 flex items-center space-x-3 w-64">
-                                                    <FileIcon className={`w-8 h-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium truncate">{message.fileData.name}</p>
-                                                        <p className="text-xs opacity-75">{formatFileSize(message.fileData.size)}</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => {
-                                                            const link = document.createElement('a');
-                                                            link.href = message.fileData?.content || '';
-                                                            link.download = message.fileData?.name || 'file';
-                                                            link.click();
-                                                        }}
-                                                        className={`text-xs px-2 py-1 rounded ${isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}`}
-                                                    >
-                                                        Tải xuống
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="p-3 max-w-md">
-                                                    <p className="text-sm leading-relaxed break-words">
-                                                        {message.content}
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })
+                        channel.messages.map((message: any) => renderMessage(message))
                     )}
                     {/* Auto-scroll target */}
                     <div ref={messagesEndRef} />
@@ -830,6 +1000,15 @@ export default function ChannelPage() {
 
                 {/* Message Input */}
                 <div className={`border-t p-4 shadow-lg ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                    {/* Reply Preview */}
+                    {replyTo && (
+                        <ReplyInputPreview
+                            replyTo={replyTo}
+                            onCancel={handleCancelReply}
+                            isDarkMode={isDarkMode}
+                        />
+                    )}
+
                     {/* File Preview */}
                     {selectedFiles.length > 0 && (
                         <div className="mb-3 flex flex-wrap gap-2">
@@ -877,7 +1056,6 @@ export default function ChannelPage() {
                     />
 
                     <div className="flex items-end space-x-3 relative">
-
                         {/* Emoji Picker */}
                         <div ref={emojiPickerRef} className="relative">
                             {showEmojiPicker && (
@@ -907,21 +1085,19 @@ export default function ChannelPage() {
                             </Button>
                         </div>
 
-
-
                         {/* Input Field */}
                         <div className="flex-1 relative">
                             <input
                                 ref={inputRef}
                                 type="text"
-                                placeholder="Nhập tin nhắn của bạn..."
+                                placeholder={replyTo ? `Trả lời ${replyTo.from}...` : "Nhập tin nhắn của bạn..."}
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 pr-12 transition-all duration-300 ${isDarkMode
+                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 pr-12 transition-all duration-300 reply-input-focus ${isDarkMode
                                     ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-gray-500 focus:border-gray-500"
                                     : "bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-400"
-                                    }`}
+                                    } ${replyTo ? 'reply-active' : ''}`}
                             />
 
                             {/* Attachment Menu */}
@@ -937,10 +1113,8 @@ export default function ChannelPage() {
                                         <Paperclip className="h-4 w-4" />
                                     </Button>
 
-
                                     {showAttachmentMenu && (
                                         <div
-
                                             onMouseLeave={() => setShowAttachmentMenu(false)}
                                             className={`absolute bottom-full right-0 mb-2 p-2 rounded-lg shadow-xl w-48 z-20 ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-white border shadow-lg"
                                                 }`}
@@ -965,7 +1139,6 @@ export default function ChannelPage() {
                                             />
                                         </div>
                                     )}
-
                                 </div>
                             </div>
                         </div>
@@ -986,7 +1159,8 @@ export default function ChannelPage() {
                         <Button
                             onClick={handleSendMessage}
                             disabled={!message.trim() && selectedFiles.length === 0}
-                            className={`w-12 h-12 rounded-full text-white shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center ${(!message.trim() && selectedFiles.length === 0) ? 'bg-gray-400 cursor-not-allowed' : isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'}`}
+                            className={`w-12 h-12 rounded-full text-white shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center ${(!message.trim() && selectedFiles.length === 0) ? 'bg-gray-400 cursor-not-allowed' : isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
+                                }`}
                         >
                             <Send className="h-5 w-5" />
                         </Button>
@@ -994,7 +1168,7 @@ export default function ChannelPage() {
                 </div>
             </div>
 
-            {/* Invite Member Modal */}
+            {/* Modals */}
             <InviteMemberModal
                 isOpen={showInviteModal}
                 onClose={() => setShowInviteModal(false)}
@@ -1002,7 +1176,6 @@ export default function ChannelPage() {
                 channelName={channel?.name || ''}
             />
 
-            {/* Channel Settings Menu */}
             <ChannelSettingsMenu
                 isOpen={showSettingsMenu}
                 onClose={() => setShowSettingsMenu(false)}
@@ -1022,7 +1195,6 @@ export default function ChannelPage() {
                 onNavigateToPosts={handleNavigateToPosts}
             />
 
-            {/* Create Poll Modal */}
             <CreatePollModal
                 isOpen={showCreatePollModal}
                 onClose={() => setShowCreatePollModal(false)}
@@ -1031,7 +1203,6 @@ export default function ChannelPage() {
                 currentUser={currentUser || { id: '', name: '' }}
             />
 
-            {/* Poll Results Modal */}
             {selectedPoll && (
                 <PollResultsModal
                     isOpen={showPollResultsModal}
@@ -1042,4 +1213,4 @@ export default function ChannelPage() {
             )}
         </div>
     );
-} 
+}

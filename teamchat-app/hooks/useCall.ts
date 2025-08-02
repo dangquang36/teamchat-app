@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Room, RemoteParticipant, LocalParticipant, ConnectionState } from 'livekit-client';
+import { Room, RemoteParticipant, LocalParticipant, ConnectionState, Track, AudioPresets, TrackPublication } from 'livekit-client';
 import { Socket } from 'socket.io-client';
 
 export interface CallData {
@@ -12,6 +12,32 @@ export interface CallData {
 }
 
 export type CallStatus = 'idle' | 'calling' | 'ringing' | 'connected' | 'rejected' | 'ended' | 'connecting' | 'timeout' | 'busy' | 'unavailable';
+
+// Debug function to check available media devices
+const checkMediaDevices = async () => {
+    try {
+        // Check secure context (HTTPS required for getUserMedia)
+        if (!window.isSecureContext) {
+            console.warn('⚠️ Not in secure context (HTTPS required for microphone access)');
+        }
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(device => device.kind === 'audioinput');
+        const videoInputs = devices.filter(device => device.kind === 'videoinput');
+
+        console.log('📱 Available media devices:', {
+            audioInputs: audioInputs.length,
+            videoInputs: videoInputs.length,
+            isSecureContext: window.isSecureContext,
+            devices: devices.map(d => ({ kind: d.kind, label: d.label || 'Unknown device' }))
+        });
+
+        return { audioInputs, videoInputs };
+    } catch (error) {
+        console.error('❌ Error checking media devices:', error);
+        return { audioInputs: [], videoInputs: [] };
+    }
+};
 
 export const useCall = (socket: Socket | null, currentUserId: string, currentUserName?: string) => {
     const [room, setRoom] = useState<Room | null>(null);
@@ -276,10 +302,68 @@ export const useCall = (socket: Socket | null, currentUserId: string, currentUse
 
         roomInstance.on('trackSubscribed', (track, publication, participant) => {
             console.log('📡 Track subscribed:', track.kind, 'from', participant.identity);
+
+            if (track.kind === 'audio') {
+                console.log('🔊 Audio track subscribed from:', participant.identity);
+
+                // Đảm bảo audio track được play
+                const audioElement = track.attach();
+                audioElement.volume = 1.0;
+                audioElement.muted = false;
+
+                // Force play with user interaction fallback
+                const playAudio = async () => {
+                    try {
+                        await audioElement.play();
+                        console.log('✅ Audio playing successfully from:', participant.identity);
+                    } catch (error) {
+                        console.error('❌ Error playing audio from', participant.identity, ':', error);
+
+                        // Retry after user interaction
+                        const handleUserInteraction = async () => {
+                            try {
+                                await audioElement.play();
+                                console.log('✅ Audio playing after user interaction from:', participant.identity);
+                                document.removeEventListener('click', handleUserInteraction);
+                                document.removeEventListener('touchstart', handleUserInteraction);
+                            } catch (retryError) {
+                                console.error('❌ Still failed to play audio:', retryError);
+                            }
+                        };
+
+                        document.addEventListener('click', handleUserInteraction, { once: true });
+                        document.addEventListener('touchstart', handleUserInteraction, { once: true });
+                    }
+                };
+
+                playAudio();
+            }
         });
 
         roomInstance.on('trackUnsubscribed', (track, publication, participant) => {
             console.log('📡 Track unsubscribed:', track.kind, 'from', participant.identity);
+
+            if (track.kind === 'audio') {
+                console.log('🔇 Audio track unsubscribed from:', participant.identity);
+            }
+        });
+
+        // Track published event
+        roomInstance.on('trackPublished', (publication, participant) => {
+            console.log('📢 Track published:', publication.kind, 'from', participant.identity);
+
+            if (publication.kind === 'audio') {
+                console.log('🎤 Audio track published by:', participant.identity);
+            }
+        });
+
+        // Track unpublished event  
+        roomInstance.on('trackUnpublished', (publication, participant) => {
+            console.log('📢 Track unpublished:', publication.kind, 'from', participant.identity);
+
+            if (publication.kind === 'audio') {
+                console.log('🎤 Audio track unpublished by:', participant.identity);
+            }
         });
     };
 
@@ -343,6 +427,11 @@ export const useCall = (socket: Socket | null, currentUserId: string, currentUse
             const roomInstance = new Room({
                 adaptiveStream: true,
                 dynacast: true,
+                publishDefaults: {
+                    stopMicTrackOnMute: false,
+                    videoCodec: 'vp8',
+                    audioPreset: AudioPresets.music,
+                },
                 videoCaptureDefaults: type === 'video' ? {
                     resolution: { width: 1280, height: 720 },
                     facingMode: 'user'
@@ -350,7 +439,9 @@ export const useCall = (socket: Socket | null, currentUserId: string, currentUse
                 audioCaptureDefaults: {
                     echoCancellation: true,
                     noiseSuppression: true,
-                    autoGainControl: true
+                    autoGainControl: true,
+                    sampleRate: 48000,
+                    channelCount: 1
                 }
             });
 
@@ -368,8 +459,60 @@ export const useCall = (socket: Socket | null, currentUserId: string, currentUse
             setLocalParticipant(roomInstance.localParticipant);
 
             try {
+                console.log(`🎥 Requesting ${type} media permissions...`);
+
+                // Check browser support
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Trình duyệt không hỗ trợ tính năng gọi thoại/video. Vui lòng cập nhật trình duyệt.');
+                }
+
+                // Debug: Check available devices
+                await checkMediaDevices();
+
+                // Request microphone permission first
+                try {
+                    await navigator.mediaDevices.getUserMedia({
+                        audio: true,
+                        video: type === 'video'
+                    });
+                    console.log('🎤 Media permissions granted');
+                } catch (permissionError: any) {
+                    console.error('❌ Media permission denied:', permissionError);
+                    if (permissionError?.name === 'NotAllowedError') {
+                        throw new Error('Cần cấp quyền truy cập microphone và camera để thực hiện cuộc gọi');
+                    } else if (permissionError?.name === 'NotFoundError') {
+                        throw new Error('Không tìm thấy microphone hoặc camera trên thiết bị');
+                    } else {
+                        throw new Error('Không thể truy cập microphone/camera: ' + (permissionError?.message || 'Unknown error'));
+                    }
+                }
+
                 console.log(`🎥 Enabling ${type} media...`);
+
+                // Enable microphone with verification
                 await roomInstance.localParticipant.setMicrophoneEnabled(true);
+                console.log('🎤 Microphone enabled, checking publication...');
+
+                // Wait for track to be published
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Verify microphone track is published
+                const micPublication = roomInstance.localParticipant.getTrackPublication(Track.Source.Microphone);
+                if (micPublication) {
+                    console.log('✅ Microphone track found and published');
+                    console.log('🎤 Microphone publication details:', {
+                        kind: micPublication.kind,
+                        muted: micPublication.isMuted,
+                        enabled: micPublication.isEnabled
+                    });
+                } else {
+                    console.warn('⚠️ Microphone track not found after enabling');
+                    // Try to force enable again
+                    console.log('🔄 Retrying microphone enable...');
+                    await roomInstance.localParticipant.setMicrophoneEnabled(false);
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    await roomInstance.localParticipant.setMicrophoneEnabled(true);
+                }
 
                 if (type === 'video') {
                     await roomInstance.localParticipant.setCameraEnabled(true);
@@ -377,9 +520,14 @@ export const useCall = (socket: Socket | null, currentUserId: string, currentUse
                     await roomInstance.localParticipant.setCameraEnabled(false);
                 }
 
+                // Log all published tracks
+                const publications = Array.from(roomInstance.localParticipant.trackPublications.values());
+                console.log('📊 Local published tracks:', publications.map(p => p.kind));
+
                 console.log(`✅ ${type} media enabled successfully`);
             } catch (enableError) {
                 console.error('❌ Error enabling media:', enableError);
+                throw enableError;
             }
 
             console.log('📤 Sending call notification via socket...');
@@ -402,7 +550,17 @@ export const useCall = (socket: Socket | null, currentUserId: string, currentUse
             console.error('❌ Error initiating call:', error);
             setCallStatus('idle');
             resetCallState();
-            setCallEndReason('Không thể khởi tạo cuộc gọi');
+
+            let errorMessage = 'Không thể khởi tạo cuộc gọi';
+            if (error instanceof Error) {
+                if (error.message.includes('microphone') || error.message.includes('camera')) {
+                    errorMessage = error.message;
+                } else if (error.message.includes('Permission')) {
+                    errorMessage = 'Cần cấp quyền truy cập microphone và camera để thực hiện cuộc gọi';
+                }
+            }
+
+            setCallEndReason(errorMessage);
 
             if (roomRef.current) {
                 await roomRef.current.disconnect();
@@ -460,6 +618,11 @@ export const useCall = (socket: Socket | null, currentUserId: string, currentUse
             const roomInstance = new Room({
                 adaptiveStream: true,
                 dynacast: true,
+                publishDefaults: {
+                    stopMicTrackOnMute: false,
+                    videoCodec: 'vp8',
+                    audioPreset: AudioPresets.music,
+                },
                 videoCaptureDefaults: incomingCall.callType === 'video' ? {
                     resolution: { width: 1280, height: 720 },
                     facingMode: 'user'
@@ -467,7 +630,9 @@ export const useCall = (socket: Socket | null, currentUserId: string, currentUse
                 audioCaptureDefaults: {
                     echoCancellation: true,
                     noiseSuppression: true,
-                    autoGainControl: true
+                    autoGainControl: true,
+                    sampleRate: 48000,
+                    channelCount: 1
                 }
             });
 
@@ -479,12 +644,74 @@ export const useCall = (socket: Socket | null, currentUserId: string, currentUse
             await roomInstance.connect(wsUrl, token);
             setLocalParticipant(roomInstance.localParticipant);
 
-            await roomInstance.localParticipant.setMicrophoneEnabled(true);
+            try {
+                console.log(`🎥 Requesting ${incomingCall.callType} media permissions...`);
 
-            if (incomingCall.callType === 'video') {
-                await roomInstance.localParticipant.setCameraEnabled(true);
-            } else {
-                await roomInstance.localParticipant.setCameraEnabled(false);
+                // Check browser support
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Trình duyệt không hỗ trợ tính năng gọi thoại/video. Vui lòng cập nhật trình duyệt.');
+                }
+
+                // Debug: Check available devices
+                await checkMediaDevices();
+
+                // Request media permissions first
+                try {
+                    await navigator.mediaDevices.getUserMedia({
+                        audio: true,
+                        video: incomingCall.callType === 'video'
+                    });
+                    console.log('🎤 Media permissions granted for call accept');
+                } catch (permissionError: any) {
+                    console.error('❌ Media permission denied during call accept:', permissionError);
+                    if (permissionError?.name === 'NotAllowedError') {
+                        throw new Error('Cần cấp quyền truy cập microphone và camera để tham gia cuộc gọi');
+                    } else if (permissionError?.name === 'NotFoundError') {
+                        throw new Error('Không tìm thấy microphone hoặc camera trên thiết bị');
+                    } else {
+                        throw new Error('Không thể truy cập microphone/camera: ' + (permissionError?.message || 'Unknown error'));
+                    }
+                }
+
+                // Enable microphone with verification
+                await roomInstance.localParticipant.setMicrophoneEnabled(true);
+                console.log('🎤 Microphone enabled for call accept, checking publication...');
+
+                // Wait for track to be published
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Verify microphone track is published
+                const micPublication = roomInstance.localParticipant.getTrackPublication(Track.Source.Microphone);
+                if (micPublication) {
+                    console.log('✅ Microphone track found and published for call accept');
+                    console.log('🎤 Microphone publication details for call accept:', {
+                        kind: micPublication.kind,
+                        muted: micPublication.isMuted,
+                        enabled: micPublication.isEnabled
+                    });
+                } else {
+                    console.warn('⚠️ Microphone track not found after enabling for call accept');
+                    // Try to force enable again
+                    console.log('🔄 Retrying microphone enable for call accept...');
+                    await roomInstance.localParticipant.setMicrophoneEnabled(false);
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    await roomInstance.localParticipant.setMicrophoneEnabled(true);
+                }
+
+                if (incomingCall.callType === 'video') {
+                    await roomInstance.localParticipant.setCameraEnabled(true);
+                } else {
+                    await roomInstance.localParticipant.setCameraEnabled(false);
+                }
+
+                // Log all published tracks
+                const publications = Array.from(roomInstance.localParticipant.trackPublications.values());
+                console.log('📊 Local published tracks for call accept:', publications.map(p => p.kind));
+
+                console.log(`✅ ${incomingCall.callType} media enabled for call accept`);
+            } catch (mediaError) {
+                console.error('❌ Error setting up media for call accept:', mediaError);
+                throw mediaError;
             }
 
             socket.emit('acceptCall', {
@@ -505,7 +732,17 @@ export const useCall = (socket: Socket | null, currentUserId: string, currentUse
             setCallStatus('idle');
             setIncomingCall(null);
             resetCallState();
-            setCallEndReason('Không thể chấp nhận cuộc gọi');
+
+            let errorMessage = 'Không thể chấp nhận cuộc gọi';
+            if (error instanceof Error) {
+                if (error.message.includes('microphone') || error.message.includes('camera')) {
+                    errorMessage = error.message;
+                } else if (error.message.includes('Permission')) {
+                    errorMessage = 'Cần cấp quyền truy cập microphone và camera để tham gia cuộc gọi';
+                }
+            }
+
+            setCallEndReason(errorMessage);
 
             if (roomRef.current) {
                 await roomRef.current.disconnect();
@@ -514,7 +751,7 @@ export const useCall = (socket: Socket | null, currentUserId: string, currentUse
             }
 
             stopAutoEndTimer();
-            return { success: false, error: 'Failed to accept call' };
+            return { success: false, error: error instanceof Error ? error.message : 'Failed to accept call' };
         }
     };
 

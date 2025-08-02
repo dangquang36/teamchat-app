@@ -22,6 +22,9 @@ export interface PostNotificationServiceResponse {
 }
 
 export class PostNotificationService {
+    // Track sent notifications to prevent duplicates
+    private static sentNotifications = new Set<string>();
+
     /**
      * Gửi thông báo bài đăng mới đến các kênh được chọn
      */
@@ -47,8 +50,20 @@ export class PostNotificationService {
                 };
             }
 
+            // Create unique notification ID to prevent duplicates
+            const notificationId = `post_notification_${post.id}_${Date.now()}`;
+
+            // Check if this post notification was already sent
+            if (this.sentNotifications.has(post.id)) {
+                console.log('⚠️ Post notification already sent for post:', post.id);
+                return {
+                    success: true,
+                    data: { message: 'Notification already sent for this post' }
+                };
+            }
+
             const notification: PostNotification = {
-                id: `post_notification_${Date.now()}`,
+                id: notificationId,
                 type: 'NEW_POST',
                 postId: post.id,
                 post: post,
@@ -68,14 +83,23 @@ export class PostNotificationService {
                 visibility: post.visibility
             });
 
+            // Mark this post as notified to prevent duplicates
+            this.sentNotifications.add(post.id);
+
             // Emit to each channel
             channelIds.forEach(channelId => {
                 socket.emit('postNotificationToChannel', {
                     channelId,
-                    notification
+                    notification,
+                    senderId: post.author.id
                 });
-                console.log(`✅ Post notification sent to channel: ${channelId}`);
+                console.log(`✅ Post notification sent to channel: ${channelId} by ${post.author.id}`);
             });
+
+            // Clean up sent notifications after 5 minutes to prevent memory leaks
+            setTimeout(() => {
+                this.sentNotifications.delete(post.id);
+            }, 5 * 60 * 1000);
 
             return {
                 success: true,
@@ -104,6 +128,15 @@ export class PostNotificationService {
                 };
             }
 
+            // Check if this public post notification was already sent
+            if (this.sentNotifications.has(`public_${post.id}`)) {
+                console.log('⚠️ Public post notification already sent for post:', post.id);
+                return {
+                    success: true,
+                    data: { message: 'Public notification already sent for this post' }
+                };
+            }
+
             const notification: PostNotification = {
                 id: `public_post_notification_${Date.now()}`,
                 type: 'NEW_POST',
@@ -125,8 +158,16 @@ export class PostNotificationService {
                 visibility: post.visibility
             });
 
+            // Mark this public post as notified
+            this.sentNotifications.add(`public_${post.id}`);
+
             socket.emit('publicPostNotification', { notification });
             console.log(`✅ Public post notification sent`);
+
+            // Clean up sent notifications after 5 minutes
+            setTimeout(() => {
+                this.sentNotifications.delete(`public_${post.id}`);
+            }, 5 * 60 * 1000);
 
             return {
                 success: true,
@@ -184,6 +225,7 @@ export class PostNotificationService {
                             error: 'No channels selected for sharing'
                         };
                     }
+                    // Only send to selected channels, not public
                     return this.sendNewPostNotification(socket, post, post.sharedChannels);
 
                 case 'private':

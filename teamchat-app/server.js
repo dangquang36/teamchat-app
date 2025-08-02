@@ -31,6 +31,7 @@ nextApp.prepare().then(() => {
         socket.on('join', (userId) => {
             userSocketMap[userId] = socket.id;
             console.log(`👤 User ${userId} joined with socket ${socket.id}`);
+            console.log(`📊 Current user map:`, userSocketMap);
         });
 
         socket.on('privateMessage', ({ recipientId, payload }) => {
@@ -38,6 +39,31 @@ nextApp.prepare().then(() => {
             if (recipientSocketId) {
                 io.to(recipientSocketId).emit('newMessage', payload);
                 console.log(`💬 Message sent from ${socket.id} to ${recipientId}`);
+            }
+        });
+
+        // Direct message emoji reaction events
+        socket.on('directMessageEmojiReaction', ({ recipientId, chatId, messageId, emoji, userId, userName, timestamp }) => {
+            console.log(`📥 SERVER RECEIVED EMOJI: recipientId=${recipientId}, chatId=${chatId}, messageId=${messageId}, emoji=${emoji}, userId=${userId}`);
+
+            console.log(`🔍 User socket map status:`, Object.keys(userSocketMap));
+            console.log(`🔍 Looking for recipient ${recipientId} in map...`);
+
+            const recipientSocketId = userSocketMap[recipientId];
+            if (recipientSocketId) {
+                console.log(`✅ Found recipient socket: ${recipientSocketId}`);
+                io.to(recipientSocketId).emit('directMessageEmojiReaction', {
+                    chatId,
+                    messageId,
+                    emoji,
+                    userId,
+                    userName,
+                    timestamp
+                });
+                console.log(`📤 Direct message emoji reaction sent to ${recipientId} (socket: ${recipientSocketId}) for chat ${chatId}`);
+            } else {
+                console.log(`❌ Recipient ${recipientId} not found in userSocketMap:`, userSocketMap);
+                console.log(`❌ Available users:`, Object.keys(userSocketMap));
             }
         });
 
@@ -607,6 +633,23 @@ nextApp.prepare().then(() => {
             console.log(`✅ Message broadcasted to channel ${channelId}`);
         });
 
+        // Channel emoji reaction events
+        socket.on('channelEmojiReaction', ({ channelId, messageId, emoji, userId, userName, timestamp }) => {
+            console.log(`😀 Emoji reaction: ${emoji} added to message ${messageId} in channel ${channelId} by ${userName} (${userId})`);
+
+            // Broadcast to all channel members EXCEPT the sender
+            socket.broadcast.emit('channelEmojiReaction', {
+                channelId,
+                messageId,
+                emoji,
+                userId,
+                userName,
+                timestamp
+            });
+
+            console.log(`✅ Emoji reaction broadcasted to channel ${channelId}`);
+        });
+
         // Poll vote notification events
         socket.on('pollVoted', (payload) => {
             console.log(`🗳️ [Server] Poll vote notification for channel ${payload.channelId}`);
@@ -671,25 +714,45 @@ nextApp.prepare().then(() => {
         });
 
         // Post notification events
-        socket.on('postNotificationToChannel', ({ channelId, notification }) => {
+        socket.on('postNotificationToChannel', ({ channelId, notification, senderId }) => {
             console.log(`📢 Post notification sent to channel ${channelId}`);
             console.log(`📝 Post: "${notification.title}" by ${notification.authorName}`);
+            console.log(`👤 Sender ID: ${senderId}`);
 
-            // Broadcast to all channel members
-            io.emit('postNotificationReceived', {
-                channelId,
-                notification,
-                timestamp: new Date().toISOString()
+            // Get channel members from ChannelMemberService
+            const { ChannelMemberService } = require('./services/channelMemberService');
+            const channelMembers = ChannelMemberService.getChannelMemberIds(channelId);
+
+            console.log(`👥 Channel ${channelId} members:`, channelMembers);
+            console.log(`📊 All channels in service:`, ChannelMemberService.getAllChannels().map(c => ({ id: c.id, name: c.name, members: c.members.length })));
+
+            // Send notification to ALL channel members INCLUDING the sender
+            const recipients = channelMembers;
+            console.log(`📤 Sending to all channel members:`, recipients);
+
+            // Send notification to all channel members INCLUDING the sender
+            recipients.forEach(recipientId => {
+                const recipientSocketId = userSocketMap[recipientId];
+                if (recipientSocketId) {
+                    io.to(recipientSocketId).emit('postNotificationReceived', {
+                        channelId,
+                        notification,
+                        timestamp: new Date().toISOString()
+                    });
+                    console.log(`✅ Sent notification to ${recipientId} (socket: ${recipientSocketId})`);
+                } else {
+                    console.log(`❌ Recipient ${recipientId} not connected`);
+                }
             });
 
-            console.log(`✅ Post notification broadcasted to channel ${channelId}`);
+            console.log(`✅ Post notification sent to ${recipients.length} channel members`);
         });
 
         // Public post notification events
         socket.on('publicPostNotification', ({ notification }) => {
             console.log(`🌍 Public post notification: "${notification.title}" by ${notification.authorName}`);
 
-            // Broadcast to all connected users
+            // Broadcast to all connected users EXCEPT the sender to prevent duplicates
             socket.broadcast.emit('publicPostNotificationReceived', {
                 notification,
                 timestamp: new Date().toISOString()

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import { useChannels } from '@/contexts/ChannelContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface CreateChannelModalProps {
     isOpen: boolean;
@@ -23,6 +24,7 @@ export function CreateChannelModal({ isOpen, onClose }: CreateChannelModalProps)
     const { toast } = useToast();
     const { addChannel } = useChannels();
     const currentUser = useCurrentUser();
+    const { isDarkMode } = useTheme();
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -112,7 +114,7 @@ export function CreateChannelModal({ isOpen, onClose }: CreateChannelModalProps)
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
-                        <X className="h-5 w-5 text-gray-500" />
+                        <X className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                     </button>
                 </div>
 

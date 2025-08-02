@@ -120,11 +120,11 @@ export function ChannelSidebar() {
                                             {channel.description || 'Không có mô tả'}
                                         </p>
                                         <div className="flex items-center mt-1">
-                                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                                            <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                                 {channel.members.length} thành viên
                                             </span>
                                             <span className="mx-2 text-gray-300 dark:text-gray-600">•</span>
-                                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                                            <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                                 {channel.messages.length} tin nhắn
                                             </span>
                                         </div>

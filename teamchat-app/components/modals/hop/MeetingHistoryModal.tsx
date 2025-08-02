@@ -2,6 +2,7 @@
 
 import { X, History, Clock, Users } from "lucide-react";
 import { Button } from '@/components/ui/button';
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface Meeting {
     id: string;
@@ -23,6 +24,8 @@ interface MeetingHistoryModalProps {
 }
 
 export function MeetingHistoryModal({ isOpen, onClose, meetings, onJoinMeeting }: MeetingHistoryModalProps) {
+    const { isDarkMode } = useTheme();
+
     if (!isOpen) return null;
 
     return (
@@ -36,7 +39,7 @@ export function MeetingHistoryModal({ isOpen, onClose, meetings, onJoinMeeting }
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
-                        <X className="h-5 w-5 text-gray-500" />
+                        <X className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                     </button>
                 </div>
 

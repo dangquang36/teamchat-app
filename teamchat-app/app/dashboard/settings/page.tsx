@@ -2,18 +2,11 @@
 
 import { SettingsSection } from "@/components/sections/SettingsSection";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function SettingsPage() {
-    const [isDarkMode, setIsDarkMode] = useState(false);
+    const { isDarkMode } = useTheme();
     const router = useRouter();
-
-    useEffect(() => {
-        const savedDarkMode = localStorage.getItem("darkMode");
-        if (savedDarkMode) {
-            setIsDarkMode(JSON.parse(savedDarkMode));
-        }
-    }, []);
 
     const handleLogout = () => {
         localStorage.removeItem("userToken");

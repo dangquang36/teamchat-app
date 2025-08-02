@@ -343,7 +343,7 @@ export function CreatePostModal({ isOpen, onClose, onSubmit, isDarkMode = false 
                                                             <div className="w-2 h-2 bg-white rounded-full" />
                                                         )}
                                                     </div>
-                                                    <Hash className="w-4 h-4 text-gray-500" />
+                                                    <Hash className={`w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                                                     <span className={isDarkMode ? "text-white" : "text-gray-900"}>
                                                         {channel.name}
                                                     </span>

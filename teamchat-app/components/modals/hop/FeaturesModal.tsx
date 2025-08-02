@@ -1,6 +1,7 @@
 "use client";
 
 import { X, History, MessageSquare } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface FeaturesModalProps {
     isOpen: boolean;
@@ -10,6 +11,8 @@ interface FeaturesModalProps {
 }
 
 export function FeaturesModal({ isOpen, onClose, onOpenHistory, onCreateChannel }: FeaturesModalProps) {
+    const { isDarkMode } = useTheme();
+
     if (!isOpen) return null;
 
     return (
@@ -23,7 +26,7 @@ export function FeaturesModal({ isOpen, onClose, onOpenHistory, onCreateChannel 
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
-                        <X className="h-5 w-5 text-gray-500" />
+                        <X className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                     </button>
                 </div>
 

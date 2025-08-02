@@ -74,6 +74,13 @@ export interface Message {
     fileUrl?: string;
     fileName?: string;
     attachments?: { name: string; url: string; type: string; size: number }[];
+    // Thêm tính năng reply
+    replyTo?: {
+        id: string;
+        from: string;
+        text?: string;
+        type?: 'text' | 'poll' | 'file' | 'image';
+    };
 }
 
 
@@ -142,6 +149,14 @@ export interface ChatInputProps {
     onCreatePoll?: (pollData: { question: string; options: string[] }) => void;
     onSendMessage: (message: string, files: File[]) => void;
     isDarkMode?: boolean;
+    // Thêm props cho reply
+    replyingTo?: {
+        id: string;
+        from: string;
+        text?: string;
+        type?: 'text' | 'poll' | 'file' | 'image';
+    } | null;
+    onCancelReply?: () => void;
 }
 
 

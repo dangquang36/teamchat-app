@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @import '../components/ui/animations.css';
+@import '../styles/reply-animations.css';
 
 body {
   font-family: Arial, Helvetica, sans-serif;

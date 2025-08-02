@@ -76,6 +76,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
         showToast,
         unreadChats,
         addContact,
+        addEmojiReaction,
     } = useChatContext();
 
     const { isPinned, togglePin, sortChatsWithPinned } = usePinnedChats();
@@ -89,6 +90,14 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
     const [rightPanelView, setRightPanelView] = useState<'details' | 'archive' | 'closed'>('closed');
     const [archiveInitialTab, setArchiveInitialTab] = useState<'media' | 'files'>('media');
     const [isFriendRequestSheetOpen, setIsFriendRequestSheetOpen] = useState(false);
+
+    // State cho reply
+    const [replyingTo, setReplyingTo] = useState<{
+        id: string;
+        from: string;
+        text?: string;
+        type?: 'text' | 'poll' | 'file' | 'image';
+    } | null>(null);
 
 
 
@@ -154,6 +163,31 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
 
     const handleCloseArchive = () => {
         setRightPanelView('details');
+    };
+
+    // Hàm xử lý reply
+    const handleReply = (message: any) => {
+        // Safety check for message structure
+        if (!message || !message.id) {
+            console.error('Invalid message for reply:', message);
+            return;
+        }
+
+        // Handle different message structures (direct messages vs channel messages)
+        const senderName = message.sender?.name ||
+            (message.from === currentUser?.id ? currentUser?.name : selectedChatUser?.name) ||
+            'Unknown User';
+
+        setReplyingTo({
+            id: message.id,
+            from: senderName,
+            text: message.text || '',
+            type: message.poll ? 'poll' : message.files?.length ? 'file' : 'text'
+        });
+    };
+
+    const handleCancelReply = () => {
+        setReplyingTo(null);
     };
 
     const allAttachments = currentMessages.flatMap(msg =>
@@ -248,7 +282,7 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
     return (
         <>
 
-            <div className="flex h-screen w-full bg-gradient-to-br from-purple-50 to-blue-50 dark:bg-gray-900 overflow-hidden relative">
+            <div className={`flex h-screen w-full overflow-hidden relative ${isDarkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-purple-50 to-blue-50'}`}>
                 {/* Phần danh sách chat bên trái */}
                 <div className={`w-80 border-r transition-colors duration-300 flex-shrink-0 ${isDarkMode ? 'bg-gray-800 border-gray-700 backdrop-blur-none' : 'bg-white/90 backdrop-blur-sm border-purple-100'}`}>
                     <div className="p-4 border-b">
@@ -459,14 +493,20 @@ export function MessagesSection({ onVideoCall, onAudioCall, isDarkMode = false }
                                 otherUser={selectedChatUser}
                                 isDarkMode={isDarkMode}
                                 setViewingProfile={setViewingProfile}
+                                onReaction={(messageId, emoji) => {
+                                    addEmojiReaction(messageId, emoji);
+                                }}
+                                onReply={handleReply}
                             />
                             <ChatInput
-                                onSendMessage={handleSendMessage}
+                                onSendMessage={(message, files) => handleSendMessage(message, files, replyingTo)}
                                 isDarkMode={isDarkMode}
+                                replyingTo={replyingTo}
+                                onCancelReply={handleCancelReply}
                             />
                         </>
                     ) : (
-                        <div className={`flex-1 flex items-center justify-center transition-colors duration-300 animate-in fade-in duration-300 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <div className={`flex-1 flex items-center justify-center transition-colors duration-300 animate-in fade-in duration-300 ${isDarkMode ? 'bg-gray-900 text-gray-400' : 'bg-gray-50 text-gray-500'}`}>
                             <div className="text-center max-w-md">
                                 <div className="text-6xl mb-4">💬</div>
                                 <p className="text-lg mb-2">Chọn một cuộc trò chuyện để bắt đầu</p>

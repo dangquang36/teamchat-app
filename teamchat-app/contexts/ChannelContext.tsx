@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PollSyncManager, PollSyncPayload } from '@/services/pollSyncManager';
 import { PollService } from '@/services/pollService';
 import { PollStateManager } from '@/services/pollStateManager';
+import { ChannelMemberService } from '@/services/channelMemberService';
 
 export interface Channel {
     id: string;
@@ -39,6 +40,18 @@ export interface ChannelMessage {
     };
     timestamp: Date;
     type: 'text' | 'image' | 'file' | 'meeting' | 'poll' | 'post_notification';
+    // Thêm tính năng reply
+    replyTo?: {
+        id: string;
+        from: string;
+        content?: string;
+        type?: 'text' | 'image' | 'file' | 'meeting' | 'poll' | 'post_notification';
+    };
+    // Thêm reactions
+    reactions?: Array<{
+        emoji: string;
+        user: string;
+    }>;
     meetingData?: {
         title: string;
         roomName: string;
@@ -119,6 +132,9 @@ interface ChannelContextType {
     declineChannelInvitation: (invitationId: string) => Promise<{ success: boolean; error?: string }>;
     removeMemberFromChannel: (channelId: string, memberId: string) => void;
     getChannelInvitations: (userId: string) => Promise<ChannelInvitation[]>;
+
+    // Emoji reaction functions
+    addEmojiReaction: (channelId: string, messageId: number, emoji: string, userId: string) => void;
 }
 
 const ChannelContext = createContext<ChannelContextType | undefined>(undefined);
@@ -180,6 +196,11 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
                 }));
                 console.log('🧹 Cleaned up channels data from localStorage');
                 setChannels(channelsWithDates);
+
+                // Sync channels with ChannelMemberService
+                channelsWithDates.forEach((channel: Channel) => {
+                    ChannelMemberService.addChannel(channel);
+                });
             } catch (error) {
                 console.error('Failed to parse channels from localStorage:', error);
             }
@@ -267,13 +288,20 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
                                 joinedAt: new Date()
                             }],
                         invitations: channel.invitations.map(inv =>
-                            inv.id === payload.invitationId
+                            inv.id === String(payload.invitationId)
                                 ? { ...inv, status: 'accepted' as const }
                                 : inv
                         )
                     }
                     : channel
             ));
+
+            // Sync with ChannelMemberService
+            const updatedChannel = getChannel(payload.channelId);
+            if (updatedChannel) {
+                ChannelMemberService.updateChannel(payload.channelId, updatedChannel);
+                console.log(`📋 ChannelContext: Updated channel ${payload.channelId} in ChannelMemberService with ${updatedChannel.members.length} members`);
+            }
 
             console.log(`🎉 ${payload.inviteeName} has joined the channel!`);
         };
@@ -383,6 +411,24 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
                         }
                     }
 
+                    // Additional check for post notification messages to prevent duplicates
+                    if (processedMessage.type === 'post_notification' && processedMessage.postData) {
+                        const duplicatePostNotification = channel.messages.find(msg =>
+                            msg.type === 'post_notification' &&
+                            msg.postData &&
+                            msg.postData.postId === processedMessage.postData?.postId
+                        );
+
+                        if (duplicatePostNotification) {
+                            console.log('⚠️ Duplicate post notification detected, keeping the original one:', {
+                                originalPostId: duplicatePostNotification.postData?.postId,
+                                newPostId: processedMessage.postData?.postId,
+                                title: processedMessage.postData?.title
+                            });
+                            return channel;
+                        }
+                    }
+
                     console.log('✅ Adding new message to channel:', processedMessage);
                     return { ...channel, messages: [...channel.messages, processedMessage] };
                 }
@@ -408,6 +454,13 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
                     }
                     : channel
             ));
+
+            // Sync with ChannelMemberService
+            const updatedChannel = getChannel(payload.channelId);
+            if (updatedChannel) {
+                ChannelMemberService.updateChannel(payload.channelId, updatedChannel);
+                console.log(`📋 ChannelContext: Updated channel ${payload.channelId} in ChannelMemberService with ${updatedChannel.members.length} members`);
+            }
 
             console.log(`🎉 ${payload.newMember.name} joined channel ${payload.channelId}!`);
         };
@@ -463,6 +516,13 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
                     ? { ...channel, ...payload.updates }
                     : channel
             ));
+
+            // Sync with ChannelMemberService
+            const updatedChannel = getChannel(payload.channelId);
+            if (updatedChannel) {
+                ChannelMemberService.updateChannel(payload.channelId, updatedChannel);
+                console.log(`📋 ChannelContext: Updated channel ${payload.channelId} in ChannelMemberService`);
+            }
 
             // Create notification message based on what was updated
             const updateMessages = [];
@@ -619,10 +679,46 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
             console.log(`🔄 ✅ POLL DATA UPDATE PROCESS COMPLETED for channel ${payload.channelId}`);
         };
 
+        // Emoji reaction handler
+        const handleChannelEmojiReaction = (payload: any) => {
+            console.log(`😀 Received emoji reaction:`, payload);
+            const { channelId, messageId, emoji, userId, userName } = payload;
+
+            setChannels(prev => prev.map(channel => {
+                if (channel.id === channelId) {
+                    const updatedMessages = channel.messages.map(message => {
+                        if (message.id === messageId) {
+                            const existingReactions = message.reactions || [];
+                            const userExistingReaction = existingReactions.find(r => r.user === userId && r.emoji === emoji);
+
+                            if (userExistingReaction) {
+                                // Remove reaction if it already exists (toggle behavior)
+                                return {
+                                    ...message,
+                                    reactions: existingReactions.filter(r => !(r.user === userId && r.emoji === emoji))
+                                };
+                            } else {
+                                // Add new reaction
+                                return {
+                                    ...message,
+                                    reactions: [...existingReactions, { emoji, user: userId }]
+                                };
+                            }
+                        }
+                        return message;
+                    });
+
+                    return { ...channel, messages: updatedMessages };
+                }
+                return channel;
+            }));
+        };
+
         socket.on('channelMessageReceived', handleChannelMessageReceived);
         socket.on('channelMemberJoined', handleChannelMemberJoined);
         socket.on('meetingNotificationReceived', handleMeetingNotificationReceived);
         socket.on('channelInfoUpdated', handleChannelInfoUpdated);
+        socket.on('channelEmojiReaction', handleChannelEmojiReaction);
         // Poll events now handled by PollSyncManager
         // socket.on('pollVoted', handlePollVoted);
         // socket.on('pollUpdated', handlePollUpdated);
@@ -635,6 +731,7 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
             socket.off('channelMemberJoined', handleChannelMemberJoined);
             socket.off('meetingNotificationReceived', handleMeetingNotificationReceived);
             socket.off('channelInfoUpdated', handleChannelInfoUpdated);
+            socket.off('channelEmojiReaction', handleChannelEmojiReaction);
             // Poll events cleanup handled by PollSyncManager
             // socket.off('pollVoted', handlePollVoted);
             // socket.off('pollUpdated', handlePollUpdated);
@@ -705,25 +802,28 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
         channelData: Omit<Channel, 'id' | 'createdAt' | 'members' | 'messages' | 'invitations'>,
         creatorUser?: { id: string; name: string; avatar?: string }
     ): string => {
-        const channelId = channelData.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+        const channelId = `h-${Date.now()}`;
         const newChannel: Channel = {
-            ...channelData,
             id: channelId,
+            ...channelData,
             createdAt: new Date(),
-            members: [
-                {
-                    id: creatorUser?.id || 'current-user',
-                    name: creatorUser?.name || 'Bạn',
-                    avatar: creatorUser?.avatar,
-                    status: 'online',
-                    joinedAt: new Date()
-                }
-            ],
-            messages: [], // No welcome message
+            members: creatorUser ? [{
+                id: creatorUser.id,
+                name: creatorUser.name,
+                avatar: creatorUser.avatar,
+                status: 'online',
+                joinedAt: new Date()
+            }] : [],
+            messages: [],
             invitations: []
         };
 
-        setChannels(prev => [newChannel, ...prev]);
+        setChannels(prev => [...prev, newChannel]);
+
+        // Sync with ChannelMemberService
+        ChannelMemberService.addChannel(newChannel);
+        console.log(`📋 ChannelContext: Added channel ${channelId} to ChannelMemberService with ${newChannel.members.length} members`);
+
         return channelId;
     };
 
@@ -736,6 +836,9 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
         setChannels(prev => prev.map(channel =>
             channel.id === id ? { ...channel, ...updates } : channel
         ));
+
+        // Update in ChannelMemberService
+        ChannelMemberService.updateChannel(id, updates);
 
         // Show notification for the person who updated (unified toast)
         const updateMessages = [];
@@ -767,6 +870,7 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
 
     const deleteChannel = (id: string) => {
         setChannels(prev => prev.filter(channel => channel.id !== id));
+        ChannelMemberService.removeChannel(id);
     };
 
     const addMessageToChannel = (channelId: string, messageData: Omit<ChannelMessage, 'id' | 'timestamp'>) => {
@@ -975,6 +1079,10 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
                 setChannels(prev => [...prev, newChannel]);
                 channel = newChannel;
 
+                // Sync with ChannelMemberService
+                ChannelMemberService.addChannel(newChannel);
+                console.log(`📋 ChannelContext: Added new channel ${channelId} to ChannelMemberService with ${newChannel.members.length} members`);
+
                 console.log('Created channel for user:', newChannel);
                 console.log('🖼️ New channel image set to:', newChannel.image);
             } else {
@@ -1002,6 +1110,13 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
                             }
                             : ch
                     ));
+
+                    // Sync with ChannelMemberService
+                    const updatedChannel = getChannel(channelId);
+                    if (updatedChannel) {
+                        ChannelMemberService.updateChannel(channelId, updatedChannel);
+                        console.log(`📋 ChannelContext: Updated channel ${channelId} in ChannelMemberService with ${updatedChannel.members.length} members`);
+                    }
 
                     console.log('Added member to existing channel:', newMember);
                 }
@@ -1089,6 +1204,13 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
                 ? { ...channel, members: channel.members.filter(member => member.id !== memberId) }
                 : channel
         ));
+
+        // Sync with ChannelMemberService
+        const updatedChannel = getChannel(channelId);
+        if (updatedChannel) {
+            ChannelMemberService.updateChannel(channelId, updatedChannel);
+            console.log(`📋 ChannelContext: Updated channel ${channelId} in ChannelMemberService after removing member ${memberId}`);
+        }
     };
 
     const getChannelInvitations = async (userId: string): Promise<ChannelInvitation[]> => {
@@ -1106,6 +1228,55 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    // Emoji reaction functions
+    const addEmojiReaction = (channelId: string, messageId: number, emoji: string, userId: string) => {
+        console.log(`😀 Adding emoji reaction: ${emoji} to message ${messageId} in channel ${channelId} by user ${userId}`);
+
+        // Update local state first for immediate UI feedback
+        setChannels(prev => prev.map(channel => {
+            if (channel.id === channelId) {
+                const updatedMessages = channel.messages.map(message => {
+                    if (String(message.id) === String(messageId)) {
+                        // Check if user already reacted with this emoji
+                        const existingReactions = message.reactions || [];
+                        const userExistingReaction = existingReactions.find(r => r.user === userId && r.emoji === emoji);
+
+                        if (userExistingReaction) {
+                            // Remove reaction if it already exists (toggle behavior)
+                            return {
+                                ...message,
+                                reactions: existingReactions.filter(r => !(r.user === userId && r.emoji === emoji))
+                            };
+                        } else {
+                            // Add new reaction
+                            return {
+                                ...message,
+                                reactions: [...existingReactions, { emoji, user: userId }]
+                            };
+                        }
+                    }
+                    return message;
+                });
+
+                return { ...channel, messages: updatedMessages };
+            }
+            return channel;
+        }));
+
+        // Broadcast via socket
+        if (socket && currentUser) {
+            console.log('😀 Broadcasting emoji reaction via socket');
+            socket.emit('channelEmojiReaction', {
+                channelId,
+                messageId,
+                emoji,
+                userId,
+                userName: currentUser.name,
+                timestamp: new Date().toISOString()
+            });
+        }
+    };
+
     const value: ChannelContextType = {
         channels,
         addChannel,
@@ -1117,7 +1288,8 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
         acceptChannelInvitation,
         declineChannelInvitation,
         removeMemberFromChannel,
-        getChannelInvitations
+        getChannelInvitations,
+        addEmojiReaction
     };
 
     return (

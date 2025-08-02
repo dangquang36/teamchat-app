@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { ProfileSection } from "./ProfileSection"; // Adjust path as needed
 import { SettingsSection } from "./SettingsSection"; // Adjust path as needed
+import { useTheme } from "@/contexts/ThemeContext";
 
 export function DashboardPage() {
     const [activeSection, setActiveSection] = useState<'profile' | 'settings'>('profile');
-    const [isDarkMode, setIsDarkMode] = useState(false); // You can manage dark mode here or higher up
+    const { isDarkMode, toggleDarkMode } = useTheme();
 
     const handleLogout = () => {
         // Implement your logout logic here (e.g., clear tokens, redirect)
@@ -39,7 +40,7 @@ export function DashboardPage() {
                 </button>
                 <button
                     className="px-4 py-2 bg-gray-700 text-white rounded-md"
-                    onClick={() => setIsDarkMode(prev => !prev)}
+                    onClick={toggleDarkMode}
                 >
                     Toggle Dark Mode ({isDarkMode ? 'On' : 'Off'})
                 </button>

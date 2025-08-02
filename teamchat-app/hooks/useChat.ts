@@ -124,7 +124,63 @@ export const useChat = (isDarkMode: boolean) => {
         fetchInitialContacts();
     }, [currentUser, fetchInitialContacts]);
 
-    const handleSendMessage = useCallback(async (text: string, files: File[] = []) => {
+    // Socket listener for emoji reactions
+    useEffect(() => {
+        if (!socket || !currentUser) return;
+
+        // Direct message emoji reaction handler
+        const handleDirectMessageEmojiReaction = (payload: any) => {
+            console.log(`📥 RECEIVED EMOJI REACTION:`, payload);
+            const { chatId, messageId, emoji, userId, userName } = payload;
+
+            if (!chatId || !messageId || !emoji || !userId) {
+                console.error(`❌ Invalid emoji reaction payload:`, payload);
+                return;
+            }
+
+            console.log(`📝 Processing emoji reaction: chatId=${chatId}, messageId=${messageId}, emoji=${emoji}, fromUser=${userId}, currentUser=${currentUser?.id}`);
+
+            // Kiểm tra xem chat có đúng là đang được mở không
+            if (chatId && selectedChatId && chatId !== selectedChatId) {
+                console.log(`📝 Emoji reaction for different chat (${chatId} vs ${selectedChatId}), still updating...`);
+            }
+
+            setAllMessages(prev => {
+                const chatMessages = prev[chatId] || [];
+                const updatedMessages = chatMessages.map(message => {
+                    if (message.id === messageId) {
+                        const existingReactions = message.reactions || [];
+                        const userExistingReaction = existingReactions.find(r => r.user === userId && r.emoji === emoji);
+
+                        if (userExistingReaction) {
+                            // Remove reaction if it already exists (toggle behavior)
+                            return {
+                                ...message,
+                                reactions: existingReactions.filter(r => !(r.user === userId && r.emoji === emoji))
+                            };
+                        } else {
+                            // Add new reaction
+                            return {
+                                ...message,
+                                reactions: [...existingReactions, { emoji, user: userId }]
+                            };
+                        }
+                    }
+                    return message;
+                });
+
+                return { ...prev, [chatId]: updatedMessages };
+            });
+        };
+
+        socket.on('directMessageEmojiReaction', handleDirectMessageEmojiReaction);
+
+        return () => {
+            socket.off('directMessageEmojiReaction', handleDirectMessageEmojiReaction);
+        };
+    }, [socket, currentUser]);
+
+    const handleSendMessage = useCallback(async (text: string, files: File[] = [], replyTo?: any) => {
         if ((!text.trim() && files.length === 0) || !selectedChatId || !currentUser || !socket) return;
 
         // Tìm người nhận từ selectedChatId
@@ -171,6 +227,15 @@ export const useChat = (isDarkMode: boolean) => {
             reactions: [],
             type: 'text',
             attachments: attachments,
+            // Thêm reply nếu có
+            ...(replyTo && {
+                replyTo: {
+                    id: replyTo.id,
+                    from: replyTo.from,
+                    text: replyTo.text,
+                    type: replyTo.type
+                }
+            })
         };
 
         // Cập nhật tin nhắn ngay lập tức cho người gửi
@@ -276,6 +341,65 @@ export const useChat = (isDarkMode: boolean) => {
         showToast("Đã tắt thông báo cho cuộc trò chuyện này");
     }, [selectedChatId, showToast]);
 
+    // Emoji reaction functions - tương tự channel chat
+    const addEmojiReaction = useCallback((messageId: string, emoji: string) => {
+        if (!selectedChatId || !currentUser) return;
+
+        console.log(`😀 Adding emoji reaction: ${emoji} to message ${messageId} in chat ${selectedChatId} by user ${currentUser.id}`);
+
+        // Update local state first for immediate UI feedback
+        setAllMessages(prev => {
+            const chatMessages = prev[selectedChatId] || [];
+            const updatedMessages = chatMessages.map(message => {
+                if (message.id === messageId) {
+                    const existingReactions = message.reactions || [];
+                    const userExistingReaction = existingReactions.find(r => r.user === currentUser.id && r.emoji === emoji);
+
+                    if (userExistingReaction) {
+                        // Remove reaction if it already exists (toggle behavior)
+                        return {
+                            ...message,
+                            reactions: existingReactions.filter(r => !(r.user === currentUser.id && r.emoji === emoji))
+                        };
+                    } else {
+                        // Add new reaction
+                        return {
+                            ...message,
+                            reactions: [...existingReactions, { emoji, user: currentUser.id }]
+                        };
+                    }
+                }
+                return message;
+            });
+
+            return { ...prev, [selectedChatId]: updatedMessages };
+        });
+
+        // Broadcast via socket
+        if (socket) {
+            console.log('😀 Broadcasting emoji reaction via socket');
+
+            // Tìm recipient ID từ chatId
+            const otherUserId = selectedChatId.split('-').find(id => id !== currentUser.id);
+
+            if (otherUserId) {
+                console.log(`📤 SENDING EMOJI: chatId=${selectedChatId}, recipient=${otherUserId}, messageId=${messageId}, emoji=${emoji}, fromUser=${currentUser.id}`);
+                socket.emit('directMessageEmojiReaction', {
+                    recipientId: otherUserId,
+                    chatId: selectedChatId,
+                    messageId,
+                    emoji,
+                    userId: currentUser.id,
+                    userName: currentUser.name,
+                    timestamp: new Date().toISOString()
+                });
+                console.log(`😀 Sent emoji reaction to recipient: ${otherUserId}`);
+            } else {
+                console.error(`❌ Could not find other user ID from chatId: ${selectedChatId}`);
+            }
+        }
+    }, [selectedChatId, currentUser, socket]);
+
     // Computed values
     const filteredDirectMessages = useMemo(() =>
         directMessages.filter(dm =>
@@ -332,5 +456,6 @@ export const useChat = (isDarkMode: boolean) => {
         confirmDeleteContact,
         addContact,
         refreshContacts,
+        addEmojiReaction,
     };
 };

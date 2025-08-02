@@ -94,7 +94,7 @@ export function CreateGroupModal({ isOpen, onClose, onCreateGroup }: CreateGroup
                             {avatarPreview ? (
                                 <img src={avatarPreview} alt="Xem trước" className="w-full h-full rounded-full object-cover" />
                             ) : (
-                                <div className="text-center text-gray-500">
+                                <div className={`text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                     <UploadCloud className="mx-auto h-8 w-8" />
                                     <span className="text-xs mt-1">Tải ảnh lên</span>
                                 </div>
@@ -139,12 +139,12 @@ export function CreateGroupModal({ isOpen, onClose, onCreateGroup }: CreateGroup
                         <RadioGroup defaultValue={groupType} onValueChange={(value: 'public' | 'private') => setGroupType(value)}>
                             <div className={`flex items-center space-x-2 p-3 border rounded-md ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`}>
                                 <RadioGroupItem value="public" id="public" />
-                                <Globe className="h-4 w-4 text-gray-500" />
+                                <Globe className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                                 <Label htmlFor="public" className="flex-1 cursor-pointer">Công khai</Label>
                             </div>
                             <div className={`flex items-center space-x-2 p-3 border rounded-md ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`}>
                                 <RadioGroupItem value="private" id="private" />
-                                <Lock className="h-4 w-4 text-gray-500" />
+                                <Lock className={`h-4 w-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                                 <Label htmlFor="private" className="flex-1 cursor-pointer">Riêng tư</Label>
                             </div>
                         </RadioGroup>

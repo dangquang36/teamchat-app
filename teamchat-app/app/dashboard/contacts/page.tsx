@@ -1,23 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { GroupProvider } from "@/contexts/GroupContext";
 import { MessagesSection } from "@/components/chat/messages/MessagesSection";
+import { useTheme } from "@/contexts/ThemeContext";
 
 
 export default function ChatPage() {
     const [showVideoCall, setShowVideoCall] = useState(false);
     const [showAudioCall, setShowAudioCall] = useState(false);
     const [showCreatePost, setShowCreatePost] = useState(false);
-    const [isDarkMode, setIsDarkMode] = useState(false);
-
-    useEffect(() => {
-        // Load dark mode preference
-        const savedDarkMode = localStorage.getItem("darkMode");
-        if (savedDarkMode) {
-            setIsDarkMode(JSON.parse(savedDarkMode));
-        }
-    }, []);
+    const { isDarkMode } = useTheme();
 
     return (
         <GroupProvider>

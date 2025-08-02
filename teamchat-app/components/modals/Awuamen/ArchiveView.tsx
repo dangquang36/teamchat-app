@@ -69,11 +69,11 @@ export function ArchiveView({ initialTab, mediaFiles, otherFiles, onClose, isDar
                     className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
                 >
                     <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
-                        <FileText className="h-5 w-5 text-gray-500" />
+                        <FileText className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className={`font-medium text-sm truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>{file.name}</p>
-                        <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{formatFileSize(file.size)}</p>
                     </div>
                 </a>
             ))}
@@ -112,7 +112,7 @@ export function ArchiveView({ initialTab, mediaFiles, otherFiles, onClose, isDar
                                 {renderMediaGrid(files)}
                             </div>
                         ))
-                        : <p className="text-center text-sm text-gray-500 mt-10">Không có ảnh hoặc video nào.</p>
+                        : <p className={`text-center text-sm mt-10 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Không có ảnh hoặc video nào.</p>
                 )}
                 {activeTab === 'files' && (
                     groupedFiles.length > 0
@@ -122,7 +122,7 @@ export function ArchiveView({ initialTab, mediaFiles, otherFiles, onClose, isDar
                                 {renderFilesList(files)}
                             </div>
                         ))
-                        : <p className="text-center text-sm text-gray-500 mt-10">Không có tệp nào.</p>
+                        : <p className={`text-center text-sm mt-10 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Không có tệp nào.</p>
                 )}
             </div>
         </motion.div>

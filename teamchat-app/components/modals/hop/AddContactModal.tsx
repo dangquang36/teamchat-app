@@ -8,13 +8,13 @@ import { apiClient } from '@/lib/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useSocketContext } from '@/contexts/SocketContext';
 import { showToast } from '@/lib/utils';
+import { useTheme } from "@/contexts/ThemeContext";
 import type { DirectMessage } from '@/app/types';
 
 interface AddContactModalProps {
     isOpen: boolean;
     onClose: () => void;
     existingContacts: DirectMessage[];
-    isDarkMode?: boolean;
     onAddContact: (contact: DirectMessage) => void;
     onStartChat: (userId: string) => void;
 }
@@ -31,12 +31,12 @@ export function AddContactModal({
     isOpen,
     onClose,
     existingContacts,
-    isDarkMode = false,
     onAddContact,
     onStartChat
 }: AddContactModalProps) {
     const { socket } = useSocketContext();
     const currentUser = useCurrentUser();
+    const { isDarkMode } = useTheme();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -167,17 +167,17 @@ export function AddContactModal({
                         <div className="flex items-center justify-center py-12">
                             <div className="flex flex-col items-center space-y-3">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
-                                <span className="text-sm text-gray-500">Đang tìm kiếm...</span>
+                                <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Đang tìm kiếm...</span>
                             </div>
                         </div>
                     ) : searchQuery.trim() === '' ? (
-                        <div className="text-center py-12 text-gray-500">
+                        <div className={`text-center py-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             <div className="text-4xl mb-4">🔍</div>
                             <p className="text-base font-medium mb-2">Tìm kiếm bạn bè</p>
                             <p className="text-sm">Nhập tên hoặc email để tìm kiếm người dùng</p>
                         </div>
                     ) : searchResults.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500">
+                        <div className={`text-center py-12 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             <div className="text-4xl mb-4">😔</div>
                             <p className="text-base font-medium mb-2">Không tìm thấy kết quả</p>
                             <p className="text-sm">Không có người dùng nào với từ khóa "<span className="font-medium">{searchQuery}</span>"</p>

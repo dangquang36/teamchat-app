@@ -276,8 +276,8 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
             }
         };
 
-        // Initial state
-        updateMicrophoneState();
+        // Initial state với delay để đảm bảo participant đã được setup đầy đủ
+        setTimeout(updateMicrophoneState, 100);
 
         // Event listeners
         const handleTrackMuted = (publication: TrackPublication) => {
@@ -337,12 +337,26 @@ const CallInterface: React.FC<CallInterfaceProps> = ({
 
             // Request microphone permission if needed
             if (!currentMicState) {
+                // Check browser support
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('Trình duyệt không hỗ trợ tính năng microphone. Vui lòng cập nhật trình duyệt.');
+                    return;
+                }
+
                 try {
                     await navigator.mediaDevices.getUserMedia({ audio: true });
                     console.log('🎤 Microphone permission granted');
                 } catch (permissionError) {
                     console.error('❌ Microphone permission denied:', permissionError);
-                    alert('Cần cấp quyền truy cập microphone để sử dụng tính năng này');
+                    let errorMessage = 'Cần cấp quyền truy cập microphone để sử dụng tính năng này';
+
+                    if (permissionError.name === 'NotFoundError') {
+                        errorMessage = 'Không tìm thấy microphone trên thiết bị';
+                    } else if (permissionError.name === 'NotAllowedError') {
+                        errorMessage = 'Cần cấp quyền truy cập microphone. Vui lòng kiểm tra cài đặt trình duyệt.';
+                    }
+
+                    alert(errorMessage);
                     return;
                 }
             }

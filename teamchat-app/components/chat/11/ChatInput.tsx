@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon, BarChart3 } from "lucide-react";
+import { Paperclip, Smile, Mic, Send, X, ImageIcon, File as FileIcon, BarChart3, Reply } from "lucide-react";
 // Removed framer-motion - using CSS transitions only
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import type { ChatInputProps } from "@/app/types";
+import { ReplyPreview } from "../ReplyPreview";
 
 // Giao diện global cho SpeechRecognition
 declare global {
@@ -22,7 +23,7 @@ const formatFileSize = (bytes: number, decimals = 2) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
-export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: ChatInputProps) {
+export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false, replyingTo, onCancelReply }: ChatInputProps) {
     const [message, setMessage] = useState("");
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [isListening, setIsListening] = useState(false);
@@ -97,11 +98,14 @@ export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: C
         setIsSending(true);
 
         // Bắn sự kiện lên cho component cha (useChat) xử lý
-        await onSendMessage(message, selectedFiles);
+        await onSendMessage(message, selectedFiles, replyingTo);
 
         // Reset state của input
         setMessage("");
         setSelectedFiles([]);
+        if (onCancelReply) {
+            onCancelReply();
+        }
 
         setTimeout(() => {
             setIsSending(false);
@@ -142,6 +146,15 @@ export function ChatInput({ onSendMessage, onCreatePoll, isDarkMode = false }: C
     return (
         <div className={`p-4 border-t transition-all duration-300 relative ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
             }`}>
+            {/* Reply Preview Section */}
+            {replyingTo && (
+                <ReplyPreview
+                    replyTo={replyingTo}
+                    onCancel={onCancelReply}
+                    isDarkMode={isDarkMode}
+                />
+            )}
+
             {/* File Preview Section */}
             {selectedFiles.length > 0 && (
                 <div className={`mb-3 p-3 border rounded-lg max-h-40 overflow-y-auto animate-in slide-in-from-top duration-300 ${isDarkMode ? 'border-gray-600 bg-gray-750' : 'border-gray-200 bg-gray-50'
